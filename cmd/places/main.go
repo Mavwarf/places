@@ -1,0 +1,96 @@
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+// fatal prints an error message to stderr and exits with code 1.
+func fatal(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "Error: "+format+"\n", args...)
+	os.Exit(1)
+}
+
+func main() {
+	args := os.Args[1:]
+
+	if len(args) < 1 {
+		printUsage()
+		os.Exit(1)
+	}
+
+	switch args[0] {
+	case "add":
+		if len(args) < 2 {
+			fatal("expected: places add <name> [path]")
+		}
+		path := ""
+		if len(args) >= 3 {
+			path = args[2]
+		}
+		cmdAdd(args[1], path)
+	case "list", "ls":
+		cmdList()
+	case "select":
+		cmdSelect()
+	case "go":
+		if len(args) < 2 {
+			fatal("expected: places go <name>")
+		}
+		cmdGo(args[1])
+	case "rm":
+		if len(args) < 2 {
+			fatal("expected: places rm <name>")
+		}
+		cmdRm(args[1])
+	case "shell-hook":
+		shellHookCmd(args[1:])
+	case "help", "-h", "--help":
+		printUsage()
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", args[0])
+		printUsage()
+		os.Exit(1)
+	}
+}
+
+func printUsage() {
+	fmt.Println(`places - Directory bookmarks for quick navigation
+
+Usage:
+  places add <name> [path]     Save current dir (or given path) with a shortcut name
+  places list                  List all saved places (alias: ls)
+  places select                Browse and pick a place interactively
+  places go <name>             Print the path for a place (used by shell wrapper)
+  places rm <name>             Remove a saved place
+  places shell-hook install    Install p() function (auto-detects shell)
+  places shell-hook uninstall  Remove p() function from shell config
+  places help                  Show this help message
+
+Options:
+  --shell bash|zsh|powershell  Override auto-detected shell (for shell-hook)
+
+Shell integration:
+  places cannot change your shell's directory directly (child process
+  limitation). The shell hook installs a 'p' function that wraps places
+  and performs the actual cd/Set-Location.
+
+  After installing, use:
+    p <name>    Jump to a saved place
+    p           Browse and select interactively
+
+Setup for Bash/Zsh:
+  1. places shell-hook install
+  2. source ~/.bashrc   (or ~/.zshrc)
+
+Setup for PowerShell:
+  1. Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+     (one-time, allows loading your profile script)
+  2. places shell-hook install
+  3. . $PROFILE
+     (or restart PowerShell)
+
+To install for multiple shells, use --shell:
+  places shell-hook install --shell bash
+  places shell-hook install --shell powershell`)
+}
