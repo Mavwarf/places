@@ -14,6 +14,7 @@ Switching between project directories means typing long paths or hunting through
 
 ```
 p                        # Browse saved places interactively and cd
+p select                 # Same as above
 p <name>                 # Jump to a saved place
 p add <name>             # Save current directory with a shortcut name
 p add <name> <path>      # Save a specific path
@@ -38,7 +39,7 @@ p list
 p notify    # instantly cd to the notify project
 ```
 
-Running `p` with no arguments opens an interactive selector:
+Running `p` or `p select` opens an interactive selector:
 
 ```
   1) notify  C:\dev\repos\private\cli_tools\notify

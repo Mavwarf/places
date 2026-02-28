@@ -18,7 +18,7 @@ const (
 
 const bashSnippet = `# BEGIN places shell-hook
 p() {
-  if [ $# -eq 0 ]; then
+  if [ $# -eq 0 ] || [ "$1" = "select" ]; then
     local dir
     dir=$(command places select)
     if [ $? -eq 0 ] && [ -n "$dir" ]; then
@@ -27,7 +27,7 @@ p() {
     return
   fi
   case "$1" in
-    add|rm|list|ls|select|help|shell-hook)
+    add|rm|list|ls|help|shell-hook)
       command places "$@"
       return
       ;;
@@ -44,14 +44,14 @@ p() {
 
 const psSnippet = `# BEGIN places shell-hook
 function p {
-    if ($args.Count -eq 0) {
+    if ($args.Count -eq 0 -or $args[0] -eq 'select') {
         $dir = & places select
         if ($LASTEXITCODE -eq 0 -and $dir) {
             Set-Location $dir
         }
         return
     }
-    $cmds = @('add','rm','list','ls','select','help','shell-hook')
+    $cmds = @('add','rm','list','ls','help','shell-hook')
     if ($cmds -contains $args[0]) {
         & places @args
         return
