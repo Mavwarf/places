@@ -66,6 +66,16 @@ func main() {
 			fatal("expected: places rename <old> <new>")
 		}
 		cmdRename(args[1], args[2])
+	case "code":
+		if len(args) < 2 {
+			fatal("expected: places code <name>")
+		}
+		cmdCode(args[1])
+	case "shell":
+		if len(args) < 2 {
+			fatal("expected: places shell <name>")
+		}
+		cmdShell(args[1])
 	case "stats":
 		cmdStats()
 	case "prune":
@@ -103,6 +113,8 @@ Usage:
   places rm <name>             Remove a saved place
   places rename <old> <new>    Rename a saved place (alias: mv)
   places stats                 Show usage summary
+  places code <name>            Open a place in VS Code
+  places shell <name>          Open a new terminal at a place (no hook needed)
   places where                 Print the place name for the current directory
   places exists <name>         Exit 0 if a place exists, 1 otherwise
   places prune                 Remove places where the directory no longer exists

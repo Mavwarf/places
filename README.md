@@ -26,6 +26,8 @@ p rm <name>              # Remove a saved place
 p rename <old> <new>     # Rename a place (alias: mv)
 p stats                  # Show usage summary
 p app                    # Open the desktop app
+p code <name>            # Open a place in VS Code
+p shell <name>           # Open a new terminal at a place (no hook needed)
 p where                  # Print the place name for the current directory
 p exists <name>          # Exit 0 if a place exists, 1 otherwise (for scripts)
 p prune                  # Remove places where the directory no longer exists

@@ -118,6 +118,75 @@ func cmdGo(name string) {
 	fmt.Print(place.Path)
 }
 
+func cmdCode(name string) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[name]
+	if !ok {
+		place, name = fuzzyFind(cfg, name)
+		if place == nil {
+			fatal("unknown place %q", name)
+		}
+	}
+
+	if _, err := os.Stat(place.Path); err != nil {
+		fatal("directory does not exist: %s", place.Path)
+	}
+
+	cmd := exec.Command("code", place.Path)
+	if err := cmd.Start(); err != nil {
+		fatal("cannot start VS Code: %v", err)
+	}
+}
+
+func cmdShell(name string) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[name]
+	if !ok {
+		place, name = fuzzyFind(cfg, name)
+		if place == nil {
+			fatal("unknown place %q", name)
+		}
+	}
+
+	if _, err := os.Stat(place.Path); err != nil {
+		fatal("directory does not exist: %s", place.Path)
+	}
+
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
+			fmt.Sprintf("Set-Location '%s'", place.Path))
+	} else {
+		shell := os.Getenv("SHELL")
+		if shell == "" {
+			shell = "/bin/sh"
+		}
+		cmd = exec.Command(shell)
+		cmd.Dir = place.Path
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
+
+	if runtime.GOOS == "windows" {
+		if err := cmd.Start(); err != nil {
+			fatal("cannot start shell: %v", err)
+		}
+	} else {
+		if err := cmd.Run(); err != nil {
+			fatal("shell exited with error: %v", err)
+		}
+	}
+}
+
 func cmdEdit(editorOverride string) {
 	p, err := config.ConfigPath()
 	if err != nil {

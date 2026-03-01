@@ -23,12 +23,12 @@
 - [x] ~~**System tray**~~ — tray icon with right-click menu for quick access to places, double-click to reopen dashboard; hide-on-close keeps app running *(Mar 1)*
 - [ ] **Tags/groups** — `p add notify --tag work`, then `p list --tag work` to filter
 - [ ] **Import/export** — `places export > places.json` / `places import < places.json` for syncing across machines
-- [ ] **Spawn shell** (`places cd <name>`) — open a new shell in that directory (no hook needed, works everywhere)
+- [x] ~~**Spawn shell** (`p shell <name>`)~~ — open a new terminal at that directory (no hook needed) *(Mar 1)*
 - [x] ~~**Prune** (`p prune`)~~ — bulk-remove all places where the directory no longer exists *(Mar 1)*
 - [x] ~~**Reverse lookup** (`p where`)~~ — if cwd is a bookmarked directory, print its name *(Mar 1)*
-- [ ] **Open in editor** (`p code <name>`) — open directory in VS Code or configured `$EDITOR`
+- [x] ~~**Open in editor** (`p code <name>`)~~ — open directory in VS Code *(Mar 1)*
 - [ ] **Auto-start on login** — register tray app to start with Windows (startup folder or registry)
-- [ ] **Left-click tray opens menu** — currently only right-click shows the menu
+- [x] ~~**Left-click tray opens menu**~~ — left-click now shows the menu, double-click opens dashboard *(Mar 1)*
 - [ ] **Temporary places** (`p add --temp`) — auto-expire after N days or on next prune
 - [ ] **Notes** (`p add api --note "billing REST API"`) — attach a description, shown in list and desktop app
 - [ ] **Clone + bookmark** (`p clone <git-url> [name]`) — git clone into a workspace dir and auto-add as a place
