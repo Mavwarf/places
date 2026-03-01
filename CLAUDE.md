@@ -13,6 +13,7 @@ When adding or changing user-facing features, update all of these together:
 - `cmd/places/main.go` `printUsage()` — help output
 - `README.md` — usage section and examples
 - Shell hook passthrough lists in `shellhook.go` (bash, PowerShell, cmd.exe) — add new commands so `p <cmd>` works
+- Wiki at `C:\dev\repos\private\cli_tools\places.wiki\` — CLI-Reference.md, Desktop-App.md, Use-Cases.md as applicable
 
 ## Shell hooks
 

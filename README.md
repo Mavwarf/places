@@ -93,6 +93,18 @@ The place list is sorted by last used (most recent on top) by default, with rela
 
 You can also add and remove places from the app. The **…** button next to the path input opens a native folder picker dialog. Changes are shared with the CLI (same `places.json`).
 
+### Tags in the App
+
+The desktop app supports tags with:
+- **Tag badges** on each place — click **x** to remove a tag
+- **+** button on each place — click to add a tag via prompt
+- **Filter bar** — click a tag chip to show only places with that tag, click "All" to reset
+- **Tags input** in the add form — comma-separated tags when adding a new place
+
+### Screenshot Mode
+
+Press **S** to toggle screenshot mode. This anonymizes place names with fantasy names for taking screenshots without exposing real project names. Places tagged with `work` also get their directory paths anonymized (keeping the `C:\dev\repos\` prefix). Mappings persist in localStorage so names stay consistent across reloads.
+
 ### Color Themes
 
 Click the theme toggle button (top-right) to cycle through 6 color schemes: Dark (default), Light, Nord, Dracula, Solarized, and Gruvbox. Your choice is saved in localStorage and persists across sessions.
