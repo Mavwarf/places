@@ -2,6 +2,10 @@
 
 ## Features
 
+- Init command (`places init`) — one-command setup that installs shell hooks for detected shell + cmd on Windows *(Mar 1)*
+- Edit command (`places edit [editor]`) — open places.json in `$EDITOR` or specified editor *(Mar 1)*
+- Fuzzy matching — `p not` matches `notify` via substring; resolves if exactly one match *(Mar 1)*
+- Color output — `places list` uses ANSI colors: green names, cyan paths, dim stats, yellow warnings *(Mar 1)*
 - Path separator normalization — all paths normalized to OS-native separators (`\` on Windows) on load *(Mar 1)*
 - Relative path resolution — `places add name .` resolves `.` and `..` to absolute paths *(Mar 1)*
 - Select sorted by recent use — most recently used places shown first in `places select` *(Mar 1)*
@@ -23,6 +27,30 @@
 ---
 
 ## 2026-03-01
+
+### Init command
+
+`places init` is a one-command setup that auto-detects the current shell,
+installs the shell hook, and on Windows also installs `p.bat` for cmd.exe.
+Skips hooks that are already installed (no error). Prints next steps
+(execution policy, profile reload).
+
+### Edit command
+
+`places edit [editor]` opens `places.json` in an editor. Priority:
+explicit argument > `$EDITOR` > `$VISUAL` > `notepad` (Windows) / `vi` (Unix).
+Example: `places edit notepad`, `places edit code`.
+
+### Fuzzy matching
+
+`places go` (and `p <name>`) now falls back to substring matching when no
+exact match is found. `p not` matches `notify` if it's the only place
+containing "not". Ambiguous matches (multiple results) still show an error.
+
+### Color output
+
+`places list` now uses ANSI color codes: place names in green, paths in cyan,
+stats in dim, and `[missing!]` warnings in yellow.
 
 ### Path separator normalization
 

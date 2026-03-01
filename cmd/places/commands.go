@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -89,9 +91,9 @@ func cmdList() {
 		stats := formatStats(p)
 		warning := ""
 		if _, err := os.Stat(p.Path); err != nil {
-			warning = " [missing!]"
+			warning = fmt.Sprintf(" %s[missing!]%s", colorYellow, colorReset)
 		}
-		fmt.Printf("  %-*s  %s  %s%s\n", maxLen, name, p.Path, stats, warning)
+		fmt.Printf("  %s%-*s%s  %s%s%s  %s%s\n", colorGreen, maxLen, name, colorReset, colorCyan, p.Path, colorReset, stats, warning)
 	}
 }
 
@@ -103,7 +105,11 @@ func cmdGo(name string) {
 
 	place, ok := cfg.Places[name]
 	if !ok {
-		fatal("unknown place %q", name)
+		// Try fuzzy (substring) match.
+		place, name = fuzzyFind(cfg, name)
+		if place == nil {
+			fatal("unknown place %q", name)
+		}
 	}
 
 	config.RecordUse(place)
@@ -111,6 +117,36 @@ func cmdGo(name string) {
 
 	// Print path to stdout for the shell wrapper to capture.
 	fmt.Print(place.Path)
+}
+
+func cmdEdit(editorOverride string) {
+	p, err := config.ConfigPath()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	editor := editorOverride
+	if editor == "" {
+		editor = os.Getenv("EDITOR")
+	}
+	if editor == "" {
+		editor = os.Getenv("VISUAL")
+	}
+	if editor == "" {
+		if runtime.GOOS == "windows" {
+			editor = "notepad"
+		} else {
+			editor = "vi"
+		}
+	}
+
+	cmd := exec.Command(editor, p)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fatal("editor exited with error: %v", err)
+	}
 }
 
 func cmdSelect() {
@@ -282,16 +318,45 @@ func sortedByRecent(cfg config.Config) []string {
 	return names
 }
 
+// fuzzyFind returns the first place whose name contains the query as a substring.
+// Returns nil if no match or multiple ambiguous matches.
+func fuzzyFind(cfg config.Config, query string) (*config.Place, string) {
+	query = strings.ToLower(query)
+	var matchName string
+	var matchPlace *config.Place
+	count := 0
+	for name, place := range cfg.Places {
+		if strings.Contains(strings.ToLower(name), query) {
+			matchName = name
+			matchPlace = place
+			count++
+		}
+	}
+	if count == 1 {
+		return matchPlace, matchName
+	}
+	return nil, query
+}
+
+// ANSI color helpers.
+const (
+	colorReset  = "\033[0m"
+	colorGreen  = "\033[32m"
+	colorCyan   = "\033[36m"
+	colorDim    = "\033[2m"
+	colorYellow = "\033[33m"
+)
+
 // formatStats returns a short stats string like "(added Feb 28, 5 uses, last: Feb 28)".
 func formatStats(p *config.Place) string {
 	added := p.AddedAt.Format("Jan _2")
 	if p.UseCount == 0 {
-		return fmt.Sprintf("(added %s, never used)", added)
+		return fmt.Sprintf("%s(added %s, never used)%s", colorDim, added, colorReset)
 	}
 	last := p.LastUsedAt.Format("Jan _2 15:04")
 	uses := "use"
 	if p.UseCount != 1 {
 		uses = "uses"
 	}
-	return fmt.Sprintf("(added %s, %d %s, last: %s)", added, p.UseCount, uses, last)
+	return fmt.Sprintf("%s(added %s, %d %s, last: %s)%s", colorDim, added, p.UseCount, uses, last, colorReset)
 }

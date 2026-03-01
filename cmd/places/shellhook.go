@@ -24,6 +24,8 @@ if /i "%~1"=="mv" goto :passthrough
 if /i "%~1"=="list" goto :passthrough
 if /i "%~1"=="ls" goto :passthrough
 if /i "%~1"=="stats" goto :passthrough
+if /i "%~1"=="edit" goto :passthrough
+if /i "%~1"=="init" goto :passthrough
 if /i "%~1"=="help" goto :passthrough
 if /i "%~1"=="shell-hook" goto :passthrough
 
@@ -62,7 +64,7 @@ p() {
     return
   fi
   case "$1" in
-    add|rm|rename|mv|list|ls|stats|help|shell-hook)
+    add|rm|rename|mv|list|ls|stats|edit|init|help|shell-hook)
       command places "$@"
       return
       ;;
@@ -86,7 +88,7 @@ function p {
         }
         return
     }
-    $cmds = @('add','rm','rename','mv','list','ls','stats','help','shell-hook')
+    $cmds = @('add','rm','rename','mv','list','ls','stats','edit','init','help','shell-hook')
     if ($cmds -contains $args[0]) {
         & places @args
         return
@@ -99,6 +101,105 @@ function p {
     }
 }
 # END places shell-hook`
+
+func cmdInit() {
+	sh := resolveShell("")
+	installed := 0
+
+	// Install shell hook for detected shell.
+	if sh == "cmd" {
+		if tryInstallCmd() {
+			installed++
+		}
+	} else {
+		if tryInstallShell(sh) {
+			installed++
+		}
+		// On Windows, also install cmd hook.
+		if runtime.GOOS == "windows" {
+			if tryInstallCmd() {
+				installed++
+			}
+		}
+	}
+
+	if installed == 0 {
+		fmt.Println("places: everything already set up!")
+	} else {
+		fmt.Println()
+		if sh == "powershell" {
+			fmt.Println("Next steps:")
+			fmt.Println("  1. Ensure execution policy allows profile loading:")
+			fmt.Println("     Set-ExecutionPolicy -Scope CurrentUser RemoteSigned")
+			fmt.Println("  2. Restart your shell or run: . $PROFILE")
+		} else if sh == "cmd" {
+			fmt.Println("Next steps:")
+			fmt.Println("  Restart cmd.exe to use 'p <name>'")
+		} else {
+			fmt.Printf("Next steps:\n  Restart your shell or run: source ~/.%src\n", sh)
+		}
+	}
+}
+
+// tryInstallShell installs the hook for a shell (bash/zsh/powershell), skipping if already present.
+// Returns true if newly installed.
+func tryInstallShell(sh string) bool {
+	rcFile, err := resolveRCFile(sh)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "places: skipping %s: %v\n", sh, err)
+		return false
+	}
+
+	existing, _ := os.ReadFile(rcFile)
+	if strings.Contains(string(existing), markerBegin) {
+		fmt.Printf("places: %s hook already installed in %s (skipped)\n", sh, rcFile)
+		return false
+	}
+
+	snippet := snippetForShell(sh)
+
+	if err := os.MkdirAll(filepath.Dir(rcFile), 0755); err != nil {
+		fmt.Fprintf(os.Stderr, "places: cannot create directory for %s: %v\n", rcFile, err)
+		return false
+	}
+
+	f, err := os.OpenFile(rcFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "places: cannot write to %s: %v\n", rcFile, err)
+		return false
+	}
+	defer f.Close()
+
+	if len(existing) > 0 && existing[len(existing)-1] != '\n' {
+		f.WriteString("\n")
+	}
+	f.WriteString("\n" + snippet + "\n")
+
+	fmt.Printf("places: shell hook installed in %s\n", rcFile)
+	return true
+}
+
+// tryInstallCmd installs p.bat, skipping if already present. Returns true if newly installed.
+func tryInstallCmd() bool {
+	batPath, err := cmdBatPath()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "places: skipping cmd: %v\n", err)
+		return false
+	}
+
+	if _, err := os.Stat(batPath); err == nil {
+		fmt.Printf("places: p.bat already exists at %s (skipped)\n", batPath)
+		return false
+	}
+
+	if err := os.WriteFile(batPath, []byte(cmdBat), 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "places: cannot write %s: %v\n", batPath, err)
+		return false
+	}
+
+	fmt.Printf("places: p.bat installed at %s\n", batPath)
+	return true
+}
 
 func shellHookCmd(args []string) {
 	// Parse --shell flag.

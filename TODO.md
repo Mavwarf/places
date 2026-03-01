@@ -11,7 +11,7 @@
 
 - [ ] **Interactive select with arrow keys** — replace numbered input with cursor up/down navigation and Enter to confirm; requires raw terminal input (consider `golang.org/x/term` or manual ANSI escape handling)
 - [ ] **Desktop app** (`places app`) — Windows GUI showing all saved places; each place has a "PowerShell" and "cmd" button that opens a terminal window at that directory (similar to `notify-app` using Wails)
-- [ ] **Fuzzy matching** — `p not` matches `notify`; no need for exact names
+- [x] ~~**Fuzzy matching**~~ — `p not` matches `notify`; substring match with single-result disambiguation *(Mar 1)*
 - [x] ~~**Auto-name on add**~~ — `places add` without a name derives it from the directory (e.g. `/cli_tools/notify` → `notify`) *(Mar 1)*
 - [ ] **Tags/groups** — `p add notify --tag work`, then `p list --tag work` to filter
 - [ ] **Import/export** — `places export > places.json` / `places import < places.json` for syncing across machines
@@ -23,6 +23,7 @@
 - [x] ~~`places rename <old> <new>` command~~ (alias: `mv`) *(Mar 1)*
 - [ ] Tab completion for place names (bash/zsh/PowerShell)
 - [x] ~~Validate that saved paths still exist on `list` / `select` (warn if missing)~~ *(Mar 1)*
-- [ ] Color output — highlight place names, dim paths, color stats
+- [x] ~~Color output~~ — names in green, paths in cyan, stats dimmed, warnings in yellow *(Mar 1)*
 - [x] ~~`places stats` — global usage summary (total uses, most used place, least used)~~ *(Mar 1)*
-- [ ] `places edit` — open `places.json` in `$EDITOR`
+- [x] ~~`places edit`~~ — open `places.json` in `$EDITOR` or specified editor *(Mar 1)*
+- [x] ~~`places init`~~ — one-command setup: installs shell hooks for detected shell + cmd on Windows *(Mar 1)*
