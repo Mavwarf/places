@@ -109,6 +109,10 @@ Press **S** to toggle screenshot mode. This anonymizes place names with fantasy 
 
 Click the theme toggle button (top-right) to cycle through 6 color schemes: Dark (default), Light, Nord, Dracula, Solarized, and Gruvbox. Your choice is saved in localStorage and persists across sessions.
 
+### Window Controls
+
+The header includes **minimize** (−) and **quit** (×) buttons in the top-right corner. Minimize hides the window; quit fully exits the app. You can also close the window normally to hide to tray (Shift+close to exit).
+
 ### System Tray
 
 The desktop app lives in the system tray. Closing the window hides it to the tray instead of exiting — the app stays running for quick access.

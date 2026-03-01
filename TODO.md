@@ -31,6 +31,7 @@
 - [x] ~~**Browse button in add form**~~ — "…" button next to the path input opens a native folder picker dialog via Wails `OpenDirectoryDialog` *(Mar 1)*
 - [x] ~~**Tags/groups** — `p add notify --tag work`, then `p list --tag work` to filter~~ *(Mar 1)*
 - [x] ~~**Screenshot mode**~~ — press S in desktop app to anonymize names and work-tagged paths for screenshots *(Mar 1)*
+- [x] ~~**Window controls**~~ — minimize and quit buttons in desktop app header *(Mar 1)*
 - [ ] **Import/export** — `places export > places.json` / `places import < places.json` for syncing across machines
 - [ ] **Temporary places** (`p add --temp`) — auto-expire after N days or on next prune
 - [ ] **Notes** (`p add api --note "billing REST API"`) — attach a description, shown in list and desktop app
