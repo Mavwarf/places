@@ -42,3 +42,11 @@ func (a *App) ShowWindow() {
 	<-a.ready // wait for Wails to be initialized
 	wailsRuntime.WindowShow(a.ctx)
 }
+
+// BrowseDir opens a native folder picker and returns the selected path.
+func (a *App) BrowseDir() (string, error) {
+	<-a.ready
+	return wailsRuntime.OpenDirectoryDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Title: "Select directory",
+	})
+}

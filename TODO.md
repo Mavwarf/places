@@ -28,7 +28,7 @@
 - [x] ~~**Auto-start on login** (`p autostart [on|off]`)~~ — registry-based autostart for Windows tray app *(Mar 1)*
 - [x] ~~**Left-click tray opens menu**~~ — left-click now shows the menu, double-click opens dashboard *(Mar 1)*
 - [x] ~~**Color schemes**~~ — 6 themes (dark, light, nord, dracula, solarized, gruvbox) with toggle button and localStorage persistence *(Mar 1)*
-- [ ] **Browse button in add form** — "…" button next to the path input that opens a native file/folder picker dialog
+- [x] ~~**Browse button in add form**~~ — "…" button next to the path input opens a native folder picker dialog via Wails `OpenDirectoryDialog` *(Mar 1)*
 - [ ] **Tags/groups** — `p add notify --tag work`, then `p list --tag work` to filter
 - [ ] **Import/export** — `places export > places.json` / `places import < places.json` for syncing across machines
 - [ ] **Temporary places** (`p add --temp`) — auto-expire after N days or on next prune
