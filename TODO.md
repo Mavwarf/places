@@ -2,8 +2,8 @@
 
 ## Bugs / Missing
 
-- [ ] **cmd.exe support** — no shell hook for Windows cmd terminal; needs a `p.bat` wrapper or doskey macro to capture `places go` output and `cd` to it
-- [ ] **Windows PowerShell hook install** — `places shell-hook install` only writes to the pwsh (PowerShell Core) profile; Windows PowerShell (`powershell.exe`) has a separate profile path that must be installed manually
+- [x] ~~**cmd.exe support**~~ — `places shell-hook install --shell cmd` creates `p.bat` next to `places.exe` *(Mar 1)*
+- [x] ~~**Windows PowerShell hook install**~~ — `places shell-hook install` now auto-detects PowerShell; use `--shell powershell` to target explicitly *(Feb 28)*
 
 ## Improvements
 

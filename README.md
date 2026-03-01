@@ -54,14 +54,14 @@ A child process cannot change the parent shell's working directory. `places` sol
 - The `places` binary handles storage and retrieval (add, list, go, rm)
 - A shell function `p()` wraps the binary, captures the path from `places go`, and performs the actual `cd` / `Set-Location`
 
-The `places shell-hook install` command injects this `p()` function into your shell config file using marker comments (`# BEGIN places shell-hook` / `# END places shell-hook`) for clean install and uninstall.
+The `places shell-hook install` command injects this `p()` function into your shell config file using marker comments (`# BEGIN places shell-hook` / `# END places shell-hook`) for clean install and uninstall. For cmd.exe, it creates a `p.bat` batch file next to `places.exe`.
 
 ## Setup
 
 ### Requirements
 
 - Go 1.24+ (to build from source)
-- Bash, Zsh, or PowerShell
+- Bash, Zsh, PowerShell, or cmd.exe
 
 ### Build
 
@@ -100,6 +100,14 @@ places shell-hook install
 . $PROFILE
 ```
 
+#### cmd.exe
+
+```
+places shell-hook install --shell cmd
+```
+
+This creates a `p.bat` next to `places.exe`. No restart needed — works immediately in any new cmd window.
+
 #### Multiple shells
 
 Use `--shell` to install for a specific shell:
@@ -107,6 +115,7 @@ Use `--shell` to install for a specific shell:
 ```
 places shell-hook install --shell bash
 places shell-hook install --shell powershell
+places shell-hook install --shell cmd
 ```
 
 ### Uninstall

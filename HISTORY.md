@@ -2,6 +2,7 @@
 
 ## Features
 
+- cmd.exe support — `places shell-hook install --shell cmd` creates `p.bat` next to `places.exe`; uses temp file for interactive select *(Mar 1)*
 - CLAUDE.md — project conventions, build/deploy instructions, shell hook update workflow *(Mar 1)*
 - Shell hook passthrough — `p add/rm/list/help/...` passes through to `places` binary; `p`/`p select` both do select+cd *(Feb 28)*
 - PowerShell support — shell hook install/uninstall for PowerShell (Core and Windows PowerShell); `--shell` flag for targeting specific shells *(Feb 28)*
@@ -15,6 +16,18 @@
 ---
 
 ## 2026-03-01
+
+### cmd.exe support
+
+Added `cmd` as a supported shell type. `places shell-hook install --shell cmd`
+creates a `p.bat` file next to the `places.exe` binary. The batch file handles:
+
+- `p <name>` — `for /f` captures `places go` output and `cd /d` to it
+- `p` / `p select` — runs `places select` with stdout redirected to a temp file
+  (preserves stdin for interactive input), then reads and `cd`s to the result
+- `p add/rm/list/...` — passthrough to `places`
+
+Uninstall with `places shell-hook uninstall --shell cmd` (deletes `p.bat`).
 
 ### CLAUDE.md
 
