@@ -174,19 +174,24 @@ func cmdSelect() {
 	for i, name := range names {
 		warning := ""
 		if _, err := os.Stat(cfg.Places[name].Path); err != nil {
-			warning = " [missing!]"
+			warning = fmt.Sprintf(" %s[missing!]%s", colorYellow, colorReset)
 		}
-		fmt.Fprintf(os.Stderr, "  %d) %-*s  %s%s\n", i+1, maxLen, name, cfg.Places[name].Path, warning)
+		fmt.Fprintf(os.Stderr, "  %d) %s%-*s%s  %s%s%s%s\n", i+1, colorGreen, maxLen, name, colorReset, colorCyan, cfg.Places[name].Path, colorReset, warning)
 	}
-	fmt.Fprintf(os.Stderr, "Select [1-%d]: ", len(names))
+	fmt.Fprintf(os.Stderr, "Select [1-%d, x=exit]: ", len(names))
 
 	reader := bufio.NewReader(os.Stdin)
 	line, err := reader.ReadString('\n')
 	if err != nil {
-		fatal("reading input: %v", err)
+		os.Exit(1)
 	}
 
-	choice, err := strconv.Atoi(strings.TrimSpace(line))
+	input := strings.TrimSpace(line)
+	if strings.EqualFold(input, "x") || (len(input) > 0 && input[0] == 0x1B) {
+		os.Exit(1)
+	}
+
+	choice, err := strconv.Atoi(input)
 	if err != nil || choice < 1 || choice > len(names) {
 		fatal("invalid selection")
 	}

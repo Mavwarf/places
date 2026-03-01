@@ -15,11 +15,15 @@ Switching between project directories means typing long paths or hunting through
 ```
 p                        # Browse saved places interactively and cd
 p select                 # Same as above
-p <name>                 # Jump to a saved place
-p add <name>             # Save current directory with a shortcut name
+p <name>                 # Jump to a saved place (supports fuzzy matching)
+p add [name] [path]      # Save current dir (name auto-derived if omitted)
 p add <name> <path>      # Save a specific path
-p list                   # List all places with usage stats
+p list                   # List all places with colored output and usage stats
 p rm <name>              # Remove a saved place
+p rename <old> <new>     # Rename a place (alias: mv)
+p stats                  # Show usage summary
+p edit [editor]          # Open places.json in $EDITOR or specified editor
+p init                   # One-command setup (installs shell hooks)
 p help                   # Show help
 ```
 
@@ -37,6 +41,7 @@ p list
   places  C:\dev\repos\private\cli_tools\places  (added Feb 28, 1 use, last: Feb 28 13:50)
 
 p notify    # instantly cd to the notify project
+p not       # fuzzy match — also jumps to notify
 ```
 
 Running `p` or `p select` opens an interactive selector:
@@ -62,6 +67,16 @@ The `places shell-hook install` command injects this `p()` function into your sh
 
 - Go 1.24+ (to build from source)
 - Bash, Zsh, PowerShell, or cmd.exe
+
+### Quick setup
+
+After building and placing the binary on your PATH:
+
+```
+places init
+```
+
+This auto-detects your shell, installs the `p` hook, and on Windows also creates `p.bat` for cmd.exe. Follow the printed next steps to reload your profile.
 
 ### Build
 
