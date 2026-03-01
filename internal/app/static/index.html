@@ -145,6 +145,7 @@ button:active { opacity: 0.7; }
 .btn-cmd { background: var(--fg-dim); color: var(--bg); }
 .btn-explorer { background: var(--yellow); color: var(--bg); }
 .btn-claude { background: #d4a373; color: var(--bg); }
+.btn-code { background: #2b7cd3; color: #fff; }
 .btn-browse {
   background: transparent;
   color: var(--fg-dim);
@@ -501,8 +502,9 @@ async function load() {
         <div class="place-actions">
           ${p.exists ? `
             <button class="btn-ps" onclick="openAt('${esc(p.name)}','powershell')" title="Open PowerShell here">PS</button>
-            <button class="btn-claude" onclick="openAt('${esc(p.name)}','claude')" title="Open Claude Code here">Claude</button>
-            <button class="btn-cmd" onclick="openAt('${esc(p.name)}','cmd')" title="Open cmd here">cmd</button>
+            <button class="btn-claude" onclick="openAt('${esc(p.name)}','claude')" title="Open Claude Code here">cl</button>
+            <button class="btn-code" onclick="openAt('${esc(p.name)}','code')" title="Open in VS Code">VS</button>
+            <button class="btn-cmd" onclick="openAt('${esc(p.name)}','cmd')" title="Open cmd here">&gt;_</button>
             <button class="btn-explorer" onclick="openAt('${esc(p.name)}','explorer')" title="Open in Explorer">dir</button>
           ` : ''}
           <button class="btn-rm" onclick="rm('${esc(p.name)}')" title="Remove">\u2715</button>

@@ -192,6 +192,8 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 		fn = launcher.Cmd
 	case "claude":
 		fn = launcher.Claude
+	case "code":
+		fn = launcher.Code
 	case "explorer":
 		fn = launcher.Explorer
 	default:

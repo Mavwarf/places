@@ -85,8 +85,9 @@ Tags are lowercase, deduplicated, and sorted alphabetically. The desktop app sho
 `p app` launches a desktop GUI (built with Wails v2) that shows all saved places with action buttons:
 
 - **PS** — open PowerShell at that directory
-- **Claude** — open PowerShell at that directory and start Claude Code
-- **cmd** — open cmd.exe at that directory
+- **cl** — open PowerShell at that directory and start Claude Code
+- **VS** — open VS Code at that directory
+- **>_** — open cmd.exe at that directory
 - **dir** — open Explorer at that directory
 
 The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, or date added.
