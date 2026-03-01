@@ -4,20 +4,22 @@ A CLI tool that bookmarks directories with shortcut names for quick navigation b
 
 ## Why
 
-Switching between project directories means typing long paths or hunting through `cd` history. `places` lets you save directories once and jump to them instantly with `p <name>`. It's especially useful when:
+Switching between project directories means typing long paths or hunting through `cd` history. `places` lets you save directories once and jump to them instantly with `p <name>`.
 
-- You work across many repositories and want single-word shortcuts
-- You start new terminal or Claude Code sessions and need to get to the right directory fast
-- You want to see which project directories you visit most often
+- Save any directory with a shortcut name — `p add api` in your API project
+- Jump back instantly from anywhere — `p api`
+- Fuzzy matching — `p ap` also works if there's only one match
+- Interactive picker — just type `p` to browse all saved places with arrow keys
+- Usage tracking — see which directories you visit most often
+
+Works on Windows (PowerShell, cmd.exe) and Unix (Bash, Zsh). No external dependencies.
 
 ## Usage
 
 ```
 p                        # Browse saved places interactively and cd
-p select                 # Same as above
 p <name>                 # Jump to a saved place (supports fuzzy matching)
 p add [name] [path]      # Save current dir (name auto-derived if omitted)
-p add <name> <path>      # Save a specific path
 p list                   # List all places with colored output and usage stats
 p rm <name>              # Remove a saved place
 p rename <old> <new>     # Rename a place (alias: mv)
@@ -30,25 +32,25 @@ p help                   # Show help
 ### Example
 
 ```
-cd C:\dev\repos\private\cli_tools\notify
-p add notify
+cd ~/projects/api
+p add api
 
-cd C:\dev\repos\private\cli_tools\places
-p add places
+cd ~/projects/frontend
+p add
 
 p list
-  notify  C:\dev\repos\private\cli_tools\notify  (added Feb 28, 3 uses, last: Feb 28 14:10)
-  places  C:\dev\repos\private\cli_tools\places  (added Feb 28, 1 use, last: Feb 28 13:50)
+  api       ~/projects/api       (added Mar 1, 5 uses, last: Mar 1 14:10)
+  frontend  ~/projects/frontend  (added Mar 1, 2 uses, last: Mar 1 13:50)
 
-p notify    # instantly cd to the notify project
-p not       # fuzzy match — also jumps to notify
+p api         # instantly cd to the api project
+p ap          # fuzzy match — also works
 ```
 
-Running `p` or `p select` opens an interactive selector with arrow-key navigation:
+Running `p` opens an interactive selector with arrow-key navigation:
 
 ```
-  > notify  C:\dev\repos\private\cli_tools\notify
-    places  C:\dev\repos\private\cli_tools\places
+  > api       ~/projects/api
+    frontend  ~/projects/frontend
   ↑/↓ navigate, Enter select, Esc cancel
 ```
 
@@ -70,7 +72,7 @@ The `places shell-hook install` command injects this `p()` function into your sh
 
 ### Quick setup
 
-After building and placing the binary on your PATH:
+Build and place the binary on your PATH, then run:
 
 ```
 places init
@@ -88,7 +90,8 @@ go build -o places.exe .
 Copy the binary somewhere on your `PATH`:
 
 ```
-cp places.exe C:\dev\tools\cli\    # or /usr/local/bin/ on Linux/macOS
+cp places.exe /usr/local/bin/       # Linux/macOS
+cp places.exe C:\dev\tools\cli\     # Windows
 ```
 
 ### Shell integration
@@ -147,15 +150,21 @@ Places are stored in `~/.config/places/places.json` with usage statistics:
 ```json
 {
   "places": {
-    "notify": {
-      "path": "C:\\dev\\repos\\private\\cli_tools\\notify",
-      "added_at": "2026-02-28T13:50:17+01:00",
-      "use_count": 3,
-      "last_used_at": "2026-02-28T14:10:42+01:00"
+    "api": {
+      "path": "/home/user/projects/api",
+      "added_at": "2026-03-01T13:50:17+01:00",
+      "use_count": 5,
+      "last_used_at": "2026-03-01T14:10:42+01:00"
     }
   }
 }
 ```
+
+## Author
+
+Created by Thomas Häuser
+- https://mavwarf.netlify.app/
+- https://github.com/Mavwarf/places
 
 ## License
 

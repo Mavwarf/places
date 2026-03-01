@@ -118,5 +118,9 @@ Setup for cmd.exe:
 To install for multiple shells, use --shell:
   places shell-hook install --shell bash
   places shell-hook install --shell powershell
-  places shell-hook install --shell cmd`)
+  places shell-hook install --shell cmd
+
+Created by Thomas Häuser
+https://mavwarf.netlify.app/
+https://github.com/Mavwarf/places`)
 }
