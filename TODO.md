@@ -33,10 +33,13 @@
 - [x] ~~**Screenshot mode**~~ — press S in desktop app to anonymize names and work-tagged paths for screenshots *(Mar 1)*
 - [x] ~~**Window controls**~~ — minimize and quit buttons in desktop app header *(Mar 1)*
 - [ ] **Import/export** — `places export > places.json` / `places import < places.json` for syncing across machines
-- [ ] **Temporary places** (`p add --temp`) — auto-expire after N days or on next prune
 - [ ] **Notes** (`p add api --note "billing REST API"`) — attach a description, shown in list and desktop app
-- [ ] **Clone + bookmark** (`p clone <git-url> [name]`) — git clone into a workspace dir and auto-add as a place
 - [ ] **Global hotkey** — system-wide keyboard shortcut to open the tray menu or dashboard
+- [ ] **Type-to-filter in select** — start typing in the interactive picker to narrow results instead of just arrow keys
+- [ ] **Git info in desktop app** — show current branch and dirty/clean status next to each place
+- [ ] **Custom actions** — user-defined commands per place or globally, beyond the built-in PS/cmd/Claude/Explorer
+- [ ] **Frecency sorting** — combine frequency + recency into a single score for smarter ordering in select and app
+- [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
 
 ## Script-Friendly
 
