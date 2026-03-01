@@ -44,12 +44,12 @@ p notify    # instantly cd to the notify project
 p not       # fuzzy match — also jumps to notify
 ```
 
-Running `p` or `p select` opens an interactive selector:
+Running `p` or `p select` opens an interactive selector with arrow-key navigation:
 
 ```
-  1) notify  C:\dev\repos\private\cli_tools\notify
-  2) places  C:\dev\repos\private\cli_tools\places
-Select [1-2]:
+  > notify  C:\dev\repos\private\cli_tools\notify
+    places  C:\dev\repos\private\cli_tools\places
+  ↑/↓ navigate, Enter select, Esc cancel
 ```
 
 ## How it works

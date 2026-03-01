@@ -2,6 +2,7 @@
 
 ## Features
 
+- Interactive arrow-key select — `places select` uses cursor navigation instead of numbered input; Up/Down to move, Enter to confirm, Esc to cancel *(Mar 1)*
 - Init command (`places init`) — one-command setup that installs shell hooks for detected shell + cmd on Windows *(Mar 1)*
 - Edit command (`places edit [editor]`) — open places.json in `$EDITOR` or specified editor *(Mar 1)*
 - Fuzzy matching — `p not` matches `notify` via substring; resolves if exactly one match *(Mar 1)*
@@ -27,6 +28,18 @@
 ---
 
 ## 2026-03-01
+
+### Interactive arrow-key select
+
+`places select` (and `p` / `p select`) now uses an interactive cursor-based menu
+instead of numbered input. Arrow keys move the highlight, Enter confirms, Esc or
+`q` cancels. The selected line shows bold green name and cyan path; other lines
+are dimmed. A footer hint shows available keys. The menu cleans up after itself
+(all lines cleared on exit).
+
+Implementation uses platform-specific raw terminal input: `ReadConsoleInputW`
+with virtual key codes on Windows, termios with VT100 escape sequences on Unix.
+No external dependencies.
 
 ### Init command
 
