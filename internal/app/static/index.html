@@ -343,6 +343,30 @@ button:active { opacity: 0.7; }
 }
 .screenshot-badge.visible { display: inline-block; }
 .screenshot-badge:not(.visible) ~ .theme-toggle { margin-left: auto; }
+
+/* Window controls */
+.window-controls {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+.win-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--fg-dim);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  line-height: 1;
+}
+.win-btn:hover { color: var(--fg); border-color: var(--fg-dim); }
+.win-btn-quit:hover { color: var(--red); border-color: var(--red); }
 </style>
 </head>
 <body>
@@ -350,6 +374,10 @@ button:active { opacity: 0.7; }
   <h1>places dashboard <span>directory bookmarks</span></h1>
   <span class="screenshot-badge" id="screenshot-badge">screenshot</span>
   <button class="theme-toggle" id="theme-toggle" title="Toggle theme"></button>
+  <div class="window-controls">
+    <button class="win-btn" onclick="minimizeWindow()" title="Minimize">&minus;</button>
+    <button class="win-btn win-btn-quit" onclick="quitApp()" title="Quit">&times;</button>
+  </div>
 </div>
 <div style="font-size:12px;color:var(--fg-dim);margin:-12px 0 16px">
   By <a href="https://mavwarf.netlify.app/" target="_blank" rel="noopener" style="color:var(--fg)">Thomas H&auml;user</a>. <a href="https://github.com/Mavwarf/places" target="_blank" rel="noopener" style="color:var(--cyan)">github.com/Mavwarf/places</a>
@@ -594,6 +622,14 @@ async function promptAddTag(name) {
     if (res.ok) { load(); toast('Tagged'); }
     else { toast(await res.text() || 'Failed', true); }
   } catch (e) { toast('Failed', true); }
+}
+
+async function minimizeWindow() {
+  try { await fetch('/api/minimize', {method: 'POST'}); } catch(e) {}
+}
+
+async function quitApp() {
+  try { await fetch('/api/quit', {method: 'POST'}); } catch(e) {}
 }
 
 // ---- Screenshot mode ----

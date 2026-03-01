@@ -43,6 +43,18 @@ func (a *App) ShowWindow() {
 	wailsRuntime.WindowShow(a.ctx)
 }
 
+// MinimizeWindow minimizes the Wails window.
+func (a *App) MinimizeWindow() {
+	<-a.ready
+	wailsRuntime.WindowMinimise(a.ctx)
+}
+
+// QuitApp fully exits the application.
+func (a *App) QuitApp() {
+	systray.Quit()
+	os.Exit(0)
+}
+
 // BrowseDir opens a native folder picker and returns the selected path.
 func (a *App) BrowseDir() (string, error) {
 	<-a.ready

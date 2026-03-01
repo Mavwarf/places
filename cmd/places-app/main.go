@@ -43,7 +43,7 @@ func main() {
 	a := &App{port: port, ready: make(chan struct{})}
 
 	go func() {
-		if err := app.Serve(port, a.ShowWindow, a.BrowseDir); err != nil {
+		if err := app.Serve(port, a.ShowWindow, a.BrowseDir, a.MinimizeWindow, a.QuitApp); err != nil {
 			fmt.Fprintf(os.Stderr, "places-app: %v\n", err)
 			os.Exit(1)
 		}
