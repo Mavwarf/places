@@ -187,6 +187,49 @@ func cmdShell(name string) {
 	}
 }
 
+func cmdAutostart(arg string) {
+	if runtime.GOOS != "windows" {
+		fatal("autostart is only supported on Windows")
+	}
+
+	// Find places-app.exe next to the places binary.
+	exe, err := os.Executable()
+	if err != nil {
+		fatal("cannot determine binary path: %v", err)
+	}
+	exe, _ = filepath.Abs(exe)
+	appExe := filepath.Join(filepath.Dir(exe), "places-app.exe")
+
+	const regKey = `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
+	const regName = "places"
+
+	switch arg {
+	case "on":
+		if _, err := os.Stat(appExe); err != nil {
+			fatal("places-app not found at %s", appExe)
+		}
+		cmd := exec.Command("reg", "add", regKey, "/v", regName, "/t", "REG_SZ", "/d", appExe, "/f")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			fatal("failed to enable autostart: %s", strings.TrimSpace(string(out)))
+		}
+		fmt.Println("Autostart enabled — places-app will start on login.")
+	case "off":
+		cmd := exec.Command("reg", "delete", regKey, "/v", regName, "/f")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			fatal("failed to disable autostart: %s", strings.TrimSpace(string(out)))
+		}
+		fmt.Println("Autostart disabled.")
+	default:
+		// Show status.
+		cmd := exec.Command("reg", "query", regKey, "/v", regName)
+		if err := cmd.Run(); err != nil {
+			fmt.Println("Autostart: off")
+		} else {
+			fmt.Println("Autostart: on")
+		}
+	}
+}
+
 func cmdEdit(editorOverride string) {
 	p, err := config.ConfigPath()
 	if err != nil {

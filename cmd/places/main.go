@@ -76,6 +76,12 @@ func main() {
 			fatal("expected: places shell <name>")
 		}
 		cmdShell(args[1])
+	case "autostart":
+		arg := ""
+		if len(args) >= 2 {
+			arg = args[1]
+		}
+		cmdAutostart(arg)
 	case "stats":
 		cmdStats()
 	case "prune":
@@ -117,6 +123,7 @@ Usage:
   places shell <name>          Open a new terminal at a place (no hook needed)
   places where                 Print the place name for the current directory
   places exists <name>         Exit 0 if a place exists, 1 otherwise
+  places autostart [on|off]    Enable/disable starting tray app on login (Windows)
   places prune                 Remove places where the directory no longer exists
   places app                   Open the places desktop app
   places edit [editor]         Open places.json in $EDITOR (or specified editor)

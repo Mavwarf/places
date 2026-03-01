@@ -31,6 +31,7 @@ p shell <name>           # Open a new terminal at a place (no hook needed)
 p where                  # Print the place name for the current directory
 p exists <name>          # Exit 0 if a place exists, 1 otherwise (for scripts)
 p prune                  # Remove places where the directory no longer exists
+p autostart [on|off]     # Enable/disable starting tray app on login (Windows)
 p edit [editor]          # Open places.json in $EDITOR or specified editor
 p init                   # One-command setup (installs shell hooks)
 p help                   # Show help
