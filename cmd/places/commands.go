@@ -147,6 +147,26 @@ func cmdEdit(editorOverride string) {
 	}
 }
 
+func cmdApp() {
+	// Look for places-app next to the places binary.
+	exe, err := os.Executable()
+	if err != nil {
+		fatal("cannot determine binary path: %v", err)
+	}
+	exe, _ = filepath.Abs(exe)
+	appExe := filepath.Join(filepath.Dir(exe), "places-app.exe")
+	if runtime.GOOS != "windows" {
+		appExe = filepath.Join(filepath.Dir(exe), "places-app")
+	}
+	if _, err := os.Stat(appExe); err != nil {
+		fatal("places-app not found at %s", appExe)
+	}
+	cmd := exec.Command(appExe)
+	if err := cmd.Start(); err != nil {
+		fatal("cannot start places-app: %v", err)
+	}
+}
+
 func cmdSelect() {
 	cfg, err := config.Load()
 	if err != nil {

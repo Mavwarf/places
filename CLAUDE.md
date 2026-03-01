@@ -4,6 +4,7 @@
 
 ```bash
 cd cmd/places && go build -o places.exe . && cp places.exe /c/dev/tools/cli/places.exe
+cd cmd/places-app && go build -tags production -o places-app.exe . && cp places-app.exe /c/dev/tools/cli/places-app.exe
 ```
 
 ## Documentation rules

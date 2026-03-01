@@ -51,6 +51,8 @@ func main() {
 		cmdRename(args[1], args[2])
 	case "stats":
 		cmdStats()
+	case "app":
+		cmdApp()
 	case "edit":
 		editor := ""
 		if len(args) >= 2 {
@@ -82,6 +84,7 @@ Usage:
   places rm <name>             Remove a saved place
   places rename <old> <new>    Rename a saved place (alias: mv)
   places stats                 Show usage summary
+  places app                   Open the places desktop app
   places edit [editor]         Open places.json in $EDITOR (or specified editor)
   places init                  Set up shell hooks (auto-detects shell, installs all)
   places shell-hook install    Install p() function (auto-detects shell)

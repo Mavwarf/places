@@ -12,7 +12,7 @@ Switching between project directories means typing long paths or hunting through
 - Interactive picker — just type `p` to browse all saved places with arrow keys
 - Usage tracking — see which directories you visit most often
 
-Works on Windows (PowerShell, cmd.exe) and Unix (Bash, Zsh). No external dependencies.
+Works on Windows (PowerShell, cmd.exe) and Unix (Bash, Zsh). Includes a desktop app for managing places with one-click terminal launching. No external dependencies (CLI) / Wails v2 (desktop app).
 
 ## Usage
 
@@ -24,6 +24,7 @@ p list                   # List all places with colored output and usage stats
 p rm <name>              # Remove a saved place
 p rename <old> <new>     # Rename a place (alias: mv)
 p stats                  # Show usage summary
+p app                    # Open the desktop app
 p edit [editor]          # Open places.json in $EDITOR or specified editor
 p init                   # One-command setup (installs shell hooks)
 p help                   # Show help
@@ -53,6 +54,25 @@ Running `p` opens an interactive selector with arrow-key navigation:
     frontend  ~/projects/frontend
   ↑/↓ navigate, Enter select, Esc cancel
 ```
+
+## Desktop App
+
+`p app` launches a desktop GUI (built with Wails v2) that shows all saved places with action buttons:
+
+- **PS** — open PowerShell at that directory
+- **cmd** — open cmd.exe at that directory
+- **dir** — open Explorer at that directory
+
+You can also add and remove places from the app. Changes are shared with the CLI (same `places.json`).
+
+### Build
+
+```
+cd cmd/places-app
+go build -tags production -o places-app.exe .
+```
+
+Copy `places-app.exe` next to `places.exe` on your PATH.
 
 ## How it works
 

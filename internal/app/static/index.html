@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>places</title>
+<style>
+:root {
+  --bg: #1a1b26;
+  --bg2: #24283b;
+  --bg3: #292e42;
+  --fg: #c0caf5;
+  --fg-dim: #565f89;
+  --accent: #7aa2f7;
+  --green: #9ece6a;
+  --yellow: #e0af68;
+  --red: #f7768e;
+  --cyan: #7dcfff;
+  --border: #3b4261;
+  --font: "Cascadia Code", "Fira Code", "JetBrains Mono", "Consolas", monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--fg);
+  padding: 24px;
+  line-height: 1.5;
+}
+h1 {
+  font-size: 1.3em;
+  margin-bottom: 20px;
+  color: var(--accent);
+  font-weight: 600;
+}
+h1 span { color: var(--fg-dim); font-weight: 400; }
+
+/* Add form */
+.add-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+.add-form input {
+  font-family: var(--font);
+  font-size: 0.85em;
+  padding: 7px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--fg);
+  outline: none;
+}
+.add-form input:focus { border-color: var(--accent); }
+.add-form input[name="name"] { width: 140px; }
+.add-form input[name="path"] { flex: 1; min-width: 200px; }
+
+/* Buttons */
+button {
+  font-family: var(--font);
+  font-size: 0.8em;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+button:hover { opacity: 0.85; }
+button:active { opacity: 0.7; }
+
+.btn-add { background: var(--green); color: var(--bg); font-weight: 600; }
+.btn-ps { background: var(--accent); color: var(--bg); }
+.btn-cmd { background: var(--fg-dim); color: var(--bg); }
+.btn-explorer { background: var(--yellow); color: var(--bg); }
+.btn-rm { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 4px 10px; font-size: 0.75em; }
+.btn-rm:hover { background: var(--red); color: var(--bg); }
+
+/* Place list */
+.place-list { display: flex; flex-direction: column; gap: 6px; }
+
+.place-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.place-row:hover { background: var(--bg3); }
+
+.place-name {
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+.place-path {
+  color: var(--fg-dim);
+  font-size: 0.85em;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.place-stats {
+  color: var(--fg-dim);
+  font-size: 0.75em;
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: right;
+}
+
+.place-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.badge-missing {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--red) 15%, transparent);
+  color: var(--red);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--fg-dim);
+  padding: 48px 0;
+  font-size: 0.9em;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.85em;
+  animation: toastIn 0.25s ease-out;
+  z-index: 100;
+}
+.toast.error { background: var(--red); color: var(--bg); }
+.toast.ok { background: var(--green); color: var(--bg); }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+</style>
+</head>
+<body>
+<h1>places <span>directory bookmarks</span></h1>
+<div style="font-size:12px;color:var(--fg-dim);margin:-12px 0 16px">
+  By <a href="https://mavwarf.netlify.app/" target="_blank" rel="noopener" style="color:var(--fg)">Thomas H&auml;user</a>. <a href="https://github.com/Mavwarf/places" target="_blank" rel="noopener" style="color:var(--cyan)">github.com/Mavwarf/places</a>
+</div>
+
+<form class="add-form" onsubmit="return addPlace(event)">
+  <input name="name" placeholder="name" required autocomplete="off">
+  <input name="path" placeholder="C:\path\to\directory" required autocomplete="off">
+  <button type="submit" class="btn-add">Add</button>
+</form>
+
+<div id="places" class="place-list"></div>
+
+<script>
+async function load() {
+  const el = document.getElementById('places');
+  try {
+    const res = await fetch('/api/places');
+    const places = await res.json();
+    if (!places.length) {
+      el.innerHTML = '<div class="empty-state">No places saved yet.<br>Add one above or use <code>places add &lt;name&gt;</code> from the CLI.</div>';
+      return;
+    }
+    el.innerHTML = places.map(p => `
+      <div class="place-row">
+        <span class="place-name">${esc(p.name)}</span>
+        <span class="place-path" title="${esc(p.path)}">${esc(p.path)}</span>
+        ${!p.exists ? '<span class="badge-missing">missing</span>' : ''}
+        <span class="place-stats">${p.use_count}x</span>
+        <div class="place-actions">
+          ${p.exists ? `
+            <button class="btn-ps" onclick="openAt('${esc(p.name)}','powershell')" title="Open PowerShell here">PS</button>
+            <button class="btn-cmd" onclick="openAt('${esc(p.name)}','cmd')" title="Open cmd here">cmd</button>
+            <button class="btn-explorer" onclick="openAt('${esc(p.name)}','explorer')" title="Open in Explorer">dir</button>
+          ` : ''}
+          <button class="btn-rm" onclick="rm('${esc(p.name)}')" title="Remove">✕</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = '<div class="empty-state">Failed to load places.</div>';
+  }
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML.replace(/'/g, "\\'");
+}
+
+async function openAt(name, action) {
+  try {
+    const res = await fetch('/api/open', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, action})
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      toast(t || 'Failed to open', true);
+    }
+  } catch (e) { toast('Failed to open', true); }
+}
+
+async function rm(name) {
+  if (!confirm('Remove "' + name + '"?')) return;
+  try {
+    const res = await fetch('/api/rm', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name})
+    });
+    if (res.ok) { load(); toast('Removed'); }
+    else { toast(await res.text() || 'Failed', true); }
+  } catch (e) { toast('Failed', true); }
+}
+
+async function addPlace(e) {
+  e.preventDefault();
+  const form = e.target;
+  const name = form.name.value.trim();
+  const path = form.path.value.trim();
+  if (!name || !path) return;
+  try {
+    const res = await fetch('/api/add', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, path})
+    });
+    if (res.ok) {
+      form.reset();
+      load();
+      toast('Added');
+    } else {
+      toast(await res.text() || 'Failed', true);
+    }
+  } catch (e) { toast('Failed', true); }
+}
+
+function toast(msg, err) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + (err ? 'error' : 'ok');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2500);
+}
+
+load();
+</script>
+</body>
+</html>
