@@ -46,26 +46,28 @@ jobs:
           path: ${{ matrix.binary }}
 
   build-app:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
           - goos: windows
             goarch: amd64
+            runner: ubuntu-latest
+            cgo: "0"
             binary: places-app-windows-amd64.exe
             extra_ldflags: "-H windowsgui"
-          - goos: linux
-            goarch: amd64
-            binary: places-app-linux-amd64
-            extra_ldflags: ""
           - goos: darwin
             goarch: amd64
+            runner: macos-latest
+            cgo: "1"
             binary: places-app-darwin-amd64
             extra_ldflags: ""
           - goos: darwin
             goarch: arm64
+            runner: macos-latest
+            cgo: "1"
             binary: places-app-darwin-arm64
             extra_ldflags: ""
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -75,7 +77,7 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: "0"
+          CGO_ENABLED: ${{ matrix.cgo }}
         run: |
           go build -tags production \
             -ldflags "-w -s ${{ matrix.extra_ldflags }}" \
