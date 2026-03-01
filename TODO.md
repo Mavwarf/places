@@ -33,12 +33,27 @@
 - [ ] **Notes** (`p add api --note "billing REST API"`) — attach a description, shown in list and desktop app
 - [ ] **Clone + bookmark** (`p clone <git-url> [name]`) — git clone into a workspace dir and auto-add as a place
 - [ ] **Global hotkey** — system-wide keyboard shortcut to open the tray menu or dashboard
+- [ ] **Color schemes** — theme support for the desktop app (like notify); user-selectable color schemes
 
 ## Script-Friendly
 
 - [x] ~~**`p list --json`**~~ — machine-readable output for scripting / integrations *(Mar 1)*
 - [x] ~~**`p exists <name>`**~~ — exit code 0/1 for use in shell scripts *(Mar 1)*
 - [ ] Tab completion for place names (bash/zsh/PowerShell)
+
+## Tech Debt
+
+- [ ] **`config.Save()` errors ignored** — `cmdGo()` and `cmdSelect()` don't check the return value, use-count updates can fail silently
+- [ ] **Duplicate `jsonPlace` struct** — defined in both `commands.go` and `internal/app/app.go` (app version has extra `Exists` field)
+- [ ] **Terminal launch commands duplicated 3x** — PowerShell/cmd/Claude/Explorer launch logic copy-pasted across `commands.go`, `internal/app/app.go`, and `cmd/places-app/tray.go`; extract to `internal/launcher` package
+- [ ] **Sorting logic duplicated** — `sortedNames()` in `commands.go` vs inline sort in `tray.go`
+- [ ] **`fuzzyFind()` doesn't distinguish "not found" from "ambiguous"** — returns nil for both; user sees `unknown place "a"` when multiple matches exist
+- [ ] **Missing path validation in `handleAdd()`** — desktop app doesn't check if path exists or is a directory, unlike `cmdAdd()`
+- [ ] **Unquoted path in cmd launch** — `app.go` uses `cd /d %s` without quotes, breaks on paths with spaces
+- [ ] **No HTTP client timeout in `waitForServer()`** — individual `http.Get()` calls could hang
+- [ ] **Hardcoded port 8822** — not configurable via env var or flag
+- [ ] **Inconsistent error formatting** — `shellhook.go` uses `fmt.Fprintf + os.Exit(1)` instead of the `fatal()` helper
+- [ ] **Silent tray menu failure** — `addPlaceMenus()` returns silently if config fails to load
 
 ## Improvements
 
