@@ -25,6 +25,7 @@ p rm <name>              # Remove a saved place
 p rename <old> <new>     # Rename a place (alias: mv)
 p stats                  # Show usage summary
 p app                    # Open the desktop app
+p prune                  # Remove places where the directory no longer exists
 p edit [editor]          # Open places.json in $EDITOR or specified editor
 p init                   # One-command setup (installs shell hooks)
 p help                   # Show help

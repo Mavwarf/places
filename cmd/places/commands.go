@@ -288,6 +288,36 @@ func cmdStats() {
 	}
 }
 
+func cmdPrune() {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	var pruned []string
+	for name, p := range cfg.Places {
+		if _, err := os.Stat(p.Path); err != nil {
+			pruned = append(pruned, name)
+			delete(cfg.Places, name)
+		}
+	}
+
+	if len(pruned) == 0 {
+		fmt.Println("Nothing to prune — all directories exist.")
+		return
+	}
+
+	sort.Strings(pruned)
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	for _, name := range pruned {
+		fmt.Printf("Removed %s%s%s (directory missing)\n", colorYellow, name, colorReset)
+	}
+	fmt.Printf("Pruned %d place(s).\n", len(pruned))
+}
+
 // sortedNames returns place names sorted alphabetically.
 func sortedNames(cfg config.Config) []string {
 	names := make([]string, 0, len(cfg.Places))
