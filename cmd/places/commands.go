@@ -15,7 +15,7 @@ import (
 	"github.com/Mavwarf/places/internal/launcher"
 )
 
-func cmdAdd(name, path string) {
+func cmdAdd(name, path string, tags []string) {
 	if path == "" {
 		var err error
 		path, err = os.Getwd()
@@ -53,19 +53,27 @@ func cmdAdd(name, path string) {
 		fatal("%v", err)
 	}
 
-	cfg.Places[name] = &config.Place{
+	place := &config.Place{
 		Path:    path,
 		AddedAt: time.Now(),
 	}
+	for _, t := range tags {
+		config.AddTag(place, t)
+	}
+	cfg.Places[name] = place
 
 	if err := config.Save(cfg); err != nil {
 		fatal("%v", err)
 	}
 
-	fmt.Printf("Saved %q -> %s\n", name, path)
+	tagStr := ""
+	if len(place.Tags) > 0 {
+		tagStr = fmt.Sprintf(" %s[%s]%s", colorDim, strings.Join(place.Tags, ", "), colorReset)
+	}
+	fmt.Printf("Saved %q -> %s%s\n", name, path, tagStr)
 }
 
-func cmdList() {
+func cmdList(tagFilter string) {
 	cfg, err := config.Load()
 	if err != nil {
 		fatal("%v", err)
@@ -77,6 +85,24 @@ func cmdList() {
 	}
 
 	names := config.SortedNames(cfg)
+
+	// Filter by tag if specified.
+	if tagFilter != "" {
+		var filtered []string
+		for _, name := range names {
+			for _, t := range cfg.Places[name].Tags {
+				if t == tagFilter {
+					filtered = append(filtered, name)
+					break
+				}
+			}
+		}
+		names = filtered
+		if len(names) == 0 {
+			fmt.Printf("No places with tag %q.\n", tagFilter)
+			return
+		}
+	}
 
 	// Find max name length for alignment.
 	maxLen := 0
@@ -93,7 +119,11 @@ func cmdList() {
 		if _, err := os.Stat(p.Path); err != nil {
 			warning = fmt.Sprintf(" %s[missing!]%s", colorYellow, colorReset)
 		}
-		fmt.Printf("  %s%-*s%s  %s%s%s  %s%s\n", colorGreen, maxLen, name, colorReset, colorCyan, p.Path, colorReset, stats, warning)
+		tagBadge := ""
+		if len(p.Tags) > 0 {
+			tagBadge = fmt.Sprintf(" %s[%s]%s", colorDim, strings.Join(p.Tags, ", "), colorReset)
+		}
+		fmt.Printf("  %s%-*s%s  %s%s%s  %s%s%s\n", colorGreen, maxLen, name, colorReset, colorCyan, p.Path, colorReset, stats, tagBadge, warning)
 	}
 }
 
@@ -457,29 +487,44 @@ func cmdExists(name string) {
 	os.Exit(1)
 }
 
-func cmdListJSON() {
+func cmdListJSON(tagFilter string) {
 	cfg, err := config.Load()
 	if err != nil {
 		fatal("%v", err)
 	}
 
 	type jsonPlace struct {
-		Name       string `json:"name"`
-		Path       string `json:"path"`
-		UseCount   int    `json:"use_count"`
-		AddedAt    string `json:"added_at"`
-		LastUsedAt string `json:"last_used_at,omitempty"`
+		Name       string   `json:"name"`
+		Path       string   `json:"path"`
+		UseCount   int      `json:"use_count"`
+		AddedAt    string   `json:"added_at"`
+		LastUsedAt string   `json:"last_used_at,omitempty"`
+		Tags       []string `json:"tags,omitempty"`
 	}
 
 	names := config.SortedNames(cfg)
 	places := make([]jsonPlace, 0, len(names))
 	for _, name := range names {
 		p := cfg.Places[name]
+		// Filter by tag if specified.
+		if tagFilter != "" {
+			found := false
+			for _, t := range p.Tags {
+				if t == tagFilter {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
 		jp := jsonPlace{
 			Name:     name,
 			Path:     p.Path,
 			UseCount: p.UseCount,
 			AddedAt:  p.AddedAt.Format(time.RFC3339),
+			Tags:     p.Tags,
 		}
 		if !p.LastUsedAt.IsZero() {
 			jp.LastUsedAt = p.LastUsedAt.Format(time.RFC3339)
@@ -490,6 +535,78 @@ func cmdListJSON() {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	enc.Encode(places)
+}
+
+func cmdTag(name, tag string) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[name]
+	if !ok {
+		fatal("unknown place %q", name)
+	}
+
+	config.AddTag(place, tag)
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	fmt.Printf("Tagged %q with %q\n", name, strings.ToLower(strings.TrimSpace(tag)))
+}
+
+func cmdUntag(name, tag string) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[name]
+	if !ok {
+		fatal("unknown place %q", name)
+	}
+
+	if !config.RemoveTag(place, tag) {
+		fatal("place %q does not have tag %q", name, tag)
+	}
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	fmt.Printf("Removed tag %q from %q\n", strings.ToLower(strings.TrimSpace(tag)), name)
+}
+
+func cmdTags() {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	tags := config.AllTags(cfg)
+	if len(tags) == 0 {
+		fmt.Println("No tags. Use 'places tag <name> <tag>' to add one.")
+		return
+	}
+
+	// Count places per tag.
+	counts := make(map[string]int)
+	for _, p := range cfg.Places {
+		for _, t := range p.Tags {
+			counts[t]++
+		}
+	}
+
+	for _, t := range tags {
+		n := counts[t]
+		unit := "place"
+		if n != 1 {
+			unit = "places"
+		}
+		fmt.Printf("  %s%s%s  %s(%d %s)%s\n", colorGreen, t, colorReset, colorDim, n, unit, colorReset)
+	}
 }
 
 // sortedByRecent returns place names sorted by last used (most recent first),

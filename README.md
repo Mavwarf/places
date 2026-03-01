@@ -24,6 +24,9 @@ p list                   # List all places with colored output and usage stats
 p list --json            # List all places as JSON
 p rm <name>              # Remove a saved place
 p rename <old> <new>     # Rename a place (alias: mv)
+p tag <name> <tag>       # Add a tag to a place
+p untag <name> <tag>     # Remove a tag from a place
+p tags                   # List all tags with place counts
 p stats                  # Show usage summary
 p app                    # Open the desktop app
 p code <name>            # Open a place in VS Code
@@ -41,7 +44,7 @@ p help                   # Show help
 
 ```
 cd ~/projects/api
-p add api
+p add api --tag work --tag backend
 
 cd ~/projects/frontend
 p add
@@ -61,6 +64,21 @@ Running `p` opens an interactive selector with arrow-key navigation:
     frontend  ~/projects/frontend
   ↑/↓ navigate, Enter select, Esc cancel
 ```
+
+### Tags
+
+Organize places with tags for filtering:
+
+```
+p add api --tag work --tag backend    # tag on creation
+p tag api devops                      # add a tag later
+p untag api devops                    # remove a tag
+p list --tag work                     # filter by tag
+p list --json --tag work              # filtered JSON output
+p tags                                # list all tags with counts
+```
+
+Tags are lowercase, deduplicated, and sorted alphabetically. The desktop app shows tag badges on each place with click-to-add and click-to-remove, plus a filter bar to show only places with a specific tag.
 
 ## Desktop App
 
@@ -199,7 +217,8 @@ Places are stored in `~/.config/places/places.json` with usage statistics:
       "path": "/home/user/projects/api",
       "added_at": "2026-03-01T13:50:17+01:00",
       "use_count": 5,
-      "last_used_at": "2026-03-01T14:10:42+01:00"
+      "last_used_at": "2026-03-01T14:10:42+01:00",
+      "tags": ["backend", "work"]
     }
   }
 }

@@ -17,12 +17,13 @@ import (
 var staticFS embed.FS
 
 type jsonPlace struct {
-	Name       string `json:"name"`
-	Path       string `json:"path"`
-	Exists     bool   `json:"exists"`
-	UseCount   int    `json:"use_count"`
-	AddedAt    string `json:"added_at"`
-	LastUsedAt string `json:"last_used_at,omitempty"`
+	Name       string   `json:"name"`
+	Path       string   `json:"path"`
+	Exists     bool     `json:"exists"`
+	UseCount   int      `json:"use_count"`
+	AddedAt    string   `json:"added_at"`
+	LastUsedAt string   `json:"last_used_at,omitempty"`
+	Tags       []string `json:"tags,omitempty"`
 }
 
 type openReq struct {
@@ -31,8 +32,14 @@ type openReq struct {
 }
 
 type addReq struct {
+	Name string   `json:"name"`
+	Path string   `json:"path"`
+	Tags []string `json:"tags,omitempty"`
+}
+
+type tagReq struct {
 	Name string `json:"name"`
-	Path string `json:"path"`
+	Tag  string `json:"tag"`
 }
 
 type rmReq struct {
@@ -50,6 +57,8 @@ func Serve(port int, showFn func(), browseFn func() (string, error)) error {
 	mux.HandleFunc("/api/open", handleOpen)
 	mux.HandleFunc("/api/rm", handleRm)
 	mux.HandleFunc("/api/add", handleAdd)
+	mux.HandleFunc("/api/tag", handleTag)
+	mux.HandleFunc("/api/untag", handleUntag)
 	if showFn != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
@@ -114,6 +123,7 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 			Exists:   statErr == nil,
 			UseCount: p.UseCount,
 			AddedAt:  p.AddedAt.Format(time.RFC3339),
+			Tags:     p.Tags,
 		}
 		if !p.LastUsedAt.IsZero() {
 			jp.LastUsedAt = p.LastUsedAt.Format(time.RFC3339)
@@ -247,10 +257,85 @@ func handleAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg.Places[req.Name] = &config.Place{
+	place := &config.Place{
 		Path:    req.Path,
 		AddedAt: time.Now(),
 	}
+	for _, t := range req.Tags {
+		config.AddTag(place, t)
+	}
+	cfg.Places[req.Name] = place
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func handleTag(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req tagReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+
+	config.AddTag(place, req.Tag)
+
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func handleUntag(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req tagReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+
+	if !config.RemoveTag(place, req.Tag) {
+		http.Error(w, "tag not found", http.StatusNotFound)
+		return
+	}
+
 	if err := config.Save(cfg); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

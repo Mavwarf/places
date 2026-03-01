@@ -228,6 +228,63 @@ button:active { opacity: 0.7; }
   color: var(--red);
 }
 
+.badge-tag {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tag-x {
+  cursor: pointer;
+  opacity: 0.6;
+  font-size: 1.1em;
+  line-height: 1;
+}
+.tag-x:hover { opacity: 1; }
+.btn-add-tag {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg-dim);
+  border: 1px dashed var(--border);
+  cursor: pointer;
+}
+.btn-add-tag:hover { color: var(--accent); border-color: var(--accent); }
+
+.tag-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  align-items: center;
+  font-size: 0.8em;
+  color: var(--fg-dim);
+  flex-wrap: wrap;
+}
+.tag-chip {
+  background: transparent;
+  color: var(--fg-dim);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  font-size: 0.85em;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.tag-chip:hover { opacity: 0.85; }
+.tag-chip.active { color: var(--accent); border-color: var(--accent); }
+
+.place-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .empty-state {
   text-align: center;
   color: var(--fg-dim);
@@ -288,6 +345,7 @@ button:active { opacity: 0.7; }
   <input name="name" placeholder="name" required autocomplete="off">
   <input name="path" placeholder="C:\path\to\directory" required autocomplete="off">
   <button type="button" class="btn-browse" onclick="browsePath()" title="Browse for folder">&hellip;</button>
+  <input name="tags" placeholder="tags (comma-separated)" autocomplete="off" style="width:160px">
   <button type="submit" class="btn-add">Add</button>
 </form>
 
@@ -299,6 +357,7 @@ button:active { opacity: 0.7; }
   <button class="sort-btn" onclick="setSort('added')" id="sort-added">Added</button>
 </div>
 
+<div class="tag-bar" id="tag-bar"></div>
 <div id="places" class="place-list"></div>
 
 <script>
@@ -331,6 +390,7 @@ themeToggle.addEventListener('click', function() {
 });
 
 let currentSort = 'last_used';
+let activeTag = '';
 
 function setSort(key) {
   currentSort = key;
@@ -353,20 +413,46 @@ function sortPlaces(places) {
 
 async function load() {
   const el = document.getElementById('places');
+  const tagBar = document.getElementById('tag-bar');
   try {
     const res = await fetch('/api/places');
     let places = await res.json();
     if (!places.length) {
+      tagBar.innerHTML = '';
       el.innerHTML = '<div class="empty-state">No places saved yet.<br>Add one above or use <code>places add &lt;name&gt;</code> from the CLI.</div>';
       return;
     }
+
+    // Build tag bar from all tags.
+    const allTags = new Set();
+    places.forEach(p => (p.tags || []).forEach(t => allTags.add(t)));
+    const sortedTags = Array.from(allTags).sort();
+    if (sortedTags.length > 0) {
+      tagBar.innerHTML = '<span>Tags:</span>' +
+        `<button class="tag-chip${activeTag === '' ? ' active' : ''}" onclick="filterTag('')">All</button>` +
+        sortedTags.map(t =>
+          `<button class="tag-chip${activeTag === t ? ' active' : ''}" onclick="filterTag('${esc(t)}')">${esc(t)}</button>`
+        ).join('');
+    } else {
+      tagBar.innerHTML = '';
+    }
+
+    // Filter by active tag.
+    if (activeTag) {
+      places = places.filter(p => (p.tags || []).includes(activeTag));
+    }
+
     places = sortPlaces(places);
     el.innerHTML = places.map(p => `
       <div class="place-row">
         <span class="place-name">${esc(p.name)}</span>
         <span class="place-path" title="${esc(p.path)}">${esc(p.path)}</span>
+        <span class="place-tags">
+          ${(p.tags || []).map(t => `<span class="badge-tag">${esc(t)}<span class="tag-x" onclick="removeTag('${esc(p.name)}','${esc(t)}')">\u00d7</span></span>`).join('')}
+          <button class="btn-add-tag" onclick="promptAddTag('${esc(p.name)}')" title="Add tag">+</button>
+        </span>
         ${!p.exists ? '<span class="badge-missing">missing</span>' : ''}
-        <span class="place-stats">${p.use_count}x${p.last_used_at ? ' · ' + timeAgo(p.last_used_at) : ''}</span>
+        <span class="place-stats">${p.use_count}x${p.last_used_at ? ' \u00b7 ' + timeAgo(p.last_used_at) : ''}</span>
         <div class="place-actions">
           ${p.exists ? `
             <button class="btn-ps" onclick="openAt('${esc(p.name)}','powershell')" title="Open PowerShell here">PS</button>
@@ -374,7 +460,7 @@ async function load() {
             <button class="btn-cmd" onclick="openAt('${esc(p.name)}','cmd')" title="Open cmd here">cmd</button>
             <button class="btn-explorer" onclick="openAt('${esc(p.name)}','explorer')" title="Open in Explorer">dir</button>
           ` : ''}
-          <button class="btn-rm" onclick="rm('${esc(p.name)}')" title="Remove">✕</button>
+          <button class="btn-rm" onclick="rm('${esc(p.name)}')" title="Remove">\u2715</button>
         </div>
       </div>
     `).join('');
@@ -444,11 +530,13 @@ async function addPlace(e) {
   const name = form.name.value.trim();
   const path = form.path.value.trim();
   if (!name || !path) return;
+  const tagsRaw = form.tags.value.trim();
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [];
   try {
     const res = await fetch('/api/add', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name, path})
+      body: JSON.stringify({name, path, tags: tags.length ? tags : undefined})
     });
     if (res.ok) {
       form.reset();
@@ -457,6 +545,37 @@ async function addPlace(e) {
     } else {
       toast(await res.text() || 'Failed', true);
     }
+  } catch (e) { toast('Failed', true); }
+}
+
+function filterTag(tag) {
+  activeTag = tag;
+  load();
+}
+
+async function removeTag(name, tag) {
+  try {
+    const res = await fetch('/api/untag', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, tag})
+    });
+    if (res.ok) { load(); }
+    else { toast(await res.text() || 'Failed', true); }
+  } catch (e) { toast('Failed', true); }
+}
+
+async function promptAddTag(name) {
+  const tag = prompt('Add tag to "' + name + '":');
+  if (!tag || !tag.trim()) return;
+  try {
+    const res = await fetch('/api/tag', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, tag: tag.trim().toLowerCase()})
+    });
+    if (res.ok) { load(); toast('Tagged'); }
+    else { toast(await res.text() || 'Failed', true); }
   } catch (e) { toast('Failed', true); }
 }
 

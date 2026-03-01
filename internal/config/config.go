@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type Place struct {
 	AddedAt    time.Time `json:"added_at"`
 	UseCount   int       `json:"use_count"`
 	LastUsedAt time.Time `json:"last_used_at,omitempty"`
+	Tags       []string  `json:"tags,omitempty"`
 }
 
 // Config holds the saved places.
@@ -144,4 +146,50 @@ func SortedNames(cfg Config) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// AddTag adds a tag to a place (lowercase, trimmed, deduplicated, sorted).
+func AddTag(place *Place, tag string) {
+	tag = strings.ToLower(strings.TrimSpace(tag))
+	if tag == "" {
+		return
+	}
+	for _, t := range place.Tags {
+		if t == tag {
+			return
+		}
+	}
+	place.Tags = append(place.Tags, tag)
+	sort.Strings(place.Tags)
+}
+
+// RemoveTag removes a tag from a place. Returns true if the tag was found.
+func RemoveTag(place *Place, tag string) bool {
+	tag = strings.ToLower(strings.TrimSpace(tag))
+	for i, t := range place.Tags {
+		if t == tag {
+			place.Tags = append(place.Tags[:i], place.Tags[i+1:]...)
+			if len(place.Tags) == 0 {
+				place.Tags = nil
+			}
+			return true
+		}
+	}
+	return false
+}
+
+// AllTags returns all unique tags across all places, sorted alphabetically.
+func AllTags(cfg Config) []string {
+	seen := make(map[string]bool)
+	for _, p := range cfg.Places {
+		for _, t := range p.Tags {
+			seen[t] = true
+		}
+	}
+	tags := make([]string, 0, len(seen))
+	for t := range seen {
+		tags = append(tags, t)
+	}
+	sort.Strings(tags)
+	return tags
 }

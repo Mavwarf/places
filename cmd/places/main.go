@@ -23,24 +23,54 @@ func main() {
 	case "add":
 		name := ""
 		path := ""
-		if len(args) >= 2 {
-			name = args[1]
+		var tags []string
+		rest := args[1:]
+		for i := 0; i < len(rest); i++ {
+			if rest[i] == "--tag" {
+				if i+1 < len(rest) {
+					tags = append(tags, rest[i+1])
+					i++
+				} else {
+					fatal("--tag requires a value")
+				}
+			} else if name == "" {
+				name = rest[i]
+			} else if path == "" {
+				path = rest[i]
+			}
 		}
-		if len(args) >= 3 {
-			path = args[2]
+		cmdAdd(name, path, tags)
+	case "tag":
+		if len(args) < 3 {
+			fatal("expected: places tag <name> <tag>")
 		}
-		cmdAdd(name, path)
+		cmdTag(args[1], args[2])
+	case "untag":
+		if len(args) < 3 {
+			fatal("expected: places untag <name> <tag>")
+		}
+		cmdUntag(args[1], args[2])
+	case "tags":
+		cmdTags()
 	case "list", "ls":
 		hasJSON := false
-		for _, a := range args[1:] {
-			if a == "--json" {
+		tagFilter := ""
+		for i := 1; i < len(args); i++ {
+			if args[i] == "--json" {
 				hasJSON = true
+			} else if args[i] == "--tag" {
+				if i+1 < len(args) {
+					tagFilter = args[i+1]
+					i++
+				} else {
+					fatal("--tag requires a value")
+				}
 			}
 		}
 		if hasJSON {
-			cmdListJSON()
+			cmdListJSON(tagFilter)
 		} else {
-			cmdList()
+			cmdList(tagFilter)
 		}
 	case "where":
 		cmdWhere()
@@ -113,7 +143,12 @@ func printUsage() {
 Usage:
   places add [name] [path]     Save current dir (or given path) with a shortcut name
                                If name is omitted, uses the directory basename
+    --tag <tag>                Attach a tag (repeatable: --tag work --tag api)
   places list [--json]         List all saved places (alias: ls)
+    --tag <tag>                Filter by tag
+  places tag <name> <tag>      Add a tag to an existing place
+  places untag <name> <tag>    Remove a tag from a place
+  places tags                  List all tags with place counts
   places select                Browse and pick a place (sorted by recent use)
   places go <name>             Print the path for a place (used by shell wrapper)
   places rm <name>             Remove a saved place
