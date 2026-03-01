@@ -31,7 +31,24 @@ func main() {
 		}
 		cmdAdd(name, path)
 	case "list", "ls":
-		cmdList()
+		hasJSON := false
+		for _, a := range args[1:] {
+			if a == "--json" {
+				hasJSON = true
+			}
+		}
+		if hasJSON {
+			cmdListJSON()
+		} else {
+			cmdList()
+		}
+	case "where":
+		cmdWhere()
+	case "exists":
+		if len(args) < 2 {
+			fatal("expected: places exists <name>")
+		}
+		cmdExists(args[1])
 	case "select":
 		cmdSelect()
 	case "go":
@@ -80,12 +97,14 @@ func printUsage() {
 Usage:
   places add [name] [path]     Save current dir (or given path) with a shortcut name
                                If name is omitted, uses the directory basename
-  places list                  List all saved places (alias: ls)
+  places list [--json]         List all saved places (alias: ls)
   places select                Browse and pick a place (sorted by recent use)
   places go <name>             Print the path for a place (used by shell wrapper)
   places rm <name>             Remove a saved place
   places rename <old> <new>    Rename a saved place (alias: mv)
   places stats                 Show usage summary
+  places where                 Print the place name for the current directory
+  places exists <name>         Exit 0 if a place exists, 1 otherwise
   places prune                 Remove places where the directory no longer exists
   places app                   Open the places desktop app
   places edit [editor]         Open places.json in $EDITOR (or specified editor)

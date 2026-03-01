@@ -21,10 +21,13 @@ p                        # Browse saved places interactively and cd
 p <name>                 # Jump to a saved place (supports fuzzy matching)
 p add [name] [path]      # Save current dir (name auto-derived if omitted)
 p list                   # List all places with colored output and usage stats
+p list --json            # List all places as JSON
 p rm <name>              # Remove a saved place
 p rename <old> <new>     # Rename a place (alias: mv)
 p stats                  # Show usage summary
 p app                    # Open the desktop app
+p where                  # Print the place name for the current directory
+p exists <name>          # Exit 0 if a place exists, 1 otherwise (for scripts)
 p prune                  # Remove places where the directory no longer exists
 p edit [editor]          # Open places.json in $EDITOR or specified editor
 p init                   # One-command setup (installs shell hooks)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -316,6 +317,75 @@ func cmdPrune() {
 		fmt.Printf("Removed %s%s%s (directory missing)\n", colorYellow, name, colorReset)
 	}
 	fmt.Printf("Pruned %d place(s).\n", len(pruned))
+}
+
+func cmdWhere() {
+	cwd, err := os.Getwd()
+	if err != nil {
+		fatal("cannot determine current directory: %v", err)
+	}
+	cwd = filepath.Clean(cwd)
+
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	for name, p := range cfg.Places {
+		if strings.EqualFold(filepath.Clean(p.Path), cwd) {
+			fmt.Println(name)
+			return
+		}
+	}
+
+	os.Exit(1)
+}
+
+func cmdExists(name string) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	if _, ok := cfg.Places[name]; ok {
+		os.Exit(0)
+	}
+	os.Exit(1)
+}
+
+func cmdListJSON() {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	type jsonPlace struct {
+		Name       string `json:"name"`
+		Path       string `json:"path"`
+		UseCount   int    `json:"use_count"`
+		AddedAt    string `json:"added_at"`
+		LastUsedAt string `json:"last_used_at,omitempty"`
+	}
+
+	names := sortedNames(cfg)
+	places := make([]jsonPlace, 0, len(names))
+	for _, name := range names {
+		p := cfg.Places[name]
+		jp := jsonPlace{
+			Name:     name,
+			Path:     p.Path,
+			UseCount: p.UseCount,
+			AddedAt:  p.AddedAt.Format(time.RFC3339),
+		}
+		if !p.LastUsedAt.IsZero() {
+			jp.LastUsedAt = p.LastUsedAt.Format(time.RFC3339)
+		}
+		places = append(places, jp)
+	}
+
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	enc.Encode(places)
 }
 
 // sortedNames returns place names sorted alphabetically.

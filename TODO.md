@@ -24,8 +24,8 @@
 - [ ] **Tags/groups** — `p add notify --tag work`, then `p list --tag work` to filter
 - [ ] **Import/export** — `places export > places.json` / `places import < places.json` for syncing across machines
 - [ ] **Spawn shell** (`places cd <name>`) — open a new shell in that directory (no hook needed, works everywhere)
-- [ ] **Prune** (`p prune`) — bulk-remove all places where the directory no longer exists
-- [ ] **Reverse lookup** (`p where` / `p which`) — if cwd is a bookmarked directory, print its name
+- [x] ~~**Prune** (`p prune`)~~ — bulk-remove all places where the directory no longer exists *(Mar 1)*
+- [x] ~~**Reverse lookup** (`p where`)~~ — if cwd is a bookmarked directory, print its name *(Mar 1)*
 - [ ] **Open in editor** (`p code <name>`) — open directory in VS Code or configured `$EDITOR`
 - [ ] **Auto-start on login** — register tray app to start with Windows (startup folder or registry)
 - [ ] **Left-click tray opens menu** — currently only right-click shows the menu
@@ -36,8 +36,8 @@
 
 ## Script-Friendly
 
-- [ ] **`p list --json`** — machine-readable output for scripting / integrations
-- [ ] **`p exists <name>`** — exit code 0/1 for use in shell scripts
+- [x] ~~**`p list --json`**~~ — machine-readable output for scripting / integrations *(Mar 1)*
+- [x] ~~**`p exists <name>`**~~ — exit code 0/1 for use in shell scripts *(Mar 1)*
 
 ## Improvements
 
