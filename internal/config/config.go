@@ -17,6 +17,7 @@ type Place struct {
 	UseCount   int       `json:"use_count"`
 	LastUsedAt time.Time `json:"last_used_at,omitempty"`
 	Tags       []string  `json:"tags,omitempty"`
+	Favorite   bool      `json:"favorite,omitempty"`
 }
 
 // Config holds the saved places.

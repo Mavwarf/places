@@ -52,12 +52,25 @@ func main() {
 		cmdUntag(args[1], args[2])
 	case "tags":
 		cmdTags()
+	case "fav":
+		if len(args) < 2 {
+			fatal("expected: places fav <name>")
+		}
+		cmdFav(args[1])
+	case "unfav":
+		if len(args) < 2 {
+			fatal("expected: places unfav <name>")
+		}
+		cmdUnfav(args[1])
 	case "list", "ls":
 		hasJSON := false
 		tagFilter := ""
+		favOnly := false
 		for i := 1; i < len(args); i++ {
 			if args[i] == "--json" {
 				hasJSON = true
+			} else if args[i] == "--fav" {
+				favOnly = true
 			} else if args[i] == "--tag" {
 				if i+1 < len(args) {
 					tagFilter = args[i+1]
@@ -68,9 +81,9 @@ func main() {
 			}
 		}
 		if hasJSON {
-			cmdListJSON(tagFilter)
+			cmdListJSON(tagFilter, favOnly)
 		} else {
-			cmdList(tagFilter)
+			cmdList(tagFilter, favOnly)
 		}
 	case "where":
 		cmdWhere()
@@ -144,8 +157,11 @@ Usage:
   places add [name] [path]     Save current dir (or given path) with a shortcut name
                                If name is omitted, uses the directory basename
     --tag <tag>                Attach a tag (repeatable: --tag work --tag api)
+  places fav <name>             Mark a place as favorite
+  places unfav <name>           Unmark a place as favorite
   places list [--json]         List all saved places (alias: ls)
     --tag <tag>                Filter by tag
+    --fav                      Show only favorites
   places tag <name> <tag>      Add a tag to an existing place
   places untag <name> <tag>    Remove a tag from a place
   places tags                  List all tags with place counts

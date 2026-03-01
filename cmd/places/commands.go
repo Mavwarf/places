@@ -73,7 +73,7 @@ func cmdAdd(name, path string, tags []string) {
 	fmt.Printf("Saved %q -> %s%s\n", name, path, tagStr)
 }
 
-func cmdList(tagFilter string) {
+func cmdList(tagFilter string, favOnly bool) {
 	cfg, err := config.Load()
 	if err != nil {
 		fatal("%v", err)
@@ -104,6 +104,21 @@ func cmdList(tagFilter string) {
 		}
 	}
 
+	// Filter by favorites if requested.
+	if favOnly {
+		var filtered []string
+		for _, name := range names {
+			if cfg.Places[name].Favorite {
+				filtered = append(filtered, name)
+			}
+		}
+		names = filtered
+		if len(names) == 0 {
+			fmt.Println("No favorite places. Use 'places fav <name>' to mark one.")
+			return
+		}
+	}
+
 	// Find max name length for alignment.
 	maxLen := 0
 	for _, name := range names {
@@ -123,7 +138,11 @@ func cmdList(tagFilter string) {
 		if len(p.Tags) > 0 {
 			tagBadge = fmt.Sprintf(" %s[%s]%s", colorDim, strings.Join(p.Tags, ", "), colorReset)
 		}
-		fmt.Printf("  %s%-*s%s  %s%s%s  %s%s%s\n", colorGreen, maxLen, name, colorReset, colorCyan, p.Path, colorReset, stats, tagBadge, warning)
+		star := ""
+		if p.Favorite {
+			star = fmt.Sprintf("%s★%s ", colorYellow, colorReset)
+		}
+		fmt.Printf("  %s%s%-*s%s  %s%s%s  %s%s%s\n", star, colorGreen, maxLen, name, colorReset, colorCyan, p.Path, colorReset, stats, tagBadge, warning)
 	}
 }
 
@@ -487,7 +506,7 @@ func cmdExists(name string) {
 	os.Exit(1)
 }
 
-func cmdListJSON(tagFilter string) {
+func cmdListJSON(tagFilter string, favOnly bool) {
 	cfg, err := config.Load()
 	if err != nil {
 		fatal("%v", err)
@@ -500,6 +519,7 @@ func cmdListJSON(tagFilter string) {
 		AddedAt    string   `json:"added_at"`
 		LastUsedAt string   `json:"last_used_at,omitempty"`
 		Tags       []string `json:"tags,omitempty"`
+		Favorite   bool     `json:"favorite,omitempty"`
 	}
 
 	names := config.SortedNames(cfg)
@@ -519,12 +539,17 @@ func cmdListJSON(tagFilter string) {
 				continue
 			}
 		}
+		// Filter by favorites if requested.
+		if favOnly && !p.Favorite {
+			continue
+		}
 		jp := jsonPlace{
 			Name:     name,
 			Path:     p.Path,
 			UseCount: p.UseCount,
 			AddedAt:  p.AddedAt.Format(time.RFC3339),
 			Tags:     p.Tags,
+			Favorite: p.Favorite,
 		}
 		if !p.LastUsedAt.IsZero() {
 			jp.LastUsedAt = p.LastUsedAt.Format(time.RFC3339)
@@ -535,6 +560,46 @@ func cmdListJSON(tagFilter string) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	enc.Encode(places)
+}
+
+func cmdFav(name string) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[name]
+	if !ok {
+		fatal("unknown place %q", name)
+	}
+
+	place.Favorite = true
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	fmt.Printf("Marked %q as favorite\n", name)
+}
+
+func cmdUnfav(name string) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[name]
+	if !ok {
+		fatal("unknown place %q", name)
+	}
+
+	place.Favorite = false
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	fmt.Printf("Unmarked %q as favorite\n", name)
 }
 
 func cmdTag(name, tag string) {

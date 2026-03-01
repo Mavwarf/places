@@ -21,9 +21,12 @@ p                        # Browse saved places interactively and cd
 p <name>                 # Jump to a saved place (supports fuzzy matching)
 p add [name] [path]      # Save current dir (name auto-derived if omitted)
 p list                   # List all places with colored output and usage stats
+p list --fav             # List only favorite places
 p list --json            # List all places as JSON
 p rm <name>              # Remove a saved place
 p rename <old> <new>     # Rename a place (alias: mv)
+p fav <name>             # Mark a place as favorite
+p unfav <name>           # Unmark a place as favorite
 p tag <name> <tag>       # Add a tag to a place
 p untag <name> <tag>     # Remove a tag from a place
 p tags                   # List all tags with place counts
@@ -80,6 +83,19 @@ p tags                                # list all tags with counts
 
 Tags are lowercase, deduplicated, and sorted alphabetically. The desktop app shows tag badges on each place with click-to-add and click-to-remove, plus a filter bar to show only places with a specific tag.
 
+### Favorites
+
+Mark frequently-used places for quick filtering:
+
+```
+p fav api                # mark as favorite
+p unfav api              # unmark
+p list --fav             # show only favorites
+p list --json --fav      # filtered JSON output
+```
+
+Favorites show a ★ marker in `p list`. The desktop app has a clickable star toggle per place and a ★ filter button in the sort bar.
+
 ## Desktop App
 
 `p app` launches a desktop GUI (built with Wails v2) that shows all saved places with action buttons:
@@ -90,7 +106,7 @@ Tags are lowercase, deduplicated, and sorted alphabetically. The desktop app sho
 - **>_** — open cmd.exe at that directory
 - **dir** — open Explorer at that directory
 
-The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, or date added.
+The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, or date added. A ★ filter button in the sort bar shows only favorites. Each place has a clickable star to toggle its favorite status.
 
 You can also add and remove places from the app. The **…** button next to the path input opens a native folder picker dialog. Changes are shared with the CLI (same `places.json`).
 
