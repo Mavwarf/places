@@ -10,11 +10,43 @@ import (
 )
 
 const (
-	markerBegin   = "# BEGIN places shell-hook"
-	markerEnd     = "# END places shell-hook"
-	psMarkerBegin = "# BEGIN places shell-hook"
-	psMarkerEnd   = "# END places shell-hook"
+	markerBegin = "# BEGIN places shell-hook"
+	markerEnd   = "# END places shell-hook"
 )
+
+const cmdBat = `@echo off
+if "%~1"=="" goto :select
+if /i "%~1"=="select" goto :select
+if /i "%~1"=="add" goto :passthrough
+if /i "%~1"=="rm" goto :passthrough
+if /i "%~1"=="list" goto :passthrough
+if /i "%~1"=="ls" goto :passthrough
+if /i "%~1"=="help" goto :passthrough
+if /i "%~1"=="shell-hook" goto :passthrough
+
+for /f "delims=" %%d in ('places go "%~1" 2^>nul') do (
+    cd /d "%%d"
+    goto :eof
+)
+places go "%~1"
+goto :eof
+
+:select
+set "_places_tmp=%TEMP%\places_%RANDOM%.tmp"
+places select > "%_places_tmp%"
+if errorlevel 1 (
+    del "%_places_tmp%" 2>nul
+    goto :eof
+)
+set /p "_places_dir=" < "%_places_tmp%"
+del "%_places_tmp%" 2>nul
+if defined _places_dir cd /d "%_places_dir%"
+set "_places_dir="
+goto :eof
+
+:passthrough
+places %*
+`
 
 const bashSnippet = `# BEGIN places shell-hook
 p() {
@@ -75,7 +107,7 @@ func shellHookCmd(args []string) {
 				shellOverride = args[i+1]
 				i++
 			} else {
-				fatal("--shell requires a value (bash, zsh, powershell)")
+				fatal("--shell requires a value (bash, zsh, powershell, cmd)")
 			}
 		} else {
 			rest = append(rest, args[i])
@@ -83,7 +115,7 @@ func shellHookCmd(args []string) {
 	}
 
 	if len(rest) == 0 {
-		fmt.Fprintf(os.Stderr, "Usage: places shell-hook <install|uninstall> [--shell bash|zsh|powershell]\n")
+		fmt.Fprintf(os.Stderr, "Usage: places shell-hook <install|uninstall> [--shell bash|zsh|powershell|cmd]\n")
 		os.Exit(1)
 	}
 
@@ -156,7 +188,22 @@ func snippetForShell(sh string) string {
 	}
 }
 
+// cmdBatPath returns the path for p.bat next to the places binary.
+func cmdBatPath() (string, error) {
+	exe, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("cannot determine places binary path: %w", err)
+	}
+	exe, _ = filepath.Abs(exe)
+	return filepath.Join(filepath.Dir(exe), "p.bat"), nil
+}
+
 func shellHookInstall(sh string) {
+	if sh == "cmd" {
+		cmdHookInstall()
+		return
+	}
+
 	rcFile, err := resolveRCFile(sh)
 	if err != nil {
 		fatal("%v", err)
@@ -203,7 +250,30 @@ func shellHookInstall(sh string) {
 	}
 }
 
+func cmdHookInstall() {
+	batPath, err := cmdBatPath()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	if _, err := os.Stat(batPath); err == nil {
+		fatal("p.bat already exists at %s (use 'places shell-hook uninstall --shell cmd' first)", batPath)
+	}
+
+	if err := os.WriteFile(batPath, []byte(cmdBat), 0644); err != nil {
+		fatal("cannot write %s: %v", batPath, err)
+	}
+
+	fmt.Printf("places: p.bat installed at %s\n", batPath)
+	fmt.Println("places: use 'p <name>' in cmd.exe to jump to a saved place")
+}
+
 func shellHookUninstall(sh string) {
+	if sh == "cmd" {
+		cmdHookUninstall()
+		return
+	}
+
 	rcFile, err := resolveRCFile(sh)
 	if err != nil {
 		fatal("%v", err)
@@ -247,4 +317,21 @@ func shellHookUninstall(sh string) {
 	}
 
 	fmt.Printf("places: shell hook removed from %s\n", rcFile)
+}
+
+func cmdHookUninstall() {
+	batPath, err := cmdBatPath()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	if _, err := os.Stat(batPath); os.IsNotExist(err) {
+		fatal("p.bat not found at %s", batPath)
+	}
+
+	if err := os.Remove(batPath); err != nil {
+		fatal("cannot remove %s: %v", batPath, err)
+	}
+
+	fmt.Printf("places: p.bat removed from %s\n", batPath)
 }

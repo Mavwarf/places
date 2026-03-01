@@ -68,11 +68,11 @@ Usage:
   places help                  Show this help message
 
 Options:
-  --shell bash|zsh|powershell  Override auto-detected shell (for shell-hook)
+  --shell bash|zsh|powershell|cmd  Override auto-detected shell (for shell-hook)
 
 Shell integration:
   places cannot change your shell's directory directly (child process
-  limitation). The shell hook installs a 'p' function that wraps places
+  limitation). The shell hook installs a 'p' wrapper that calls places
   and performs the actual cd/Set-Location.
 
   After installing, use:
@@ -90,7 +90,12 @@ Setup for PowerShell:
   3. . $PROFILE
      (or restart PowerShell)
 
+Setup for cmd.exe:
+  1. places shell-hook install --shell cmd
+     (creates p.bat next to places.exe)
+
 To install for multiple shells, use --shell:
   places shell-hook install --shell bash
-  places shell-hook install --shell powershell`)
+  places shell-hook install --shell powershell
+  places shell-hook install --shell cmd`)
 }
