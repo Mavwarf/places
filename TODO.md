@@ -33,7 +33,7 @@
 - [ ] **Notes** (`p add api --note "billing REST API"`) — attach a description, shown in list and desktop app
 - [ ] **Clone + bookmark** (`p clone <git-url> [name]`) — git clone into a workspace dir and auto-add as a place
 - [ ] **Global hotkey** — system-wide keyboard shortcut to open the tray menu or dashboard
-- [ ] **Color schemes** — theme support for the desktop app (like notify); user-selectable color schemes
+- [x] ~~**Color schemes**~~ — 6 themes (dark, light, nord, dracula, solarized, gruvbox) with toggle button and localStorage persistence *(Mar 1)*
 
 ## Script-Friendly
 
