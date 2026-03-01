@@ -49,11 +49,11 @@
 - [x] ~~**No HTTP client timeout in `waitForServer()`**~~ — added 200ms client timeout *(Mar 1)*
 - [x] ~~**Inconsistent error formatting**~~ — `shellhook.go` now uses `fatal()` helper *(Mar 1)*
 - [x] ~~**Silent tray menu failure**~~ — `addPlaceMenus()` now shows disabled error item in tray *(Mar 1)*
-- [ ] **Duplicate `jsonPlace` struct** — defined in both `commands.go` and `internal/app/app.go` (app version has extra `Exists` field)
-- [ ] **Terminal launch commands duplicated 3x** — PowerShell/cmd/Claude/Explorer launch logic copy-pasted across `commands.go`, `internal/app/app.go`, and `cmd/places-app/tray.go`; extract to `internal/launcher` package
-- [ ] **Sorting logic duplicated** — `sortedNames()` in `commands.go` vs inline sort in `tray.go`
-- [ ] **`fuzzyFind()` doesn't distinguish "not found" from "ambiguous"** — returns nil for both; user sees `unknown place "a"` when multiple matches exist
-- [ ] **Hardcoded port 8822** — not configurable via env var or flag
+- [x] ~~**Terminal launch commands duplicated 3x**~~ — extracted to `internal/launcher` package *(Mar 1)*
+- [x] ~~**Sorting logic duplicated**~~ — moved `SortedNames()` to `internal/config`, removed duplicates *(Mar 1)*
+- [x] ~~**`fuzzyFind()` doesn't distinguish "not found" from "ambiguous"**~~ — now lists matching names on ambiguous query *(Mar 1)*
+- [x] ~~**Hardcoded port 8822**~~ — now configurable via `PLACES_PORT` env var or `--port` flag *(Mar 1)*
+- [ ] **Duplicate `jsonPlace` struct** — defined in both `commands.go` and `internal/app/app.go` (accepted: different fields needed)
 
 ## Improvements
 

@@ -4,13 +4,11 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/binary"
-	"fmt"
 	"os"
-	"os/exec"
 	"runtime"
-	"sort"
 
 	"github.com/Mavwarf/places/internal/config"
+	"github.com/Mavwarf/places/internal/launcher"
 	"github.com/energye/systray"
 )
 
@@ -85,11 +83,7 @@ func addPlaceMenus() {
 		return
 	}
 
-	names := make([]string, 0, len(cfg.Places))
-	for name := range cfg.Places {
-		names = append(names, name)
-	}
-	sort.Strings(names)
+	names := config.SortedNames(cfg)
 
 	for _, name := range names {
 		place := cfg.Places[name]
@@ -97,37 +91,15 @@ func addPlaceMenus() {
 		parent := systray.AddMenuItem(name, path)
 
 		mPS := parent.AddSubMenuItem("PowerShell", "Open PowerShell here")
-		mPS.Click(func() { openTerminal(path, "powershell") })
+		mPS.Click(func() { launcher.Detach(launcher.PowerShell(path)) })
 
 		mClaude := parent.AddSubMenuItem("Claude", "Open PowerShell + Claude here")
-		mClaude.Click(func() { openTerminal(path, "claude") })
+		mClaude.Click(func() { launcher.Detach(launcher.Claude(path)) })
 
 		mCmd := parent.AddSubMenuItem("cmd", "Open cmd.exe here")
-		mCmd.Click(func() { openTerminal(path, "cmd") })
+		mCmd.Click(func() { launcher.Detach(launcher.Cmd(path)) })
 
 		mExplorer := parent.AddSubMenuItem("Explorer", "Open Explorer here")
-		mExplorer.Click(func() { openTerminal(path, "explorer") })
-	}
-}
-
-func openTerminal(path, action string) {
-	var cmd *exec.Cmd
-	switch action {
-	case "powershell":
-		cmd = exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
-			fmt.Sprintf("Set-Location '%s'", path))
-	case "cmd":
-		cmd = exec.Command("cmd", "/c", "start", "", "cmd", "/k",
-			fmt.Sprintf("cd /d \"%s\"", path))
-	case "claude":
-		cmd = exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
-			fmt.Sprintf("Set-Location '%s'; claude", path))
-	case "explorer":
-		cmd = exec.Command("explorer", path)
-	}
-	if cmd != nil {
-		if err := cmd.Start(); err == nil {
-			go cmd.Wait()
-		}
+		mExplorer.Click(func() { launcher.Detach(launcher.Explorer(path)) })
 	}
 }

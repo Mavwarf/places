@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Mavwarf/places/internal/config"
+	"github.com/Mavwarf/places/internal/launcher"
 )
 
 //go:embed static/index.html
@@ -134,30 +135,25 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var cmd *exec.Cmd
+	var fn func(string) *exec.Cmd
 	switch req.Action {
 	case "powershell":
-		cmd = exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
-			fmt.Sprintf("Set-Location '%s'", place.Path))
+		fn = launcher.PowerShell
 	case "cmd":
-		cmd = exec.Command("cmd", "/c", "start", "", "cmd", "/k",
-			fmt.Sprintf("cd /d \"%s\"", place.Path))
+		fn = launcher.Cmd
 	case "claude":
-		cmd = exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
-			fmt.Sprintf("Set-Location '%s'; claude", place.Path))
+		fn = launcher.Claude
 	case "explorer":
-		cmd = exec.Command("explorer", place.Path)
+		fn = launcher.Explorer
 	default:
 		http.Error(w, "unknown action", http.StatusBadRequest)
 		return
 	}
 
-	if err := cmd.Start(); err != nil {
+	if err := launcher.Detach(fn(place.Path)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// Detach — don't wait for the process.
-	go cmd.Wait()
 
 	w.WriteHeader(http.StatusNoContent)
 }

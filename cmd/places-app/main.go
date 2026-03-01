@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/Mavwarf/places/internal/app"
@@ -14,6 +15,11 @@ import (
 
 func main() {
 	port := 8822
+	if env := os.Getenv("PLACES_PORT"); env != "" {
+		if p, err := strconv.Atoi(env); err == nil {
+			port = p
+		}
+	}
 
 	args := os.Args[1:]
 	for i := 0; i < len(args); i++ {

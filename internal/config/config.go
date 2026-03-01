@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 )
 
@@ -133,4 +134,14 @@ func Save(cfg Config) error {
 func RecordUse(place *Place) {
 	place.UseCount++
 	place.LastUsedAt = time.Now()
+}
+
+// SortedNames returns place names sorted alphabetically.
+func SortedNames(cfg Config) []string {
+	names := make([]string, 0, len(cfg.Places))
+	for name := range cfg.Places {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }

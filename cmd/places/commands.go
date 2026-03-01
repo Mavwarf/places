@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Mavwarf/places/internal/config"
+	"github.com/Mavwarf/places/internal/launcher"
 )
 
 func cmdAdd(name, path string) {
@@ -75,7 +76,7 @@ func cmdList() {
 		return
 	}
 
-	names := sortedNames(cfg)
+	names := config.SortedNames(cfg)
 
 	// Find max name length for alignment.
 	maxLen := 0
@@ -138,8 +139,7 @@ func cmdCode(name string) {
 		fatal("directory does not exist: %s", place.Path)
 	}
 
-	cmd := exec.Command("code", place.Path)
-	if err := cmd.Start(); err != nil {
+	if err := launcher.Detach(launcher.Code(place.Path)); err != nil {
 		fatal("cannot start VS Code: %v", err)
 	}
 }
@@ -162,27 +162,15 @@ func cmdShell(name string) {
 		fatal("directory does not exist: %s", place.Path)
 	}
 
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
-			fmt.Sprintf("Set-Location '%s'", place.Path))
-	} else {
-		shell := os.Getenv("SHELL")
-		if shell == "" {
-			shell = "/bin/sh"
-		}
-		cmd = exec.Command(shell)
-		cmd.Dir = place.Path
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-	}
-
+	cmd := launcher.PowerShell(place.Path)
 	if runtime.GOOS == "windows" {
 		if err := cmd.Start(); err != nil {
 			fatal("cannot start shell: %v", err)
 		}
 	} else {
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			fatal("shell exited with error: %v", err)
 		}
@@ -483,7 +471,7 @@ func cmdListJSON() {
 		LastUsedAt string `json:"last_used_at,omitempty"`
 	}
 
-	names := sortedNames(cfg)
+	names := config.SortedNames(cfg)
 	places := make([]jsonPlace, 0, len(names))
 	for _, name := range names {
 		p := cfg.Places[name]
@@ -502,16 +490,6 @@ func cmdListJSON() {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	enc.Encode(places)
-}
-
-// sortedNames returns place names sorted alphabetically.
-func sortedNames(cfg config.Config) []string {
-	names := make([]string, 0, len(cfg.Places))
-	for name := range cfg.Places {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
 }
 
 // sortedByRecent returns place names sorted by last used (most recent first),
@@ -542,21 +520,21 @@ func sortedByRecent(cfg config.Config) []string {
 }
 
 // fuzzyFind returns the first place whose name contains the query as a substring.
-// Returns nil if no match or multiple ambiguous matches.
+// Returns nil if no match found. Calls fatal() if multiple ambiguous matches exist.
 func fuzzyFind(cfg config.Config, query string) (*config.Place, string) {
-	query = strings.ToLower(query)
-	var matchName string
-	var matchPlace *config.Place
-	count := 0
-	for name, place := range cfg.Places {
-		if strings.Contains(strings.ToLower(name), query) {
-			matchName = name
-			matchPlace = place
-			count++
+	lower := strings.ToLower(query)
+	var matches []string
+	for name := range cfg.Places {
+		if strings.Contains(strings.ToLower(name), lower) {
+			matches = append(matches, name)
 		}
 	}
-	if count == 1 {
-		return matchPlace, matchName
+	if len(matches) == 1 {
+		return cfg.Places[matches[0]], matches[0]
+	}
+	if len(matches) > 1 {
+		sort.Strings(matches)
+		fatal("ambiguous place %q — matches: %s", query, strings.Join(matches, ", "))
 	}
 	return nil, query
 }
