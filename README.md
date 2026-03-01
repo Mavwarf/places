@@ -75,12 +75,16 @@ The place list is sorted by last used (most recent on top) by default, with rela
 
 You can also add and remove places from the app. Changes are shared with the CLI (same `places.json`).
 
+### Color Themes
+
+Click the theme toggle button (top-right) to cycle through 6 color schemes: Dark (default), Light, Nord, Dracula, Solarized, and Gruvbox. Your choice is saved in localStorage and persists across sessions.
+
 ### System Tray
 
 The desktop app lives in the system tray. Closing the window hides it to the tray instead of exiting — the app stays running for quick access.
 
 - **Double-click** the tray icon to reopen the dashboard
-- **Right-click** for the context menu:
+- **Left-click** or **right-click** for the context menu:
   - **Open Dashboard** — show the main window
   - **Place submenus** — each saved place has PowerShell, Claude, cmd, and Explorer actions
   - **Refresh** — reload places from config
