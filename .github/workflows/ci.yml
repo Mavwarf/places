@@ -62,4 +62,8 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: ${{ matrix.cgo }}
-        run: go build -tags production -o /dev/null ./cmd/places-app
+        run: |
+          if [ "${{ matrix.goos }}" = "darwin" ]; then
+            export CGO_LDFLAGS="-framework UniformTypeIdentifiers"
+          fi
+          go build -tags production -o /dev/null ./cmd/places-app
