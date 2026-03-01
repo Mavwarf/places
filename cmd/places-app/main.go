@@ -26,8 +26,18 @@ func main() {
 		}
 	}
 
+	// If an instance is already running, ask it to show its window and exit.
+	showURL := fmt.Sprintf("http://127.0.0.1:%d/api/show", port)
+	resp, err := http.Post(showURL, "", nil)
+	if err == nil {
+		resp.Body.Close()
+		os.Exit(0)
+	}
+
+	a := &App{port: port, ready: make(chan struct{})}
+
 	go func() {
-		if err := app.Serve(port); err != nil {
+		if err := app.Serve(port, a.ShowWindow); err != nil {
 			fmt.Fprintf(os.Stderr, "places-app: %v\n", err)
 			os.Exit(1)
 		}
@@ -38,8 +48,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	a := &App{port: port, ready: make(chan struct{})}
-
 	go runTray(a)
 
 	loader := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +55,7 @@ func main() {
 		w.Write([]byte(`<!DOCTYPE html><html><body style="background:#1a1b26"></body></html>`))
 	})
 
-	err := wails.Run(&options.App{
+	err = wails.Run(&options.App{
 		Title:             "places dashboard",
 		Width:             900,
 		Height:            600,

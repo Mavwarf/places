@@ -39,13 +39,26 @@ type rmReq struct {
 }
 
 // Serve starts the HTTP server on the given port.
-func Serve(port int) error {
+// Serve starts the HTTP server on the given port. If showFn is non-nil,
+// a POST /api/show endpoint is registered that calls it (used to bring
+// the existing window to front when a second instance is launched).
+func Serve(port int, showFn func()) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleIndex)
 	mux.HandleFunc("/api/places", handlePlaces)
 	mux.HandleFunc("/api/open", handleOpen)
 	mux.HandleFunc("/api/rm", handleRm)
 	mux.HandleFunc("/api/add", handleAdd)
+	if showFn != nil {
+		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			showFn()
+			w.WriteHeader(http.StatusNoContent)
+		})
+	}
 
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	return http.ListenAndServe(addr, mux)
