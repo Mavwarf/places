@@ -19,6 +19,77 @@
   --border: #3b4261;
   --font: "Cascadia Code", "Fira Code", "JetBrains Mono", "Consolas", monospace;
 }
+
+[data-theme="light"] {
+  --bg: #f5f5f5;
+  --bg2: #ffffff;
+  --bg3: #e8e8ec;
+  --fg: #1a1b26;
+  --fg-dim: #6b7280;
+  --accent: #2563eb;
+  --green: #16a34a;
+  --yellow: #ca8a04;
+  --red: #dc2626;
+  --cyan: #0891b2;
+  --border: #d1d5db;
+}
+
+[data-theme="nord"] {
+  --bg: #2e3440;
+  --bg2: #3b4252;
+  --bg3: #434c5e;
+  --fg: #d8dee9;
+  --fg-dim: #7b88a1;
+  --accent: #88c0d0;
+  --green: #a3be8c;
+  --yellow: #ebcb8b;
+  --red: #bf616a;
+  --cyan: #8fbcbb;
+  --border: #4c566a;
+}
+
+[data-theme="dracula"] {
+  --bg: #282a36;
+  --bg2: #343746;
+  --bg3: #3e4154;
+  --fg: #f8f8f2;
+  --fg-dim: #6272a4;
+  --accent: #bd93f9;
+  --green: #50fa7b;
+  --yellow: #f1fa8c;
+  --red: #ff5555;
+  --cyan: #8be9fd;
+  --border: #44475a;
+}
+
+[data-theme="solarized"] {
+  --bg: #002b36;
+  --bg2: #073642;
+  --bg3: #0a3f4c;
+  --fg: #839496;
+  --fg-dim: #586e75;
+  --accent: #268bd2;
+  --green: #859900;
+  --yellow: #b58900;
+  --red: #dc322f;
+  --cyan: #2aa198;
+  --border: #1a4f5c;
+}
+
+[data-theme="gruvbox"] {
+  --bg: #282828;
+  --bg2: #3c3836;
+  --bg3: #504945;
+  --fg: #ebdbb2;
+  --fg-dim: #928374;
+  --accent: #fe8019;
+  --green: #b8bb26;
+  --yellow: #fabd2f;
+  --red: #fb4934;
+  --cyan: #8ec07c;
+  --border: #665c54;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: var(--font);
@@ -171,10 +242,34 @@ button:active { opacity: 0.7; }
   from { opacity: 0; transform: translateX(40px); }
   to { opacity: 1; transform: translateX(0); }
 }
+
+/* Theme toggle */
+.header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; }
+.header h1 { margin-bottom: 0; }
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--fg-dim);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font);
+  height: 32px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.15s, border-color 0.15s;
+  margin-left: auto;
+}
+.theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
 </style>
 </head>
 <body>
-<h1>places dashboard <span>directory bookmarks</span></h1>
+<div class="header">
+  <h1>places dashboard <span>directory bookmarks</span></h1>
+  <button class="theme-toggle" id="theme-toggle" title="Toggle theme"></button>
+</div>
 <div style="font-size:12px;color:var(--fg-dim);margin:-12px 0 16px">
   By <a href="https://mavwarf.netlify.app/" target="_blank" rel="noopener" style="color:var(--fg)">Thomas H&auml;user</a>. <a href="https://github.com/Mavwarf/places" target="_blank" rel="noopener" style="color:var(--cyan)">github.com/Mavwarf/places</a>
 </div>
@@ -196,6 +291,34 @@ button:active { opacity: 0.7; }
 <div id="places" class="place-list"></div>
 
 <script>
+// Theme cycle
+var THEMES = [
+  { name: 'dark',      icon: '\u263D', label: 'Dark' },
+  { name: 'light',     icon: '\u2600', label: 'Light' },
+  { name: 'nord',      icon: '\u2744', label: 'Nord' },
+  { name: 'dracula',   icon: '\u2605', label: 'Dracula' },
+  { name: 'solarized', icon: '\u25D0', label: 'Solarized' },
+  { name: 'gruvbox',   icon: '\u25A3', label: 'Gruvbox' },
+];
+var themeToggle = document.getElementById('theme-toggle');
+var savedTheme = localStorage.getItem('places-theme');
+var themeIdx = Math.max(0, THEMES.findIndex(function(t) { return t.name === savedTheme; }));
+document.documentElement.dataset.theme = THEMES[themeIdx].name;
+
+function updateToggleIcon() {
+  var t = THEMES[themeIdx];
+  themeToggle.textContent = t.icon + ' ' + t.label;
+  themeToggle.title = 'Theme: ' + t.label + ' (click to cycle)';
+}
+updateToggleIcon();
+
+themeToggle.addEventListener('click', function() {
+  themeIdx = (themeIdx + 1) % THEMES.length;
+  document.documentElement.dataset.theme = THEMES[themeIdx].name;
+  localStorage.setItem('places-theme', THEMES[themeIdx].name);
+  updateToggleIcon();
+});
+
 let currentSort = 'last_used';
 
 function setSort(key) {
