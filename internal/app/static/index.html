@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>places</title>
+<title>places dashboard</title>
 <style>
 :root {
   --bg: #1a1b26;
@@ -73,8 +73,28 @@ button:active { opacity: 0.7; }
 .btn-ps { background: var(--accent); color: var(--bg); }
 .btn-cmd { background: var(--fg-dim); color: var(--bg); }
 .btn-explorer { background: var(--yellow); color: var(--bg); }
+.btn-claude { background: #d4a373; color: var(--bg); }
 .btn-rm { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 4px 10px; font-size: 0.75em; }
 .btn-rm:hover { background: var(--red); color: var(--bg); }
+
+/* Sort bar */
+.sort-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  align-items: center;
+  font-size: 0.8em;
+  color: var(--fg-dim);
+}
+.sort-bar span { margin-right: 4px; }
+.sort-btn {
+  background: transparent;
+  color: var(--fg-dim);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  font-size: 0.85em;
+}
+.sort-btn.active { color: var(--accent); border-color: var(--accent); }
 
 /* Place list */
 .place-list { display: flex; flex-direction: column; gap: 6px; }
@@ -154,7 +174,7 @@ button:active { opacity: 0.7; }
 </style>
 </head>
 <body>
-<h1>places <span>directory bookmarks</span></h1>
+<h1>places dashboard <span>directory bookmarks</span></h1>
 <div style="font-size:12px;color:var(--fg-dim);margin:-12px 0 16px">
   By <a href="https://mavwarf.netlify.app/" target="_blank" rel="noopener" style="color:var(--fg)">Thomas H&auml;user</a>. <a href="https://github.com/Mavwarf/places" target="_blank" rel="noopener" style="color:var(--cyan)">github.com/Mavwarf/places</a>
 </div>
@@ -165,18 +185,48 @@ button:active { opacity: 0.7; }
   <button type="submit" class="btn-add">Add</button>
 </form>
 
+<div class="sort-bar">
+  <span>Sort:</span>
+  <button class="sort-btn active" onclick="setSort('name')" id="sort-name">Name</button>
+  <button class="sort-btn" onclick="setSort('use_count')" id="sort-use_count">Most used</button>
+  <button class="sort-btn" onclick="setSort('last_used')" id="sort-last_used">Last used</button>
+  <button class="sort-btn" onclick="setSort('added')" id="sort-added">Added</button>
+</div>
+
 <div id="places" class="place-list"></div>
 
 <script>
+let currentSort = 'name';
+
+function setSort(key) {
+  currentSort = key;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sort-' + key).classList.add('active');
+  load();
+}
+
+function sortPlaces(places) {
+  return places.slice().sort((a, b) => {
+    switch (currentSort) {
+      case 'name': return a.name.localeCompare(b.name);
+      case 'use_count': return b.use_count - a.use_count;
+      case 'last_used': return (b.last_used_at || '').localeCompare(a.last_used_at || '');
+      case 'added': return (b.added_at || '').localeCompare(a.added_at || '');
+      default: return 0;
+    }
+  });
+}
+
 async function load() {
   const el = document.getElementById('places');
   try {
     const res = await fetch('/api/places');
-    const places = await res.json();
+    let places = await res.json();
     if (!places.length) {
       el.innerHTML = '<div class="empty-state">No places saved yet.<br>Add one above or use <code>places add &lt;name&gt;</code> from the CLI.</div>';
       return;
     }
+    places = sortPlaces(places);
     el.innerHTML = places.map(p => `
       <div class="place-row">
         <span class="place-name">${esc(p.name)}</span>
@@ -186,6 +236,7 @@ async function load() {
         <div class="place-actions">
           ${p.exists ? `
             <button class="btn-ps" onclick="openAt('${esc(p.name)}','powershell')" title="Open PowerShell here">PS</button>
+            <button class="btn-claude" onclick="openAt('${esc(p.name)}','claude')" title="Open Claude Code here">Claude</button>
             <button class="btn-cmd" onclick="openAt('${esc(p.name)}','cmd')" title="Open cmd here">cmd</button>
             <button class="btn-explorer" onclick="openAt('${esc(p.name)}','explorer')" title="Open in Explorer">dir</button>
           ` : ''}

@@ -129,6 +129,9 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	case "cmd":
 		cmd = exec.Command("cmd", "/c", "start", "", "cmd", "/k",
 			fmt.Sprintf("cd /d %s", place.Path))
+	case "claude":
+		cmd = exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
+			fmt.Sprintf("Set-Location '%s'; claude", place.Path))
 	case "explorer":
 		cmd = exec.Command("explorer", place.Path)
 	default:

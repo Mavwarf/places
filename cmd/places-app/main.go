@@ -46,7 +46,7 @@ func main() {
 	})
 
 	err := wails.Run(&options.App{
-		Title:     "places",
+		Title:     "places dashboard",
 		Width:     900,
 		Height:    600,
 		MinWidth:  700,

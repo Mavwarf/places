@@ -60,8 +60,11 @@ Running `p` opens an interactive selector with arrow-key navigation:
 `p app` launches a desktop GUI (built with Wails v2) that shows all saved places with action buttons:
 
 - **PS** — open PowerShell at that directory
+- **Claude** — open PowerShell at that directory and start Claude Code
 - **cmd** — open cmd.exe at that directory
 - **dir** — open Explorer at that directory
+
+The place list can be sorted by name, most used, last used, or date added.
 
 You can also add and remove places from the app. Changes are shared with the CLI (same `places.json`).
 
