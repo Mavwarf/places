@@ -27,13 +27,14 @@
 - [x] ~~**Open in editor** (`p code <name>`)~~ — open directory in VS Code *(Mar 1)*
 - [x] ~~**Auto-start on login** (`p autostart [on|off]`)~~ — registry-based autostart for Windows tray app *(Mar 1)*
 - [x] ~~**Left-click tray opens menu**~~ — left-click now shows the menu, double-click opens dashboard *(Mar 1)*
+- [x] ~~**Color schemes**~~ — 6 themes (dark, light, nord, dracula, solarized, gruvbox) with toggle button and localStorage persistence *(Mar 1)*
+- [ ] **Browse button in add form** — "…" button next to the path input that opens a native file/folder picker dialog
 - [ ] **Tags/groups** — `p add notify --tag work`, then `p list --tag work` to filter
 - [ ] **Import/export** — `places export > places.json` / `places import < places.json` for syncing across machines
 - [ ] **Temporary places** (`p add --temp`) — auto-expire after N days or on next prune
 - [ ] **Notes** (`p add api --note "billing REST API"`) — attach a description, shown in list and desktop app
 - [ ] **Clone + bookmark** (`p clone <git-url> [name]`) — git clone into a workspace dir and auto-add as a place
 - [ ] **Global hotkey** — system-wide keyboard shortcut to open the tray menu or dashboard
-- [x] ~~**Color schemes**~~ — 6 themes (dark, light, nord, dracula, solarized, gruvbox) with toggle button and localStorage persistence *(Mar 1)*
 
 ## Script-Friendly
 
