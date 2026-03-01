@@ -68,7 +68,7 @@ Running `p` opens an interactive selector with arrow-key navigation:
 - **cmd** — open cmd.exe at that directory
 - **dir** — open Explorer at that directory
 
-The place list can be sorted by name, most used, last used, or date added.
+The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, or date added.
 
 You can also add and remove places from the app. Changes are shared with the CLI (same `places.json`).
 

@@ -187,16 +187,16 @@ button:active { opacity: 0.7; }
 
 <div class="sort-bar">
   <span>Sort:</span>
-  <button class="sort-btn active" onclick="setSort('name')" id="sort-name">Name</button>
+  <button class="sort-btn" onclick="setSort('name')" id="sort-name">Name</button>
   <button class="sort-btn" onclick="setSort('use_count')" id="sort-use_count">Most used</button>
-  <button class="sort-btn" onclick="setSort('last_used')" id="sort-last_used">Last used</button>
+  <button class="sort-btn active" onclick="setSort('last_used')" id="sort-last_used">Last used</button>
   <button class="sort-btn" onclick="setSort('added')" id="sort-added">Added</button>
 </div>
 
 <div id="places" class="place-list"></div>
 
 <script>
-let currentSort = 'name';
+let currentSort = 'last_used';
 
 function setSort(key) {
   currentSort = key;
@@ -232,7 +232,7 @@ async function load() {
         <span class="place-name">${esc(p.name)}</span>
         <span class="place-path" title="${esc(p.path)}">${esc(p.path)}</span>
         ${!p.exists ? '<span class="badge-missing">missing</span>' : ''}
-        <span class="place-stats">${p.use_count}x</span>
+        <span class="place-stats">${p.use_count}x${p.last_used_at ? ' · ' + timeAgo(p.last_used_at) : ''}</span>
         <div class="place-actions">
           ${p.exists ? `
             <button class="btn-ps" onclick="openAt('${esc(p.name)}','powershell')" title="Open PowerShell here">PS</button>
@@ -247,6 +247,18 @@ async function load() {
   } catch (e) {
     el.innerHTML = '<div class="empty-state">Failed to load places.</div>';
   }
+}
+
+function timeAgo(iso) {
+  const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  const d = Math.floor(h / 24);
+  if (d < 7) return d + 'd ago';
+  return new Date(iso).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
 }
 
 function esc(s) {
