@@ -38,7 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	a := &App{port: port}
+	a := &App{port: port, ready: make(chan struct{})}
 
 	go runTray(a)
 
@@ -53,12 +53,12 @@ func main() {
 		Height:            600,
 		MinWidth:          700,
 		MinHeight:         400,
-		HideWindowOnClose: true,
 		AssetServer: &assetserver.Options{
 			Handler: loader,
 		},
 		BackgroundColour: &options.RGBA{R: 26, G: 27, B: 38, A: 255},
 		OnStartup:        a.startup,
+		OnBeforeClose:    a.beforeClose,
 		OnShutdown:       a.shutdown,
 		Bind:             []interface{}{a},
 	})
