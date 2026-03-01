@@ -24,8 +24,7 @@ func PowerShell(path string) *exec.Cmd {
 
 // Cmd opens a new cmd.exe window at the given directory (Windows only).
 func Cmd(path string) *exec.Cmd {
-	return exec.Command("cmd", "/c", "start", "", "cmd", "/k",
-		fmt.Sprintf("cd /d \"%s\"", path))
+	return exec.Command("cmd", "/c", "start", "", "cmd", "/k", "cd", "/d", path)
 }
 
 // Claude opens a new PowerShell window at the given directory and starts Claude.
