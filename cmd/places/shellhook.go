@@ -19,8 +19,11 @@ if "%~1"=="" goto :select
 if /i "%~1"=="select" goto :select
 if /i "%~1"=="add" goto :passthrough
 if /i "%~1"=="rm" goto :passthrough
+if /i "%~1"=="rename" goto :passthrough
+if /i "%~1"=="mv" goto :passthrough
 if /i "%~1"=="list" goto :passthrough
 if /i "%~1"=="ls" goto :passthrough
+if /i "%~1"=="stats" goto :passthrough
 if /i "%~1"=="help" goto :passthrough
 if /i "%~1"=="shell-hook" goto :passthrough
 
@@ -59,7 +62,7 @@ p() {
     return
   fi
   case "$1" in
-    add|rm|list|ls|help|shell-hook)
+    add|rm|rename|mv|list|ls|stats|help|shell-hook)
       command places "$@"
       return
       ;;
@@ -83,7 +86,7 @@ function p {
         }
         return
     }
-    $cmds = @('add','rm','list','ls','help','shell-hook')
+    $cmds = @('add','rm','rename','mv','list','ls','stats','help','shell-hook')
     if ($cmds -contains $args[0]) {
         & places @args
         return

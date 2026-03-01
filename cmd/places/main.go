@@ -21,14 +21,15 @@ func main() {
 
 	switch args[0] {
 	case "add":
-		if len(args) < 2 {
-			fatal("expected: places add <name> [path]")
-		}
+		name := ""
 		path := ""
+		if len(args) >= 2 {
+			name = args[1]
+		}
 		if len(args) >= 3 {
 			path = args[2]
 		}
-		cmdAdd(args[1], path)
+		cmdAdd(name, path)
 	case "list", "ls":
 		cmdList()
 	case "select":
@@ -43,6 +44,13 @@ func main() {
 			fatal("expected: places rm <name>")
 		}
 		cmdRm(args[1])
+	case "rename", "mv":
+		if len(args) < 3 {
+			fatal("expected: places rename <old> <new>")
+		}
+		cmdRename(args[1], args[2])
+	case "stats":
+		cmdStats()
 	case "shell-hook":
 		shellHookCmd(args[1:])
 	case "help", "-h", "--help":
@@ -58,11 +66,14 @@ func printUsage() {
 	fmt.Println(`places - Directory bookmarks for quick navigation
 
 Usage:
-  places add <name> [path]     Save current dir (or given path) with a shortcut name
+  places add [name] [path]     Save current dir (or given path) with a shortcut name
+                               If name is omitted, uses the directory basename
   places list                  List all saved places (alias: ls)
-  places select                Browse and pick a place interactively
+  places select                Browse and pick a place (sorted by recent use)
   places go <name>             Print the path for a place (used by shell wrapper)
   places rm <name>             Remove a saved place
+  places rename <old> <new>    Rename a saved place (alias: mv)
+  places stats                 Show usage summary
   places shell-hook install    Install p() function (auto-detects shell)
   places shell-hook uninstall  Remove p() function from shell config
   places help                  Show this help message

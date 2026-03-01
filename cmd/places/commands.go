@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,6 +19,21 @@ func cmdAdd(name, path string) {
 		path, err = os.Getwd()
 		if err != nil {
 			fatal("cannot determine current directory: %v", err)
+		}
+	} else {
+		// Resolve to absolute path.
+		abs, err := filepath.Abs(path)
+		if err != nil {
+			fatal("cannot resolve path: %v", err)
+		}
+		path = abs
+	}
+
+	// Auto-derive name from directory basename if not provided.
+	if name == "" {
+		name = filepath.Base(path)
+		if name == "." || name == "/" || name == "\\" {
+			fatal("cannot derive name from path %q, please provide a name", path)
 		}
 	}
 
@@ -71,7 +87,11 @@ func cmdList() {
 	for _, name := range names {
 		p := cfg.Places[name]
 		stats := formatStats(p)
-		fmt.Printf("  %-*s  %s  %s\n", maxLen, name, p.Path, stats)
+		warning := ""
+		if _, err := os.Stat(p.Path); err != nil {
+			warning = " [missing!]"
+		}
+		fmt.Printf("  %-*s  %s  %s%s\n", maxLen, name, p.Path, stats, warning)
 	}
 }
 
@@ -103,7 +123,8 @@ func cmdSelect() {
 		fatal("no places saved. Use 'places add <name>' to save one.")
 	}
 
-	names := sortedNames(cfg)
+	// Sort by most recently used for select.
+	names := sortedByRecent(cfg)
 
 	// Find max name length for alignment.
 	maxLen := 0
@@ -115,7 +136,11 @@ func cmdSelect() {
 
 	// Print menu to stderr (stdout is reserved for the selected path).
 	for i, name := range names {
-		fmt.Fprintf(os.Stderr, "  %d) %-*s  %s\n", i+1, maxLen, name, cfg.Places[name].Path)
+		warning := ""
+		if _, err := os.Stat(cfg.Places[name].Path); err != nil {
+			warning = " [missing!]"
+		}
+		fmt.Fprintf(os.Stderr, "  %d) %-*s  %s%s\n", i+1, maxLen, name, cfg.Places[name].Path, warning)
 	}
 	fmt.Fprintf(os.Stderr, "Select [1-%d]: ", len(names))
 
@@ -157,6 +182,69 @@ func cmdRm(name string) {
 	fmt.Printf("Removed %q\n", name)
 }
 
+func cmdRename(oldName, newName string) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[oldName]
+	if !ok {
+		fatal("unknown place %q", oldName)
+	}
+
+	if _, exists := cfg.Places[newName]; exists {
+		fatal("place %q already exists", newName)
+	}
+
+	cfg.Places[newName] = place
+	delete(cfg.Places, oldName)
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	fmt.Printf("Renamed %q -> %q\n", oldName, newName)
+}
+
+func cmdStats() {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	if len(cfg.Places) == 0 {
+		fmt.Println("No places saved.")
+		return
+	}
+
+	totalUses := 0
+	var mostUsedName, leastUsedName string
+	mostUses := -1
+	leastUses := -1
+
+	for name, p := range cfg.Places {
+		totalUses += p.UseCount
+		if mostUses < 0 || p.UseCount > mostUses {
+			mostUses = p.UseCount
+			mostUsedName = name
+		}
+		if leastUses < 0 || p.UseCount < leastUses {
+			leastUses = p.UseCount
+			leastUsedName = name
+		}
+	}
+
+	fmt.Printf("Places: %d\n", len(cfg.Places))
+	fmt.Printf("Total uses: %d\n", totalUses)
+	if mostUses > 0 {
+		fmt.Printf("Most used: %s (%d uses)\n", mostUsedName, mostUses)
+	}
+	if leastUsedName != mostUsedName {
+		fmt.Printf("Least used: %s (%d uses)\n", leastUsedName, leastUses)
+	}
+}
+
 // sortedNames returns place names sorted alphabetically.
 func sortedNames(cfg config.Config) []string {
 	names := make([]string, 0, len(cfg.Places))
@@ -164,6 +252,33 @@ func sortedNames(cfg config.Config) []string {
 		names = append(names, name)
 	}
 	sort.Strings(names)
+	return names
+}
+
+// sortedByRecent returns place names sorted by last used (most recent first),
+// with never-used places at the end sorted alphabetically.
+func sortedByRecent(cfg config.Config) []string {
+	names := make([]string, 0, len(cfg.Places))
+	for name := range cfg.Places {
+		names = append(names, name)
+	}
+	sort.Slice(names, func(i, j int) bool {
+		pi := cfg.Places[names[i]]
+		pj := cfg.Places[names[j]]
+		// Both never used: sort alphabetically.
+		if pi.UseCount == 0 && pj.UseCount == 0 {
+			return names[i] < names[j]
+		}
+		// Never-used goes last.
+		if pi.UseCount == 0 {
+			return false
+		}
+		if pj.UseCount == 0 {
+			return true
+		}
+		// Most recent first.
+		return pi.LastUsedAt.After(pj.LastUsedAt)
+	})
 	return names
 }
 

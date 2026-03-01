@@ -2,6 +2,13 @@
 
 ## Features
 
+- Path separator normalization — all paths normalized to OS-native separators (`\` on Windows) on load *(Mar 1)*
+- Relative path resolution — `places add name .` resolves `.` and `..` to absolute paths *(Mar 1)*
+- Select sorted by recent use — most recently used places shown first in `places select` *(Mar 1)*
+- Usage stats (`places stats`) — total uses, most/least used place summary *(Mar 1)*
+- Rename command (`places rename`/`mv`) — rename a place while preserving stats *(Mar 1)*
+- Path validation — `list` and `select` show `[missing!]` for deleted directories *(Mar 1)*
+- Auto-name on add — `places add` with no name derives it from the directory basename *(Mar 1)*
 - cmd.exe support — `places shell-hook install --shell cmd` creates `p.bat` next to `places.exe`; uses temp file for interactive select *(Mar 1)*
 - CLAUDE.md — project conventions, build/deploy instructions, shell hook update workflow *(Mar 1)*
 - Shell hook passthrough — `p add/rm/list/help/...` passes through to `places` binary; `p`/`p select` both do select+cd *(Feb 28)*
@@ -16,6 +23,50 @@
 ---
 
 ## 2026-03-01
+
+### Path separator normalization
+
+All stored paths are normalized to OS-native separators on load via
+`filepath.Clean()`. On Windows, forward slashes are converted to backslashes.
+Existing paths with mixed separators are fixed automatically on the next save.
+
+### Relative path resolution
+
+`places add name .` and similar relative paths are now resolved to absolute
+paths via `filepath.Abs()` before saving. Previously `.` was stored literally.
+
+### Select sorted by recent use
+
+`places select` now shows places sorted by most recently used first, with
+never-used places at the bottom (sorted alphabetically). `places list` remains
+alphabetical.
+
+### Usage stats
+
+`places stats` shows a quick summary:
+
+```
+Places: 5
+Total uses: 15
+Most used: notify (12 uses)
+Least used: eco (0 uses)
+```
+
+### Rename command
+
+`places rename <old> <new>` (alias: `mv`) renames a saved place while
+preserving all statistics (added_at, use_count, last_used_at).
+
+### Path validation
+
+`places list` and `places select` now check if each saved path still exists on
+disk. Missing directories are flagged with `[missing!]` in the output.
+
+### Auto-name on add
+
+`places add` without a name argument derives the name from the current
+directory's basename. E.g. running `places add` in `/cli_tools/notify` saves it
+as `notify`.
 
 ### cmd.exe support
 

@@ -102,6 +102,11 @@ func Load() (Config, error) {
 		Save(cfg)
 	}
 
+	// Normalize path separators to OS convention.
+	for _, place := range cfg.Places {
+		place.Path = filepath.Clean(place.Path)
+	}
+
 	return cfg, nil
 }
 
