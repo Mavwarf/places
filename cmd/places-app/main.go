@@ -40,17 +40,20 @@ func main() {
 
 	a := &App{port: port}
 
+	go runTray(a)
+
 	loader := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.Write([]byte(`<!DOCTYPE html><html><body style="background:#1a1b26"></body></html>`))
 	})
 
 	err := wails.Run(&options.App{
-		Title:     "places dashboard",
-		Width:     900,
-		Height:    600,
-		MinWidth:  700,
-		MinHeight: 400,
+		Title:             "places dashboard",
+		Width:             900,
+		Height:            600,
+		MinWidth:          700,
+		MinHeight:         400,
+		HideWindowOnClose: true,
 		AssetServer: &assetserver.Options{
 			Handler: loader,
 		},

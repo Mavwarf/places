@@ -20,3 +20,8 @@ func (a *App) startup(ctx context.Context) {
 }
 
 func (a *App) shutdown(ctx context.Context) {}
+
+// ShowWindow makes the Wails window visible (used by the tray icon).
+func (a *App) ShowWindow() {
+	wailsRuntime.WindowShow(a.ctx)
+}

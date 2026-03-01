@@ -68,6 +68,17 @@ The place list can be sorted by name, most used, last used, or date added.
 
 You can also add and remove places from the app. Changes are shared with the CLI (same `places.json`).
 
+### System Tray
+
+The desktop app lives in the system tray. Closing the window hides it to the tray instead of exiting — the app stays running for quick access.
+
+- **Double-click** the tray icon to reopen the dashboard
+- **Right-click** for the context menu:
+  - **Open Dashboard** — show the main window
+  - **Place submenus** — each saved place has PowerShell, Claude, cmd, and Explorer actions
+  - **Refresh** — reload places from config
+  - **Quit** — fully exit the app
+
 ### Build
 
 ```
