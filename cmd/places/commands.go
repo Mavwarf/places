@@ -1,14 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -162,41 +160,25 @@ func cmdSelect() {
 	// Sort by most recently used for select.
 	names := sortedByRecent(cfg)
 
-	// Find max name length for alignment.
-	maxLen := 0
-	for _, name := range names {
-		if len(name) > maxLen {
-			maxLen = len(name)
-		}
-	}
-
-	// Print menu to stderr (stdout is reserved for the selected path).
+	// Build items for interactive selector.
+	items := make([]selectItem, len(names))
 	for i, name := range names {
 		warning := ""
 		if _, err := os.Stat(cfg.Places[name].Path); err != nil {
-			warning = fmt.Sprintf(" %s[missing!]%s", colorYellow, colorReset)
+			warning = "[missing!]"
 		}
-		fmt.Fprintf(os.Stderr, "  %d) %s%-*s%s  %s%s%s%s\n", i+1, colorGreen, maxLen, name, colorReset, colorCyan, cfg.Places[name].Path, colorReset, warning)
+		items[i] = selectItem{Name: name, Path: cfg.Places[name].Path, Warning: warning}
 	}
-	fmt.Fprintf(os.Stderr, "Select [1-%d, x=exit]: ", len(names))
 
-	reader := bufio.NewReader(os.Stdin)
-	line, err := reader.ReadString('\n')
+	idx, ok, err := runInteractiveSelect(items)
 	if err != nil {
+		fatal("failed to enable interactive mode: %v", err)
+	}
+	if !ok {
 		os.Exit(1)
 	}
 
-	input := strings.TrimSpace(line)
-	if strings.EqualFold(input, "x") || (len(input) > 0 && input[0] == 0x1B) {
-		os.Exit(1)
-	}
-
-	choice, err := strconv.Atoi(input)
-	if err != nil || choice < 1 || choice > len(names) {
-		fatal("invalid selection")
-	}
-
-	selected := cfg.Places[names[choice-1]]
+	selected := cfg.Places[names[idx]]
 	config.RecordUse(selected)
 	config.Save(cfg)
 
