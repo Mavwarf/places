@@ -43,17 +43,17 @@
 
 ## Tech Debt
 
-- [ ] **`config.Save()` errors ignored** — `cmdGo()` and `cmdSelect()` don't check the return value, use-count updates can fail silently
+- [x] ~~**`config.Save()` errors ignored**~~ — added error checks in `cmdGo()` and `cmdSelect()` *(Mar 1)*
+- [x] ~~**Missing path validation in `handleAdd()`**~~ — desktop app now checks path exists and is a directory *(Mar 1)*
+- [x] ~~**Unquoted path in cmd launch**~~ — `app.go` and `tray.go` now quote paths in `cd /d` *(Mar 1)*
+- [x] ~~**No HTTP client timeout in `waitForServer()`**~~ — added 200ms client timeout *(Mar 1)*
+- [x] ~~**Inconsistent error formatting**~~ — `shellhook.go` now uses `fatal()` helper *(Mar 1)*
+- [x] ~~**Silent tray menu failure**~~ — `addPlaceMenus()` now shows disabled error item in tray *(Mar 1)*
 - [ ] **Duplicate `jsonPlace` struct** — defined in both `commands.go` and `internal/app/app.go` (app version has extra `Exists` field)
 - [ ] **Terminal launch commands duplicated 3x** — PowerShell/cmd/Claude/Explorer launch logic copy-pasted across `commands.go`, `internal/app/app.go`, and `cmd/places-app/tray.go`; extract to `internal/launcher` package
 - [ ] **Sorting logic duplicated** — `sortedNames()` in `commands.go` vs inline sort in `tray.go`
 - [ ] **`fuzzyFind()` doesn't distinguish "not found" from "ambiguous"** — returns nil for both; user sees `unknown place "a"` when multiple matches exist
-- [ ] **Missing path validation in `handleAdd()`** — desktop app doesn't check if path exists or is a directory, unlike `cmdAdd()`
-- [ ] **Unquoted path in cmd launch** — `app.go` uses `cd /d %s` without quotes, breaks on paths with spaces
-- [ ] **No HTTP client timeout in `waitForServer()`** — individual `http.Get()` calls could hang
 - [ ] **Hardcoded port 8822** — not configurable via env var or flag
-- [ ] **Inconsistent error formatting** — `shellhook.go` uses `fmt.Fprintf + os.Exit(1)` instead of the `fatal()` helper
-- [ ] **Silent tray menu failure** — `addPlaceMenus()` returns silently if config fails to load
 
 ## Improvements
 

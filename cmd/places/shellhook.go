@@ -226,8 +226,7 @@ func shellHookCmd(args []string) {
 	}
 
 	if len(rest) == 0 {
-		fmt.Fprintf(os.Stderr, "Usage: places shell-hook <install|uninstall> [--shell bash|zsh|powershell|cmd]\n")
-		os.Exit(1)
+		fatal("Usage: places shell-hook <install|uninstall> [--shell bash|zsh|powershell|cmd]")
 	}
 
 	sh := resolveShell(shellOverride)
@@ -238,9 +237,7 @@ func shellHookCmd(args []string) {
 	case "uninstall":
 		shellHookUninstall(sh)
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown shell-hook subcommand: %s\n", rest[0])
-		fmt.Fprintf(os.Stderr, "Usage: places shell-hook <install|uninstall>\n")
-		os.Exit(1)
+		fatal("unknown shell-hook subcommand: %s\nUsage: places shell-hook <install|uninstall>", rest[0])
 	}
 }
 

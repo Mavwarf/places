@@ -78,9 +78,10 @@ func main() {
 
 func waitForServer(port int, timeout time.Duration) error {
 	addr := fmt.Sprintf("http://127.0.0.1:%d/", port)
+	client := &http.Client{Timeout: 200 * time.Millisecond}
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		resp, err := http.Get(addr)
+		resp, err := client.Get(addr)
 		if err == nil {
 			resp.Body.Close()
 			return nil

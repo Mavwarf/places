@@ -141,7 +141,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 			fmt.Sprintf("Set-Location '%s'", place.Path))
 	case "cmd":
 		cmd = exec.Command("cmd", "/c", "start", "", "cmd", "/k",
-			fmt.Sprintf("cd /d %s", place.Path))
+			fmt.Sprintf("cd /d \"%s\"", place.Path))
 	case "claude":
 		cmd = exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
 			fmt.Sprintf("Set-Location '%s'; claude", place.Path))
@@ -208,6 +208,16 @@ func handleAdd(w http.ResponseWriter, r *http.Request) {
 
 	if req.Name == "" || req.Path == "" {
 		http.Error(w, "name and path are required", http.StatusBadRequest)
+		return
+	}
+
+	info, err := os.Stat(req.Path)
+	if err != nil {
+		http.Error(w, "path does not exist", http.StatusBadRequest)
+		return
+	}
+	if !info.IsDir() {
+		http.Error(w, "path is not a directory", http.StatusBadRequest)
 		return
 	}
 

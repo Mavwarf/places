@@ -80,6 +80,8 @@ func onTrayReady(app *App) {
 func addPlaceMenus() {
 	cfg, err := config.Load()
 	if err != nil {
+		item := systray.AddMenuItem("(failed to load places)", "")
+		item.Disable()
 		return
 	}
 
@@ -116,7 +118,7 @@ func openTerminal(path, action string) {
 			fmt.Sprintf("Set-Location '%s'", path))
 	case "cmd":
 		cmd = exec.Command("cmd", "/c", "start", "", "cmd", "/k",
-			fmt.Sprintf("cd /d %s", path))
+			fmt.Sprintf("cd /d \"%s\"", path))
 	case "claude":
 		cmd = exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
 			fmt.Sprintf("Set-Location '%s'; claude", path))

@@ -112,7 +112,9 @@ func cmdGo(name string) {
 	}
 
 	config.RecordUse(place)
-	config.Save(cfg)
+	if err := config.Save(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "places: warning: %v\n", err)
+	}
 
 	// Print path to stdout for the shell wrapper to capture.
 	fmt.Print(place.Path)
@@ -313,7 +315,9 @@ func cmdSelect() {
 
 	selected := cfg.Places[names[idx]]
 	config.RecordUse(selected)
-	config.Save(cfg)
+	if err := config.Save(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "places: warning: %v\n", err)
+	}
 
 	// Print selected path to stdout for shell wrapper to capture.
 	fmt.Print(selected.Path)
