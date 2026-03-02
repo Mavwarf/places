@@ -44,6 +44,9 @@
 - [ ] **Custom actions** — user-defined commands per place or globally, beyond the built-in PS/cmd/Claude/Explorer
 - [ ] **Frecency sorting** — combine frequency + recency into a single score for smarter ordering in select and app
 - [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
+- [ ] **Inline editing in dashboard** — click a place's name or path to edit it inline; rename and path update via API
+- [ ] **Always on top** — dashboard window stays above all other windows
+- [ ] **Drag-and-drop path** — dragging a folder from Explorer onto the add form's path input should fill in the path instead of opening a new window
 - [x] ~~**Open links in default browser** — web links clicked in the dashboard (Wails WebView) now open in the system default browser via `/api/open-url` endpoint~~ *(Mar 2)*
 
 ## Script-Friendly
