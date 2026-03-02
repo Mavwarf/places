@@ -141,6 +141,8 @@ func main() {
 		cmdPrune()
 	case "app":
 		cmdApp()
+	case "action":
+		actionCmd(args[1:])
 	case "edit":
 		editor := ""
 		if len(args) >= 2 {
@@ -187,6 +189,14 @@ Usage:
   places exists <name>         Exit 0 if a place exists, 1 otherwise
   places autostart [on|off]    Enable/disable starting tray app on login (Windows)
   places prune                 Remove places where the directory no longer exists
+  places action add <name>     Define a custom action
+    --label <text>             Short button label (e.g. "WS", "JR", "GD")
+    --cmd <command>            Shell command ({path} and {name} are substituted)
+                               Tip: use 'places edit' for commands with quoted paths
+  places action rm <name>      Remove a custom action (also unassigns from all places)
+  places action list           List all defined actions
+  places action assign <place> <action>    Show action button on a place
+  places action unassign <place> <action>  Hide action button from a place
   places app                   Open the places desktop app
   places edit [editor]         Open places.json in $EDITOR (or specified editor)
   places init                  Set up shell hooks (auto-detects shell, installs all)

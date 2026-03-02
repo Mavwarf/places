@@ -50,6 +50,13 @@ func Lock() { mu.Lock() }
 // Unlock releases the config mutex.
 func Unlock() { mu.Unlock() }
 
+// Action defines a user-created command that can be assigned to places.
+// The Cmd template supports {path} and {name} placeholders.
+type Action struct {
+	Label string `json:"label"` // short button text (e.g. "git", "JB")
+	Cmd   string `json:"cmd"`   // shell command template with {path} and {name}
+}
+
 // Place holds a bookmarked directory with usage statistics.
 type Place struct {
 	Path       string    `json:"path"`
@@ -59,11 +66,13 @@ type Place struct {
 	Tags       []string  `json:"tags,omitempty"`
 	Favorite   bool      `json:"favorite,omitempty"`
 	Desktop    int       `json:"desktop,omitempty"`
+	Actions    []string  `json:"actions,omitempty"` // names of assigned custom actions
 }
 
-// Config holds the saved places.
+// Config holds the saved places and custom actions.
 type Config struct {
-	Places map[string]*Place `json:"places"`
+	Actions map[string]*Action `json:"actions,omitempty"`
+	Places  map[string]*Place  `json:"places"`
 }
 
 // configDir returns the directory for places config files.
@@ -98,7 +107,7 @@ func Load() (Config, error) {
 	data, err := os.ReadFile(p)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return Config{Places: make(map[string]*Place)}, nil
+			return Config{Places: make(map[string]*Place), Actions: make(map[string]*Action)}, nil
 		}
 		return Config{}, fmt.Errorf("reading config: %w", err)
 	}
@@ -115,6 +124,9 @@ func Load() (Config, error) {
 	// deserializes with all zero values — we detect this by checking for empty Path.
 	if cfg.Places == nil {
 		cfg.Places = make(map[string]*Place)
+	}
+	if cfg.Actions == nil {
+		cfg.Actions = make(map[string]*Action)
 	}
 	needsMigration := false
 	for _, place := range cfg.Places {
@@ -259,6 +271,42 @@ func RemoveTag(place *Place, tag string) bool {
 		}
 	}
 	return false
+}
+
+// AddAction adds an action name to a place's action list (deduplicated, sorted).
+func AddAction(place *Place, actionName string) {
+	for _, a := range place.Actions {
+		if a == actionName {
+			return
+		}
+	}
+	place.Actions = append(place.Actions, actionName)
+	sort.Strings(place.Actions)
+}
+
+// RemoveAction removes an action name from a place's action list.
+// Returns true if the action was found and removed.
+func RemoveAction(place *Place, actionName string) bool {
+	for i, a := range place.Actions {
+		if a == actionName {
+			place.Actions = append(place.Actions[:i], place.Actions[i+1:]...)
+			if len(place.Actions) == 0 {
+				place.Actions = nil
+			}
+			return true
+		}
+	}
+	return false
+}
+
+// SortedActionNames returns action names from cfg.Actions sorted alphabetically.
+func SortedActionNames(cfg Config) []string {
+	names := make([]string, 0, len(cfg.Actions))
+	for name := range cfg.Actions {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 // AllTags returns all unique tags across all places, sorted alphabetically.

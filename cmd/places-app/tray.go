@@ -103,6 +103,24 @@ func addPlaceMenus() {
 		placeName := name
 		parent := systray.AddMenuItem(name, path)
 
+		// Custom actions assigned to this place (shown first).
+		for _, actionName := range place.Actions {
+			act, ok := cfg.Actions[actionName]
+			if !ok {
+				continue
+			}
+			label := act.Label
+			cmdTpl := act.Cmd
+			aName := actionName
+			mAction := parent.AddSubMenuItem(label, "Custom: "+aName)
+			mAction.Click(func() {
+				recordTrayUse(placeName)
+				launcher.SwitchDesktop(desk)
+				expanded := launcher.ExpandAction(cmdTpl, path, placeName)
+				launcher.Detach(launcher.Shell(expanded))
+			})
+		}
+
 		mPS := parent.AddSubMenuItem("PowerShell", "Open PowerShell here")
 		mPS.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.PowerShell(path)) })
 

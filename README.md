@@ -39,10 +39,51 @@ p shell <name>           # Open a new terminal at a place (no hook needed)
 p where                  # Print the place name for the current directory
 p exists <name>          # Exit 0 if a place exists, 1 otherwise (for scripts)
 p prune                  # Remove places where the directory no longer exists
+p action add <name>      # Define a custom action (--label, --cmd required)
+p action rm <name>       # Remove a custom action
+p action list            # List all defined actions
+p action assign <p> <a>  # Show action button on a place
+p action unassign <p> <a> # Hide action button from a place
 p autostart [on|off]     # Enable/disable starting tray app on login (Windows)
 p edit [editor]          # Open places.json in $EDITOR or specified editor
 p init                   # One-command setup (installs shell hooks)
 p help                   # Show help
+```
+
+### Custom Actions
+
+Define reusable shell commands and assign them to specific places. Custom action buttons appear in the desktop app and system tray alongside the built-in buttons, only on places they're assigned to.
+
+`{path}` is replaced with the place's directory, `{name}` with the place's shortcut name. On Windows, commands run via `cmd /c`; on Unix, via `sh -c`. GUI apps need `start ""` on Windows to launch properly.
+
+```
+p action list                    # List all defined actions
+p action assign api rider        # Show "rider" button on "api" place
+p action unassign api rider      # Remove it
+p action rm rider                # Delete action (also unassigns from all places)
+```
+
+**Adding actions:** PowerShell mangles embedded quotes when passing them to external programs. The easiest way to define actions with complex commands is to edit `places.json` directly (`p edit`). The `actions` section uses this format:
+
+```json
+{
+  "actions": {
+    "rider": {
+      "label": "JR",
+      "cmd": "start \"\" \"C:\\Program Files\\JetBrains\\Rider\\bin\\rider64.exe\" \"{path}\""
+    },
+    "godot": {
+      "label": "GD",
+      "cmd": "start \"\" \"C:\\dev\\tools\\godot\\4.6.1\\Godot_v4.6.1-stable_win64.exe\" -e --path \"{path}\""
+    }
+  }
+}
+```
+
+For simple commands without spaces in paths, the CLI works fine:
+
+```
+p action add mytest --label "T" --cmd "echo {name} at {path}"
 ```
 
 ### Example
@@ -253,6 +294,12 @@ Places are stored in `~/.config/places/places.json` with usage statistics:
 
 ```json
 {
+  "actions": {
+    "git": {
+      "label": "git",
+      "cmd": "cmd /c start powershell -NoExit -Command \"Set-Location '{path}'; git status\""
+    }
+  },
   "places": {
     "api": {
       "path": "/home/user/projects/api",
@@ -260,7 +307,8 @@ Places are stored in `~/.config/places/places.json` with usage statistics:
       "use_count": 5,
       "last_used_at": "2026-03-01T14:10:42+01:00",
       "tags": ["backend", "work"],
-      "desktop": 2
+      "desktop": 2,
+      "actions": ["git"]
     }
   }
 }

@@ -80,6 +80,12 @@ func Code(path string) *exec.Cmd {
 	return exec.Command("code", path)
 }
 
+// ExpandAction replaces {path} and {name} placeholders in a command template.
+func ExpandAction(cmdTpl, path, name string) string {
+	s := strings.ReplaceAll(cmdTpl, "{path}", path)
+	return strings.ReplaceAll(s, "{name}", name)
+}
+
 // SwitchDesktop switches to the given virtual desktop before launching.
 // Does nothing if n <= 0 or if the DLL is unavailable.
 func SwitchDesktop(n int) {

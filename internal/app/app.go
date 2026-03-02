@@ -39,6 +39,12 @@ type jsonPlace struct {
 	Tags       []string `json:"tags,omitempty"`
 	Favorite   bool     `json:"favorite,omitempty"`
 	Desktop    int      `json:"desktop,omitempty"`
+	Actions    []string `json:"actions,omitempty"`
+}
+
+type actionAssignReq struct {
+	Name   string `json:"name"`   // place name
+	Action string `json:"action"` // action name
 }
 
 type openReq struct {
@@ -94,6 +100,10 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 	mux.HandleFunc("/api/desktop", handleDesktop)
 	mux.HandleFunc("/api/switch-desktop", handleSwitchDesktop)
 	mux.HandleFunc("/api/open-url", handleOpenURL)
+	mux.HandleFunc("/api/actions", handleActions)
+	mux.HandleFunc("/api/run-action", handleRunAction)
+	mux.HandleFunc("/api/action-assign", handleActionAssign)
+	mux.HandleFunc("/api/action-unassign", handleActionUnassign)
 	if showFn != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
@@ -209,7 +219,8 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-// handlePlaces returns the full list of places as JSON.
+// handlePlaces returns the full list of places and action definitions as JSON.
+// Response format: {"places": [...], "actions": {"name": {"label": "...", "cmd": "..."}}}
 // No config.Lock needed — this is a read-only endpoint with no modify-save cycle.
 func handlePlaces(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Load()
@@ -232,6 +243,7 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 			Tags:     p.Tags,
 			Favorite: p.Favorite,
 			Desktop:  p.Desktop,
+			Actions:  p.Actions,
 		}
 		if !p.LastUsedAt.IsZero() {
 			jp.LastUsedAt = p.LastUsedAt.Format(time.RFC3339)
@@ -240,7 +252,10 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(places)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"places":  places,
+		"actions": cfg.Actions,
+	})
 }
 
 // handleOpen launches an application (PowerShell, cmd, Claude, Code, Explorer)
@@ -598,6 +613,158 @@ func handleOpenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	go cmd.Wait()
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleActions returns all defined custom actions as JSON.
+func handleActions(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(cfg.Actions)
+}
+
+// handleRunAction executes a custom action for a place.
+// Uses manual Lock/Unlock to release the lock before launching the process.
+func handleRunAction(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req actionAssignReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	cfg, err := config.Load()
+	if err != nil {
+		config.Unlock()
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		config.Unlock()
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+
+	action, ok := cfg.Actions[req.Action]
+	if !ok {
+		config.Unlock()
+		http.Error(w, "action not found", http.StatusNotFound)
+		return
+	}
+
+	config.RecordUse(place)
+	if err := config.Save(cfg); err != nil {
+		config.Unlock()
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+	path := place.Path
+	name := req.Name
+	desk := place.Desktop
+	cmdTpl := action.Cmd
+	config.Unlock()
+
+	launcher.SwitchDesktop(desk)
+
+	expanded := launcher.ExpandAction(cmdTpl, path, name)
+	cmd := launcher.Shell(expanded)
+	if err := launcher.Detach(cmd); err != nil {
+		http.Error(w, "failed to launch action", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleActionAssign assigns a custom action to a place.
+func handleActionAssign(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req actionAssignReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	defer config.Unlock()
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+
+	if _, ok := cfg.Actions[req.Action]; !ok {
+		http.Error(w, "action not found", http.StatusNotFound)
+		return
+	}
+
+	config.AddAction(place, req.Action)
+
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleActionUnassign removes a custom action from a place.
+func handleActionUnassign(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req actionAssignReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	defer config.Unlock()
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+
+	config.RemoveAction(place, req.Action)
+
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 

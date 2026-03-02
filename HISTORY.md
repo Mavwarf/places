@@ -2,6 +2,8 @@
 
 ## Features
 
+- Custom actions — define global actions with shell command templates, assign them to individual places; buttons appear in the dashboard and system tray alongside built-in actions; `{path}` and `{name}` placeholders expanded at runtime; Windows uses `SysProcAttr.CmdLine` to bypass Go's quote escaping for `cmd /c` *(Mar 2)*
+- Code comments — added documentation across all 16 source files covering Windows APIs, ANSI escapes, platform-specific patterns, concurrency model, and architectural decisions *(Mar 2)*
 - Drag-and-drop path — drag a folder from Explorer onto the dashboard to fill in the add form's path input *(Mar 2)*
 - Always on top — pin button in the dashboard header toggles the window to stay above all other windows; state persists across restarts via localStorage *(Mar 2)*
 - Claude tab title — launching Claude from the dashboard or tray sets the terminal tab title to "Claude Code - \<name\>"; uses Windows Terminal `--suppressApplicationTitle` to prevent override *(Mar 2)*
@@ -40,6 +42,50 @@
 ---
 
 ## 2026-03-02
+
+### Custom actions
+
+Define reusable shell command templates and assign them to specific places.
+Custom action buttons appear alongside the built-in PS/cl/VS/>_/dir buttons —
+only on places they're assigned to.
+
+- CLI: `places action add/rm/list/assign/unassign` subcommands
+- Config: `Action` struct with `label` and `cmd` fields; `Place.Actions` list
+- Templates: `{path}` expands to the place directory, `{name}` to the place name
+- Dashboard: custom action buttons per place (left of built-in buttons),
+  "+" dropdown to assign actions
+- System tray: custom action submenu items per place
+- Execution: platform-specific `launcher.Shell()` — Windows uses
+  `SysProcAttr.CmdLine` to pass commands raw to `cmd /c`, bypassing Go's
+  argument escaping that breaks embedded quotes; Unix uses `sh -c`
+- GUI apps on Windows need `start ""` prefix to launch from the background
+- PowerShell mangles embedded quotes in `--cmd` values — use `p edit` to
+  define actions with complex commands directly in `places.json`
+
+Example (`places.json`):
+```json
+{
+  "rider": { "label": "JR", "cmd": "start \"\" \"C:\\Program Files\\JetBrains\\Rider\\bin\\rider64.exe\" \"{path}\"" },
+  "godot": { "label": "GD", "cmd": "start \"\" \"path\\to\\godot.exe\" -e --path \"{path}\"" }
+}
+```
+
+### Code comments
+
+Added comments across all 16 Go source files so a new contributor can understand
+the codebase without prior context. Focus areas:
+
+- **Windows APIs** — `ReadConsoleInputW` vs `os.Stdin.Read`, `SetWindowPos` z-order
+  constants, `RegisterHotKey` + `GetMessageW` threading, `DETACH_PROCESS` flag,
+  `FreeConsole`, ICO file format for `SetIcon`
+- **Unix terminal** — termios `ICANON`/`ECHO` flags, VT100 escape sequence parsing
+- **ANSI escapes** — cursor hide/show (`DECTCEM`), line clear, color codes in selector
+- **Concurrency** — `config.Lock/Unlock` for read-modify-write cycles, manual unlock
+  in `handleOpen` to avoid holding the lock during process launch, `runtime.LockOSThread`
+  for Windows message loops
+- **Architecture** — shell hook marker strategy, cmd.exe temp file workaround,
+  Wails HTTP redirect + `BindingsAllowedOrigins`, `originGuard` CSRF protection,
+  atomic config save via temp+rename, VirtualDesktopAccessor 0/1 indexing
 
 ### Drag-and-drop path
 

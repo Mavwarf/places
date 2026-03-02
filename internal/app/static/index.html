@@ -158,6 +158,38 @@ button:active { opacity: 0.7; }
 .btn-browse:hover { color: var(--accent); border-color: var(--accent); }
 .btn-rm { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 4px 10px; font-size: 0.75em; }
 .btn-rm:hover { background: var(--red); color: var(--bg); }
+.btn-custom { background: color-mix(in srgb, var(--cyan) 15%, var(--bg2)); color: var(--cyan); border: 1px solid color-mix(in srgb, var(--cyan) 40%, transparent); padding: 4px 10px; font-size: 0.75em; }
+.btn-custom:hover { background: var(--cyan); color: var(--bg); }
+.btn-assign-action {
+  background: transparent;
+  color: var(--fg-dim);
+  border: 1px dashed var(--border);
+  padding: 4px 8px;
+  font-size: 0.75em;
+  cursor: pointer;
+  position: relative;
+}
+.btn-assign-action:hover { color: var(--accent); border-color: var(--accent); }
+.action-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 0;
+  z-index: 50;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.action-dropdown-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.8em;
+  color: var(--fg);
+  white-space: nowrap;
+}
+.action-dropdown-item:hover { background: var(--bg3); color: var(--accent); }
 
 /* Sort bar */
 .sort-bar {
@@ -475,6 +507,8 @@ themeToggle.addEventListener('click', function() {
 let currentSort = 'last_used';
 let activeTag = '';
 let favFilter = false;
+let actionDefs = {};  // global action definitions from server
+var lastPlacesData = [];  // cached place data for dropdown lookups
 
 function setSort(key) {
   currentSort = key;
@@ -508,7 +542,10 @@ async function load() {
   const tagBar = document.getElementById('tag-bar');
   try {
     const res = await fetch('/api/places');
-    let places = await res.json();
+    const data = await res.json();
+    actionDefs = data.actions || {};
+    let places = data.places || [];
+    lastPlacesData = places;
     if (!places.length) {
       tagBar.innerHTML = '';
       el.innerHTML = '<div class="empty-state">No places saved yet.<br>Add one above or use <code>places add &lt;name&gt;</code> from the CLI.</div>';
@@ -564,6 +601,8 @@ async function load() {
         <span class="place-stats">${p.use_count}x${p.last_used_at ? ' \u00b7 ' + timeAgo(p.last_used_at) : ''}</span>
         <div class="place-actions">
           ${p.exists ? `
+            ${renderCustomActions(p)}
+            ${renderAssignBtn(p)}
             <button class="btn-ps" onclick="openAt('${esc(p.name)}','powershell')" title="Open PowerShell here">PS</button>
             <button class="btn-claude" onclick="openAt('${esc(p.name)}','claude')" title="Open Claude Code here">cl</button>
             <button class="btn-code" onclick="openAt('${esc(p.name)}','code')" title="Open in VS Code">VS</button>
@@ -860,6 +899,93 @@ document.addEventListener('keydown', function(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.key === 's' || e.key === 'S') toggleScreenshot();
 });
+
+// Custom actions
+function renderCustomActions(p) {
+  if (!p.actions || !p.actions.length) return '';
+  return p.actions.map(a => {
+    const def = actionDefs[a];
+    if (!def) return '';
+    return `<button class="btn-custom" onclick="runCustomAction('${esc(p.name)}','${esc(a)}')" title="${esc(def.cmd)}">${esc(def.label)}</button>`;
+  }).join('');
+}
+
+function renderAssignBtn(p) {
+  const allNames = Object.keys(actionDefs);
+  if (!allNames.length) return '';
+  const assigned = p.actions || [];
+  const available = allNames.filter(n => !assigned.includes(n));
+  if (!available.length) return '';
+  return `<button class="btn-assign-action" onclick="showActionDropdown(event,'${esc(p.name)}')" title="Assign custom action">+</button>`;
+}
+
+async function runCustomAction(placeName, actionName) {
+  try {
+    const res = await fetch('/api/run-action', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: placeName, action: actionName})
+    });
+    if (res.ok) { load(); }
+    else { toast(await res.text() || 'Failed', true); }
+  } catch (e) { toast('Failed to run action', true); }
+}
+
+function showActionDropdown(e, placeName) {
+  e.stopPropagation();
+  document.querySelectorAll('.action-dropdown').forEach(d => d.remove());
+  const allNames = Object.keys(actionDefs).sort();
+  const btn = e.target;
+  const placeData = lastPlacesData.find(p => p.name === placeName);
+  const assigned = (placeData && placeData.actions) || [];
+  const available = allNames.filter(n => !assigned.includes(n));
+  if (!available.length) return;
+  const dd = document.createElement('div');
+  dd.className = 'action-dropdown';
+  available.forEach(function(name) {
+    const item = document.createElement('div');
+    item.className = 'action-dropdown-item';
+    item.textContent = actionDefs[name].label + ' (' + name + ')';
+    item.onclick = function(ev) {
+      ev.stopPropagation();
+      dd.remove();
+      assignAction(placeName, name);
+    };
+    dd.appendChild(item);
+  });
+  btn.style.position = 'relative';
+  btn.appendChild(dd);
+  setTimeout(function() {
+    document.addEventListener('click', function closeDD() {
+      dd.remove();
+      document.removeEventListener('click', closeDD);
+    }, {once: true});
+  }, 0);
+}
+
+async function assignAction(placeName, actionName) {
+  try {
+    const res = await fetch('/api/action-assign', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: placeName, action: actionName})
+    });
+    if (res.ok) { load(); toast('Action assigned'); }
+    else { toast(await res.text() || 'Failed', true); }
+  } catch (e) { toast('Failed', true); }
+}
+
+async function unassignAction(placeName, actionName) {
+  try {
+    const res = await fetch('/api/action-unassign', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: placeName, action: actionName})
+    });
+    if (res.ok) { load(); toast('Action removed'); }
+    else { toast(await res.text() || 'Failed', true); }
+  } catch (e) { toast('Failed', true); }
+}
 
 function toast(msg, err) {
   const el = document.createElement('div');

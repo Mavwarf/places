@@ -517,6 +517,7 @@ func cmdListJSON(tagFilter string, favOnly bool) {
 		Tags       []string `json:"tags,omitempty"`
 		Favorite   bool     `json:"favorite,omitempty"`
 		Desktop    int      `json:"desktop,omitempty"`
+		Actions    []string `json:"actions,omitempty"`
 	}
 
 	names := config.FilterNames(cfg, config.SortedNames(cfg), tagFilter, favOnly)
@@ -531,6 +532,7 @@ func cmdListJSON(tagFilter string, favOnly bool) {
 			Tags:     p.Tags,
 			Favorite: p.Favorite,
 			Desktop:  p.Desktop,
+			Actions:  p.Actions,
 		}
 		if !p.LastUsedAt.IsZero() {
 			jp.LastUsedAt = p.LastUsedAt.Format(time.RFC3339)
@@ -677,6 +679,185 @@ func cmdTags() {
 		}
 		fmt.Printf("  %s%s%s  %s(%d %s)%s\n", colorGreen, t, colorReset, colorDim, n, unit, colorReset)
 	}
+}
+
+func actionCmd(args []string) {
+	if len(args) == 0 {
+		fatal("Usage: places action <add|rm|list|assign|unassign>")
+	}
+
+	switch args[0] {
+	case "add":
+		name := ""
+		label := ""
+		cmd := ""
+		rest := args[1:]
+		for i := 0; i < len(rest); i++ {
+			switch rest[i] {
+			case "--label":
+				if i+1 < len(rest) {
+					label = rest[i+1]
+					i++
+				} else {
+					fatal("--label requires a value")
+				}
+			case "--cmd":
+				if i+1 < len(rest) {
+					cmd = rest[i+1]
+					i++
+				} else {
+					fatal("--cmd requires a value")
+				}
+			default:
+				if name == "" {
+					name = rest[i]
+				}
+			}
+		}
+		cmdActionAdd(name, label, cmd)
+	case "rm":
+		if len(args) < 2 {
+			fatal("expected: places action rm <name>")
+		}
+		cmdActionRm(args[1])
+	case "list", "ls":
+		cmdActionList()
+	case "assign":
+		if len(args) < 3 {
+			fatal("expected: places action assign <place> <action>")
+		}
+		cmdActionAssign(args[1], args[2])
+	case "unassign":
+		if len(args) < 3 {
+			fatal("expected: places action unassign <place> <action>")
+		}
+		cmdActionUnassign(args[1], args[2])
+	default:
+		fatal("unknown action subcommand: %s\nUsage: places action <add|rm|list|assign|unassign>", args[0])
+	}
+}
+
+func cmdActionAdd(name, label, cmd string) {
+	if name == "" {
+		fatal("expected: places action add <name> --label <label> --cmd <cmd>")
+	}
+	if err := config.ValidateName(name); err != nil {
+		fatal("%v", err)
+	}
+	if label == "" {
+		fatal("--label is required")
+	}
+	if cmd == "" {
+		fatal("--cmd is required")
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	if _, ok := cfg.Actions[name]; ok {
+		fmt.Fprintf(os.Stderr, "Warning: overwriting action %q\n", name)
+	}
+
+	cfg.Actions[name] = &config.Action{Label: label, Cmd: cmd}
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	fmt.Printf("Defined action %q (label=%q)\n", name, label)
+}
+
+func cmdActionRm(name string) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	if _, ok := cfg.Actions[name]; !ok {
+		fatal("unknown action %q", name)
+	}
+
+	delete(cfg.Actions, name)
+
+	// Remove from all places' action lists.
+	for _, place := range cfg.Places {
+		config.RemoveAction(place, name)
+	}
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	fmt.Printf("Removed action %q\n", name)
+}
+
+func cmdActionList() {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	names := config.SortedActionNames(cfg)
+	if len(names) == 0 {
+		fmt.Println("No actions defined. Use 'places action add <name> --label <label> --cmd <cmd>' to define one.")
+		return
+	}
+
+	for _, name := range names {
+		a := cfg.Actions[name]
+		fmt.Printf("  %s%s%s  label=%s%s%s  cmd=%s%s%s\n",
+			colorGreen, name, colorReset,
+			colorCyan, a.Label, colorReset,
+			colorDim, a.Cmd, colorReset)
+	}
+}
+
+func cmdActionAssign(placeName, actionName string) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[placeName]
+	if !ok {
+		fatal("unknown place %q", placeName)
+	}
+
+	if _, ok := cfg.Actions[actionName]; !ok {
+		fatal("unknown action %q", actionName)
+	}
+
+	config.AddAction(place, actionName)
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	fmt.Printf("Assigned action %q to place %q\n", actionName, placeName)
+}
+
+func cmdActionUnassign(placeName, actionName string) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[placeName]
+	if !ok {
+		fatal("unknown place %q", placeName)
+	}
+
+	if !config.RemoveAction(place, actionName) {
+		fatal("action %q is not assigned to place %q", actionName, placeName)
+	}
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	fmt.Printf("Unassigned action %q from place %q\n", actionName, placeName)
 }
 
 // sortedByRecent returns place names sorted by last used (most recent first),
