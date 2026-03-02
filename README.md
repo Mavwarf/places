@@ -52,7 +52,7 @@ p help                   # Show help
 
 ### Custom Actions
 
-Define reusable shell commands and assign them to specific places. Custom action buttons appear in the desktop app and system tray alongside the built-in buttons, only on places they're assigned to.
+Define reusable shell commands and assign them to specific places. Custom action buttons appear in the desktop app and system tray alongside the built-in buttons, only on places they're assigned to. Right-click a custom action button in the dashboard to unassign it from that place.
 
 `{path}` is replaced with the place's directory, `{name}` with the place's shortcut name. On Windows, commands run via `cmd /c`; on Unix, via `sh -c`. GUI apps need `start ""` on Windows to launch properly.
 

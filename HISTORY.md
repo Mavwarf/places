@@ -2,7 +2,7 @@
 
 ## Features
 
-- Custom actions — define global actions with shell command templates, assign them to individual places; buttons appear in the dashboard and system tray alongside built-in actions; `{path}` and `{name}` placeholders expanded at runtime; Windows uses `SysProcAttr.CmdLine` to bypass Go's quote escaping for `cmd /c` *(Mar 2)*
+- Custom actions — define global actions with shell command templates, assign them to individual places; buttons appear in the dashboard and system tray alongside built-in actions; right-click a custom action button to unassign it from that place; `{path}` and `{name}` placeholders expanded at runtime; Windows uses `SysProcAttr.CmdLine` to bypass Go's quote escaping for `cmd /c` *(Mar 2)*
 - Code comments — added documentation across all 16 source files covering Windows APIs, ANSI escapes, platform-specific patterns, concurrency model, and architectural decisions *(Mar 2)*
 - Drag-and-drop path — drag a folder from Explorer onto the dashboard to fill in the add form's path input *(Mar 2)*
 - Always on top — pin button in the dashboard header toggles the window to stay above all other windows; state persists across restarts via localStorage *(Mar 2)*
@@ -53,7 +53,8 @@ only on places they're assigned to.
 - Config: `Action` struct with `label` and `cmd` fields; `Place.Actions` list
 - Templates: `{path}` expands to the place directory, `{name}` to the place name
 - Dashboard: custom action buttons per place (left of built-in buttons),
-  "+" dropdown to assign actions
+  "+" dropdown to assign actions, right-click a custom action button to
+  unassign it from that place
 - System tray: custom action submenu items per place
 - Execution: platform-specific `launcher.Shell()` — Windows uses
   `SysProcAttr.CmdLine` to pass commands raw to `cmd /c`, bypassing Go's

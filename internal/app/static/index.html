@@ -906,7 +906,7 @@ function renderCustomActions(p) {
   return p.actions.map(a => {
     const def = actionDefs[a];
     if (!def) return '';
-    return `<button class="btn-custom" onclick="runCustomAction('${esc(p.name)}','${esc(a)}')" title="${esc(def.cmd)}">${esc(def.label)}</button>`;
+    return `<button class="btn-custom" onclick="runCustomAction('${esc(p.name)}','${esc(a)}')" oncontextmenu="confirmUnassign(event,'${esc(p.name)}','${esc(a)}')" title="${esc(def.cmd)} (right-click to remove)">${esc(def.label)}</button>`;
   }).join('');
 }
 
@@ -985,6 +985,13 @@ async function unassignAction(placeName, actionName) {
     if (res.ok) { load(); toast('Action removed'); }
     else { toast(await res.text() || 'Failed', true); }
   } catch (e) { toast('Failed', true); }
+}
+
+function confirmUnassign(e, placeName, actionName) {
+  e.preventDefault();
+  if (confirm(`Remove "${actionName}" from "${placeName}"?`)) {
+    unassignAction(placeName, actionName);
+  }
 }
 
 function toast(msg, err) {
