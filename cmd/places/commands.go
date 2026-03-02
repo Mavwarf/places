@@ -142,7 +142,11 @@ func cmdList(tagFilter string, favOnly bool) {
 		if p.Favorite {
 			star = fmt.Sprintf("%s★%s ", colorYellow, colorReset)
 		}
-		fmt.Printf("  %s%s%-*s%s  %s%s%s  %s%s%s\n", star, colorGreen, maxLen, name, colorReset, colorCyan, p.Path, colorReset, stats, tagBadge, warning)
+		deskBadge := ""
+		if p.Desktop > 0 {
+			deskBadge = fmt.Sprintf(" %s[D%d]%s", colorDim, p.Desktop, colorReset)
+		}
+		fmt.Printf("  %s%s%-*s%s  %s%s%s  %s%s%s%s\n", star, colorGreen, maxLen, name, colorReset, colorCyan, p.Path, colorReset, stats, tagBadge, deskBadge, warning)
 	}
 }
 
@@ -520,6 +524,7 @@ func cmdListJSON(tagFilter string, favOnly bool) {
 		LastUsedAt string   `json:"last_used_at,omitempty"`
 		Tags       []string `json:"tags,omitempty"`
 		Favorite   bool     `json:"favorite,omitempty"`
+		Desktop    int      `json:"desktop,omitempty"`
 	}
 
 	names := config.SortedNames(cfg)
@@ -550,6 +555,7 @@ func cmdListJSON(tagFilter string, favOnly bool) {
 			AddedAt:  p.AddedAt.Format(time.RFC3339),
 			Tags:     p.Tags,
 			Favorite: p.Favorite,
+			Desktop:  p.Desktop,
 		}
 		if !p.LastUsedAt.IsZero() {
 			jp.LastUsedAt = p.LastUsedAt.Format(time.RFC3339)
@@ -560,6 +566,30 @@ func cmdListJSON(tagFilter string, favOnly bool) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	enc.Encode(places)
+}
+
+func cmdDesktop(name string, n int) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[name]
+	if !ok {
+		fatal("unknown place %q", name)
+	}
+
+	place.Desktop = n
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	if n == 0 {
+		fmt.Printf("Cleared desktop for %q\n", name)
+	} else {
+		fmt.Printf("Set %q to desktop %d\n", name, n)
+	}
 }
 
 func cmdFav(name string) {

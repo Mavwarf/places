@@ -267,6 +267,19 @@ button:active { opacity: 0.7; }
 }
 .btn-fav.active { color: var(--yellow); }
 .btn-fav:hover { opacity: 0.8; }
+.desktop-select {
+  font-family: var(--font);
+  font-size: 0.7em;
+  padding: 2px 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--fg-dim);
+  cursor: pointer;
+  outline: none;
+}
+.desktop-select:hover { border-color: var(--accent); }
+.desktop-select:focus { border-color: var(--accent); }
 
 .tag-bar {
   display: flex;
@@ -518,6 +531,13 @@ async function load() {
       return `
       <div class="place-row">
         <button class="btn-fav${p.favorite ? ' active' : ''}" onclick="toggleFav('${esc(p.name)}',${!p.favorite})" title="${p.favorite ? 'Unfavorite' : 'Favorite'}">${p.favorite ? '\u2605' : '\u2606'}</button>
+        <select class="desktop-select" onchange="setDesktop('${esc(p.name)}',parseInt(this.value))" title="Virtual desktop">
+          <option value="0"${p.desktop ? '' : ' selected'}>\u2014</option>
+          <option value="1"${p.desktop===1 ? ' selected' : ''}>D1</option>
+          <option value="2"${p.desktop===2 ? ' selected' : ''}>D2</option>
+          <option value="3"${p.desktop===3 ? ' selected' : ''}>D3</option>
+          <option value="4"${p.desktop===4 ? ' selected' : ''}>D4</option>
+        </select>
         <span class="place-name">${esc(dName)}</span>
         <span class="place-path" title="${esc(dPath)}">${esc(dPath)}</span>
         <span class="place-tags">
@@ -632,6 +652,18 @@ async function toggleFav(name, favorite) {
     if (res.ok) { load(); }
     else { toast(await res.text() || 'Failed', true); }
   } catch (e) { toast('Failed', true); }
+}
+
+async function setDesktop(name, desktop) {
+  try {
+    const res = await fetch('/api/desktop', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, desktop})
+    });
+    if (res.ok) { toast('Desktop set'); }
+    else { toast(await res.text() || 'Failed', true); load(); }
+  } catch (e) { toast('Failed', true); load(); }
 }
 
 function filterTag(tag) {

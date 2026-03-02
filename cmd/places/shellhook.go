@@ -40,6 +40,7 @@ if /i "%~1"=="untag" goto :passthrough
 if /i "%~1"=="tags" goto :passthrough
 if /i "%~1"=="fav" goto :passthrough
 if /i "%~1"=="unfav" goto :passthrough
+if /i "%~1"=="desktop" goto :passthrough
 
 for /f "delims=" %%d in ('places go "%~1" 2^>nul') do (
     cd /d "%%d"
@@ -76,7 +77,7 @@ p() {
     return
   fi
   case "$1" in
-    add|rm|rename|mv|list|ls|code|shell|autostart|stats|where|exists|prune|app|edit|init|help|shell-hook|tag|untag|tags|fav|unfav)
+    add|rm|rename|mv|list|ls|code|shell|autostart|stats|where|exists|prune|app|edit|init|help|shell-hook|tag|untag|tags|fav|unfav|desktop)
       command places "$@"
       return
       ;;
@@ -100,7 +101,7 @@ function p {
         }
         return
     }
-    $cmds = @('add','rm','rename','mv','list','ls','code','shell','autostart','stats','where','exists','prune','app','edit','init','help','shell-hook','tag','untag','tags','fav','unfav')
+    $cmds = @('add','rm','rename','mv','list','ls','code','shell','autostart','stats','where','exists','prune','app','edit','init','help','shell-hook','tag','untag','tags','fav','unfav','desktop')
     if ($cmds -contains $args[0]) {
         & places @args
         return

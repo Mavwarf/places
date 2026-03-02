@@ -25,6 +25,7 @@ type jsonPlace struct {
 	LastUsedAt string   `json:"last_used_at,omitempty"`
 	Tags       []string `json:"tags,omitempty"`
 	Favorite   bool     `json:"favorite,omitempty"`
+	Desktop    int      `json:"desktop,omitempty"`
 }
 
 type openReq struct {
@@ -48,6 +49,11 @@ type favReq struct {
 	Favorite bool   `json:"favorite"`
 }
 
+type desktopReq struct {
+	Name    string `json:"name"`
+	Desktop int    `json:"desktop"`
+}
+
 type rmReq struct {
 	Name string `json:"name"`
 }
@@ -66,6 +72,7 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 	mux.HandleFunc("/api/tag", handleTag)
 	mux.HandleFunc("/api/untag", handleUntag)
 	mux.HandleFunc("/api/fav", handleFav)
+	mux.HandleFunc("/api/desktop", handleDesktop)
 	if showFn != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
@@ -152,6 +159,7 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 			AddedAt:  p.AddedAt.Format(time.RFC3339),
 			Tags:     p.Tags,
 			Favorite: p.Favorite,
+			Desktop:  p.Desktop,
 		}
 		if !p.LastUsedAt.IsZero() {
 			jp.LastUsedAt = p.LastUsedAt.Format(time.RFC3339)
@@ -209,7 +217,43 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	launcher.SwitchDesktop(place.Desktop)
+
 	if err := launcher.Detach(fn(place.Path)); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func handleDesktop(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req desktopReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+
+	place.Desktop = req.Desktop
+
+	if err := config.Save(cfg); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

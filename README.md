@@ -32,6 +32,7 @@ p untag <name> <tag>     # Remove a tag from a place
 p tags                   # List all tags with place counts
 p stats                  # Show usage summary
 p app                    # Open the desktop app
+p desktop <name> <0-4>   # Set virtual desktop for a place (0 = none)
 p code <name>            # Open a place in VS Code
 p shell <name>           # Open a new terminal at a place (no hook needed)
 p where                  # Print the place name for the current directory
@@ -105,6 +106,8 @@ Favorites show a ★ marker in `p list`. The desktop app has a clickable star to
 - **VS** — open VS Code at that directory
 - **>_** — open cmd.exe at that directory
 - **dir** — open Explorer at that directory
+
+Each place also has a virtual desktop selector (D1–D4). When set, the app switches to that desktop before launching any tool. Uses `VirtualDesktopAccessor.dll` (place it next to `places-app.exe`).
 
 The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, or date added. A ★ filter button in the sort bar shows only favorites. Each place has a clickable star to toggle its favorite status.
 
@@ -251,7 +254,8 @@ Places are stored in `~/.config/places/places.json` with usage statistics:
       "added_at": "2026-03-01T13:50:17+01:00",
       "use_count": 5,
       "last_used_at": "2026-03-01T14:10:42+01:00",
-      "tags": ["backend", "work"]
+      "tags": ["backend", "work"],
+      "desktop": 2
     }
   }
 }

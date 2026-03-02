@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/Mavwarf/places/internal/desktop"
 )
 
 // PowerShell opens a new PowerShell window at the given directory.
@@ -44,6 +46,14 @@ func Explorer(path string) *exec.Cmd {
 // Code opens VS Code at the given directory.
 func Code(path string) *exec.Cmd {
 	return exec.Command("code", path)
+}
+
+// SwitchDesktop switches to the given virtual desktop before launching.
+// Does nothing if n <= 0 or if the DLL is unavailable.
+func SwitchDesktop(n int) {
+	if n > 0 && desktop.Available() {
+		desktop.SwitchTo(n)
+	}
 }
 
 // Detach starts a command and detaches from it (doesn't wait for exit).

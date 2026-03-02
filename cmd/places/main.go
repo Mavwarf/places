@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 // fatal prints an error message to stderr and exits with code 1.
@@ -109,6 +110,15 @@ func main() {
 			fatal("expected: places rename <old> <new>")
 		}
 		cmdRename(args[1], args[2])
+	case "desktop":
+		if len(args) < 3 {
+			fatal("expected: places desktop <name> <0-4>")
+		}
+		n, err := strconv.Atoi(args[2])
+		if err != nil || n < 0 || n > 4 {
+			fatal("desktop must be a number 0-4")
+		}
+		cmdDesktop(args[1], n)
 	case "code":
 		if len(args) < 2 {
 			fatal("expected: places code <name>")
@@ -170,6 +180,7 @@ Usage:
   places rm <name>             Remove a saved place
   places rename <old> <new>    Rename a saved place (alias: mv)
   places stats                 Show usage summary
+  places desktop <name> <0-4>   Set virtual desktop for a place (0 = none)
   places code <name>            Open a place in VS Code
   places shell <name>          Open a new terminal at a place (no hook needed)
   places where                 Print the place name for the current directory
