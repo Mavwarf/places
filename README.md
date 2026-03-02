@@ -136,7 +136,7 @@ Click the theme toggle button (top-right) to cycle through 6 color schemes: Dark
 
 ### Window Controls
 
-The header includes **minimize** (−) and **quit** (×) buttons in the top-right corner. Minimize hides the window; quit fully exits the app. You can also close the window normally to hide to tray (Shift+close to exit).
+The header includes **pin** (📌), **minimize** (−), and **quit** (×) buttons in the top-right corner. Pin toggles always-on-top mode (the window stays above all other windows); the state persists across restarts. Minimize hides the window; quit fully exits the app. You can also close the window normally to hide to tray (Shift+close to exit).
 
 ### System Tray
 

@@ -2,6 +2,7 @@
 
 ## Features
 
+- Always on top — pin button in the dashboard header toggles the window to stay above all other windows; state persists across restarts via localStorage *(Mar 2)*
 - Claude tab title — launching Claude from the dashboard or tray sets the terminal tab title to "Claude Code - \<name\>"; uses Windows Terminal `--suppressApplicationTitle` to prevent override *(Mar 2)*
 - Place name validation — names restricted to letters, numbers, hyphens, underscores, dots (max 64 chars); enforced in CLI and desktop app *(Mar 2)*
 - Stable dashboard sorting — places with equal sort keys (e.g. never-used places sorted by last used) now use alphabetical name as tiebreaker; no more shuffling on auto-refresh *(Mar 2)*
@@ -38,6 +39,19 @@
 ---
 
 ## 2026-03-02
+
+### Always on top
+
+The dashboard header now has a **pin** button (📌) between the theme toggle and
+the minimize button. Clicking it toggles always-on-top mode — the window stays
+above all other windows. Clicking again reverts to normal behavior. The state is
+saved in localStorage, so if you pin the window and restart the app, it
+re-applies automatically on load.
+
+- Windows: `SetWindowPos` with `HWND_TOPMOST` / `HWND_NOTOPMOST`
+- Non-Windows: no-op stub (feature is Windows-only)
+- New `/api/topmost` POST endpoint accepts `{"on_top": true/false}`
+- Pin button uses accent color when active
 
 ### Claude tab title
 

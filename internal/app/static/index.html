@@ -404,6 +404,7 @@ button:active { opacity: 0.7; }
   line-height: 1;
 }
 .win-btn:hover { color: var(--fg); border-color: var(--fg-dim); }
+.win-btn-pin.active { color: var(--accent); border-color: var(--accent); }
 .win-btn-quit:hover { color: var(--red); border-color: var(--red); }
 </style>
 </head>
@@ -413,6 +414,7 @@ button:active { opacity: 0.7; }
   <span class="screenshot-badge" id="screenshot-badge">screenshot</span>
   <button class="theme-toggle" id="theme-toggle" title="Toggle theme"></button>
   <div class="window-controls">
+    <button class="win-btn win-btn-pin" id="pin-btn" onclick="togglePin()" title="Pin on top">&#128204;</button>
     <button class="win-btn" onclick="minimizeWindow()" title="Minimize">&minus;</button>
     <button class="win-btn win-btn-quit" onclick="quitApp()" title="Quit">&times;</button>
   </div>
@@ -730,6 +732,24 @@ async function minimizeWindow() {
 
 async function quitApp() {
   try { await fetch('/api/quit', {method: 'POST'}); } catch(e) {}
+}
+
+// Pin on top
+var pinned = localStorage.getItem('places-pin') === 'on';
+function updatePinBtn() {
+  var btn = document.getElementById('pin-btn');
+  btn.classList.toggle('active', pinned);
+  btn.title = pinned ? 'Unpin from top' : 'Pin on top';
+}
+async function togglePin() {
+  pinned = !pinned;
+  localStorage.setItem('places-pin', pinned ? 'on' : '');
+  updatePinBtn();
+  try { await fetch('/api/topmost', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({on_top:pinned})}); } catch(e) {}
+}
+updatePinBtn();
+if (pinned) {
+  fetch('/api/topmost', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({on_top:true})}).catch(function(){});
 }
 
 document.addEventListener('click', function(e) {

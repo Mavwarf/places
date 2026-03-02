@@ -69,7 +69,7 @@ type rmReq struct {
 // Serve starts the HTTP server on the given port. If showFn is non-nil,
 // a POST /api/show endpoint is registered that calls it (used to bring
 // the existing window to front when a second instance is launched).
-func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn func(), quitFn func()) error {
+func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn func(), quitFn func(), topmostFn func(bool)) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleIndex)
 	mux.HandleFunc("/api/places", handlePlaces)
@@ -129,6 +129,23 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 			}
 			w.WriteHeader(http.StatusNoContent)
 			go quitFn()
+		})
+	}
+	if topmostFn != nil {
+		mux.HandleFunc("/api/topmost", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			var req struct {
+				OnTop bool `json:"on_top"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "bad request", http.StatusBadRequest)
+				return
+			}
+			topmostFn(req.OnTop)
+			w.WriteHeader(http.StatusNoContent)
 		})
 	}
 
