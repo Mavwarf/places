@@ -2,6 +2,8 @@
 
 ## Features
 
+- Notes — attach text descriptions to places (`p note <name> [text]`); shown as inline subtitles in the dashboard; click to edit, hover to add; included in JSON output and import/export *(Mar 2)*
+- Import/Export — `p export` dumps all places and actions as JSON; `p import <file>` merges from file (skip existing); dashboard has Export/Import buttons for one-click backup *(Mar 2)*
 - Custom actions — define global actions with shell command templates, assign them to individual places; buttons appear in the dashboard and system tray alongside built-in actions; right-click a custom action button to unassign it from that place; `{path}` and `{name}` placeholders expanded at runtime; Windows uses `SysProcAttr.CmdLine` to bypass Go's quote escaping for `cmd /c` *(Mar 2)*
 - Code comments — added documentation across all 16 source files covering Windows APIs, ANSI escapes, platform-specific patterns, concurrency model, and architectural decisions *(Mar 2)*
 - Drag-and-drop path — drag a folder from Explorer onto the dashboard to fill in the add form's path input *(Mar 2)*

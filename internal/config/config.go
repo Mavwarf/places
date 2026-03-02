@@ -67,6 +67,7 @@ type Place struct {
 	Favorite   bool      `json:"favorite,omitempty"`
 	Desktop    int       `json:"desktop,omitempty"`
 	Actions    []string  `json:"actions,omitempty"` // names of assigned custom actions
+	Note       string    `json:"note,omitempty"`
 }
 
 // Config holds the saved places and custom actions.

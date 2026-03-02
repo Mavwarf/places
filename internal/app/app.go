@@ -40,6 +40,7 @@ type jsonPlace struct {
 	Favorite   bool     `json:"favorite,omitempty"`
 	Desktop    int      `json:"desktop,omitempty"`
 	Actions    []string `json:"actions,omitempty"`
+	Note       string   `json:"note,omitempty"`
 }
 
 type actionAssignReq struct {
@@ -56,6 +57,7 @@ type addReq struct {
 	Name string   `json:"name"`
 	Path string   `json:"path"`
 	Tags []string `json:"tags,omitempty"`
+	Note string   `json:"note,omitempty"`
 }
 
 type tagReq struct {
@@ -71,6 +73,11 @@ type favReq struct {
 type desktopReq struct {
 	Name    string `json:"name"`
 	Desktop int    `json:"desktop"`
+}
+
+type noteReq struct {
+	Name string `json:"name"`
+	Note string `json:"note"`
 }
 
 type rmReq struct {
@@ -104,6 +111,9 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 	mux.HandleFunc("/api/run-action", handleRunAction)
 	mux.HandleFunc("/api/action-assign", handleActionAssign)
 	mux.HandleFunc("/api/action-unassign", handleActionUnassign)
+	mux.HandleFunc("/api/note", handleNote)
+	mux.HandleFunc("/api/export", handleExport)
+	mux.HandleFunc("/api/import", handleImport)
 	if showFn != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
@@ -244,6 +254,7 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 			Favorite: p.Favorite,
 			Desktop:  p.Desktop,
 			Actions:  p.Actions,
+			Note:     p.Note,
 		}
 		if !p.LastUsedAt.IsZero() {
 			jp.LastUsedAt = p.LastUsedAt.Format(time.RFC3339)
@@ -494,6 +505,7 @@ func handleAdd(w http.ResponseWriter, r *http.Request) {
 	place := &config.Place{
 		Path:    req.Path,
 		AddedAt: time.Now(),
+		Note:    req.Note,
 	}
 	for _, t := range req.Tags {
 		config.AddTag(place, t)
@@ -766,6 +778,128 @@ func handleActionUnassign(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleNote sets or clears a note on a place.
+func handleNote(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req noteReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	defer config.Unlock()
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+
+	place.Note = req.Note
+
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleExport returns the full config as a JSON download.
+func handleExport(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Disposition", `attachment; filename="places-export.json"`)
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	enc.Encode(cfg)
+}
+
+// handleImport merges places and actions from uploaded JSON (skip existing).
+func handleImport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var incoming config.Config
+	if err := json.NewDecoder(r.Body).Decode(&incoming); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	defer config.Unlock()
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+
+	added := 0
+	skipped := 0
+
+	if incoming.Places != nil {
+		for name, place := range incoming.Places {
+			if place == nil {
+				continue
+			}
+			if _, exists := cfg.Places[name]; exists {
+				skipped++
+				continue
+			}
+			cfg.Places[name] = place
+			added++
+		}
+	}
+
+	actionsAdded := 0
+	actionsSkipped := 0
+	if incoming.Actions != nil {
+		for name, action := range incoming.Actions {
+			if action == nil {
+				continue
+			}
+			if _, exists := cfg.Actions[name]; exists {
+				actionsSkipped++
+				continue
+			}
+			cfg.Actions[name] = action
+			actionsAdded++
+		}
+	}
+
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"places_added":    added,
+		"places_skipped":  skipped,
+		"actions_added":   actionsAdded,
+		"actions_skipped": actionsSkipped,
+	})
 }
 
 func handleUntag(w http.ResponseWriter, r *http.Request) {

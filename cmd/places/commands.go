@@ -518,6 +518,7 @@ func cmdListJSON(tagFilter string, favOnly bool) {
 		Favorite   bool     `json:"favorite,omitempty"`
 		Desktop    int      `json:"desktop,omitempty"`
 		Actions    []string `json:"actions,omitempty"`
+		Note       string   `json:"note,omitempty"`
 	}
 
 	names := config.FilterNames(cfg, config.SortedNames(cfg), tagFilter, favOnly)
@@ -533,6 +534,7 @@ func cmdListJSON(tagFilter string, favOnly bool) {
 			Favorite: p.Favorite,
 			Desktop:  p.Desktop,
 			Actions:  p.Actions,
+			Note:     p.Note,
 		}
 		if !p.LastUsedAt.IsZero() {
 			jp.LastUsedAt = p.LastUsedAt.Format(time.RFC3339)
@@ -858,6 +860,111 @@ func cmdActionUnassign(placeName, actionName string) {
 	}
 
 	fmt.Printf("Unassigned action %q from place %q\n", actionName, placeName)
+}
+
+func cmdNote(name string, text string, clear bool) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[name]
+	if !ok {
+		fatal("unknown place %q", name)
+	}
+
+	if clear {
+		place.Note = ""
+		if err := config.Save(cfg); err != nil {
+			fatal("%v", err)
+		}
+		fmt.Printf("Cleared note for %q\n", name)
+		return
+	}
+
+	if text == "" {
+		// Print current note.
+		if place.Note == "" {
+			fmt.Printf("No note for %q\n", name)
+		} else {
+			fmt.Println(place.Note)
+		}
+		return
+	}
+
+	place.Note = text
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+	fmt.Printf("Set note for %q\n", name)
+}
+
+func cmdExport() {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(cfg); err != nil {
+		fatal("encoding export: %v", err)
+	}
+}
+
+func cmdImport(file string) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		fatal("reading import file: %v", err)
+	}
+
+	var incoming config.Config
+	if err := json.Unmarshal(data, &incoming); err != nil {
+		fatal("parsing import file: %v", err)
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	added := 0
+	skipped := 0
+
+	// Merge places (skip existing).
+	for name, place := range incoming.Places {
+		if place == nil {
+			continue
+		}
+		if _, exists := cfg.Places[name]; exists {
+			skipped++
+			continue
+		}
+		cfg.Places[name] = place
+		added++
+	}
+
+	// Merge actions (skip existing).
+	actionsAdded := 0
+	actionsSkipped := 0
+	for name, action := range incoming.Actions {
+		if action == nil {
+			continue
+		}
+		if _, exists := cfg.Actions[name]; exists {
+			actionsSkipped++
+			continue
+		}
+		cfg.Actions[name] = action
+		actionsAdded++
+	}
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "Places:  %d added, %d skipped\n", added, skipped)
+	fmt.Fprintf(os.Stderr, "Actions: %d added, %d skipped\n", actionsAdded, actionsSkipped)
 }
 
 // sortedByRecent returns place names sorted by last used (most recent first),

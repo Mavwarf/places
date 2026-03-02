@@ -326,6 +326,51 @@ button:active { opacity: 0.7; }
 .btn-desktop-go:hover { color: var(--accent); border-color: var(--accent); }
 .btn-desktop-go.visible { display: inline-block; }
 
+/* Note subtitle */
+.place-info { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 1px; }
+.place-note {
+  font-size: 0.75em;
+  color: var(--fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.place-note:hover { color: var(--fg); }
+.place-note-empty {
+  font-size: 0.75em;
+  color: var(--border);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.place-row:hover .place-note-empty { opacity: 1; }
+.place-note-empty:hover { color: var(--fg-dim); }
+.note-input {
+  font-family: var(--font);
+  font-size: 0.75em;
+  padding: 2px 6px;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--fg);
+  outline: none;
+  width: 100%;
+}
+
+/* Import/Export buttons */
+.btn-io {
+  background: transparent;
+  color: var(--fg-dim);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  font-size: 0.85em;
+  font-family: var(--font);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-io:hover { color: var(--accent); border-color: var(--accent); }
+
 .tag-bar {
   display: flex;
   gap: 6px;
@@ -460,6 +505,7 @@ button:active { opacity: 0.7; }
   <input name="path" placeholder="C:\path\to\directory" required autocomplete="off">
   <button type="button" class="btn-browse" onclick="browsePath()" title="Browse for folder">&hellip;</button>
   <input name="tags" placeholder="tags (comma-separated)" autocomplete="off" style="width:160px">
+  <input name="note" placeholder="note (optional)" autocomplete="off" style="width:180px">
   <button type="submit" class="btn-add">Add</button>
 </form>
 
@@ -470,6 +516,10 @@ button:active { opacity: 0.7; }
   <button class="sort-btn active" onclick="setSort('last_used')" id="sort-last_used">Last used</button>
   <button class="sort-btn" onclick="setSort('added')" id="sort-added">Added</button>
   <button class="sort-btn" onclick="toggleFavFilter()" id="filter-fav" title="Show favorites only">&#9733;</button>
+  <span style="flex:1"></span>
+  <button class="btn-io" onclick="exportPlaces()" title="Export places as JSON">Export</button>
+  <button class="btn-io" onclick="importPlaces()" title="Import places from JSON">Import</button>
+  <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImportFile(event)">
 </div>
 
 <div class="tag-bar" id="tag-bar"></div>
@@ -538,6 +588,8 @@ function sortPlaces(places) {
 }
 
 async function load() {
+  // Skip reload while a note input is active to prevent destroying the field mid-edit.
+  if (document.querySelector('.note-input')) return;
   const el = document.getElementById('places');
   const tagBar = document.getElementById('tag-bar');
   try {
@@ -592,7 +644,10 @@ async function load() {
         </select>
         <button class="btn-desktop-go${p.desktop ? ' visible' : ''}" onclick="switchDesktop(${p.desktop || 0})" title="Switch to desktop ${p.desktop || ''}">\u2192</button>
         <span class="place-name">${esc(dName)}</span>
-        <span class="place-path" title="${esc(dPath)}">${esc(dPath)}</span>
+        <div class="place-info">
+          <span class="place-path" title="${esc(dPath)}">${esc(dPath)}</span>
+          ${(function(){ var dn = maskNote(p.name, p.note, p.tags); return dn ? `<span class="place-note" onclick="editNote('${esc(p.name)}',this)" title="Click to edit note">${esc(dn)}</span>` : `<span class="place-note-empty" onclick="editNote('${esc(p.name)}',this)">+ note</span>`; })()}
+        </div>
         <span class="place-tags">
           ${(p.tags || []).map(t => `<span class="badge-tag">${esc(t)}<span class="tag-x" onclick="removeTag('${esc(p.name)}','${esc(t)}')">\u00d7</span></span>`).join('')}
           <button class="btn-add-tag" onclick="promptAddTag('${esc(p.name)}')" title="Add tag">+</button>
@@ -714,11 +769,12 @@ async function addPlace(e) {
   if (!name || !path) return;
   const tagsRaw = form.tags.value.trim();
   const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [];
+  const note = form.note ? form.note.value.trim() : '';
   try {
     const res = await fetch('/api/add', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name, path, tags: tags.length ? tags : undefined})
+      body: JSON.stringify({name, path, tags: tags.length ? tags : undefined, note: note || undefined})
     });
     if (res.ok) {
       form.reset();
@@ -882,6 +938,41 @@ function maskPath(realName, realPath, tags) {
   return 'C:\\dev\\repos\\' + fake;
 }
 
+var notePool = [
+  'Internal API for billing and payments',
+  'Customer-facing web portal',
+  'Infrastructure monitoring service',
+  'Shared component library',
+  'Data ingestion pipeline',
+  'Admin management console',
+  'Authentication gateway',
+  'Real-time analytics engine',
+  'Job scheduling microservice',
+  'E-commerce marketplace backend',
+  'Inventory tracking system',
+  'Self-service developer portal'
+];
+var notePoolIdx = 0;
+(function() {
+  var usedNotes = new Set(Object.values(screenshotMap).map(v => v.note).filter(Boolean));
+  notePoolIdx = notePool.findIndex(n => !usedNotes.has(n));
+  if (notePoolIdx < 0) notePoolIdx = usedNotes.size;
+})();
+
+function maskNote(realName, realNote, tags) {
+  if (!screenshotMode) return realNote;
+  if (!realNote) return realNote;
+  var isWork = (tags || []).includes('work');
+  if (!isWork) return realNote;
+  if (!screenshotMap[realName]) screenshotMap[realName] = {};
+  if (screenshotMap[realName].note) return screenshotMap[realName].note;
+  var fake = notePoolIdx < notePool.length ? notePool[notePoolIdx] : 'Project description ' + (notePoolIdx + 1);
+  notePoolIdx++;
+  screenshotMap[realName].note = fake;
+  localStorage.setItem('places-screenshot-map', JSON.stringify(screenshotMap));
+  return fake;
+}
+
 function updateScreenshotBadge() {
   var badge = document.getElementById('screenshot-badge');
   if (badge) badge.classList.toggle('visible', screenshotMode);
@@ -992,6 +1083,76 @@ function confirmUnassign(e, placeName, actionName) {
   if (confirm(`Remove "${actionName}" from "${placeName}"?`)) {
     unassignAction(placeName, actionName);
   }
+}
+
+// Note inline editing
+function editNote(name, el) {
+  const row = el.closest('.place-row');
+  const placeData = lastPlacesData.find(p => p.name === name);
+  const currentNote = placeData ? (placeData.note || '') : '';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'note-input';
+  input.value = currentNote;
+  input.placeholder = 'Add a note...';
+  el.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let done = false;
+  function finish() { done = true; input.remove(); }
+
+  async function save() {
+    if (done) return;
+    finish();
+    const note = input.value.trim();
+    try {
+      const res = await fetch('/api/note', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, note})
+      });
+      if (res.ok) { load(); }
+      else { toast(await res.text() || 'Failed', true); load(); }
+    } catch (e) { toast('Failed', true); load(); }
+  }
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); save(); }
+    if (e.key === 'Escape') { e.preventDefault(); finish(); load(); }
+  });
+  input.addEventListener('blur', save);
+}
+
+// Export
+function exportPlaces() {
+  window.location.href = '/api/export';
+}
+
+// Import
+function importPlaces() {
+  document.getElementById('import-file').click();
+}
+async function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const res = await fetch('/api/import', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      const result = await res.json();
+      toast(`Imported: ${result.places_added} places, ${result.actions_added} actions added`);
+      load();
+    } else {
+      toast(await res.text() || 'Import failed', true);
+    }
+  } catch (e) { toast('Invalid JSON file', true); }
+  e.target.value = '';
 }
 
 function toast(msg, err) {

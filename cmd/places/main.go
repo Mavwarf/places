@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // fatal prints an error message to stderr and exits with code 1.
@@ -141,6 +142,28 @@ func main() {
 		cmdPrune()
 	case "app":
 		cmdApp()
+	case "note":
+		if len(args) < 2 {
+			fatal("expected: places note <name> [text...]")
+		}
+		name := args[1]
+		clear := false
+		var textParts []string
+		for _, a := range args[2:] {
+			if a == "--rm" {
+				clear = true
+			} else {
+				textParts = append(textParts, a)
+			}
+		}
+		cmdNote(name, strings.Join(textParts, " "), clear)
+	case "export":
+		cmdExport()
+	case "import":
+		if len(args) < 2 {
+			fatal("expected: places import <file>")
+		}
+		cmdImport(args[1])
 	case "action":
 		actionCmd(args[1:])
 	case "edit":
@@ -189,6 +212,9 @@ Usage:
   places exists <name>         Exit 0 if a place exists, 1 otherwise
   places autostart [on|off]    Enable/disable starting tray app on login (Windows)
   places prune                 Remove places where the directory no longer exists
+  places note <name> [text...]  Set a note for a place (omit text to print, --rm to clear)
+  places export                 Export all places and actions as JSON to stdout
+  places import <file>          Import places and actions from a JSON file (skip existing)
   places action add <name>     Define a custom action
     --label <text>             Short button label (e.g. "WS", "JR", "GD")
     --cmd <command>            Shell command ({path} and {name} are substituted)

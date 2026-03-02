@@ -39,6 +39,9 @@ p shell <name>           # Open a new terminal at a place (no hook needed)
 p where                  # Print the place name for the current directory
 p exists <name>          # Exit 0 if a place exists, 1 otherwise (for scripts)
 p prune                  # Remove places where the directory no longer exists
+p note <name> [text...]   # Set a note (omit text to print, --rm to clear)
+p export                 # Export all places and actions as JSON to stdout
+p import <file>          # Import places and actions from JSON (skip existing)
 p action add <name>      # Define a custom action (--label, --cmd required)
 p action rm <name>       # Remove a custom action
 p action list            # List all defined actions
@@ -49,6 +52,32 @@ p edit [editor]          # Open places.json in $EDITOR or specified editor
 p init                   # One-command setup (installs shell hooks)
 p help                   # Show help
 ```
+
+### Notes
+
+Attach a text description to any place. Notes appear as subtitles in the desktop app dashboard.
+
+```
+p note api "billing REST API"   # Set a note
+p note api                      # Print the note
+p note api --rm                 # Clear the note
+p list --json                   # Notes included in JSON output
+```
+
+In the desktop app, click a note to edit it inline (Enter to save, Escape to cancel). Hover over a place without a note to see an "add note" prompt.
+
+### Import/Export
+
+Back up or sync your places and actions across machines:
+
+```
+p export > backup.json          # Export all places + actions to JSON
+p import backup.json            # Import from JSON (skips existing places/actions)
+```
+
+The export format matches `places.json` — it's the same structure, making it trivially round-trippable. Import uses a merge strategy: only places and actions that don't already exist are added.
+
+The desktop app has Export and Import buttons in the sort bar for one-click backup/restore.
 
 ### Custom Actions
 
@@ -148,6 +177,8 @@ Favorites show a ★ marker in `p list`. The desktop app has a clickable star to
 - **VS** — open VS Code at that directory
 - **>_** — open cmd.exe at that directory
 - **dir** — open Explorer at that directory
+
+Places with notes show a muted subtitle below the path. Click a note to edit it inline, or hover over a place without a note to add one. Export and Import buttons in the sort bar allow one-click backup/restore.
 
 Each place also has a virtual desktop selector (D1–D4). When set, the app switches to that desktop before launching any tool. A **→** button next to the selector lets you jump to that desktop without launching anything. Uses `VirtualDesktopAccessor.dll` (place it next to `places-app.exe`).
 
@@ -308,7 +339,8 @@ Places are stored in `~/.config/places/places.json` with usage statistics:
       "last_used_at": "2026-03-01T14:10:42+01:00",
       "tags": ["backend", "work"],
       "desktop": 2,
-      "actions": ["git"]
+      "actions": ["git"],
+      "note": "billing REST API"
     }
   }
 }
