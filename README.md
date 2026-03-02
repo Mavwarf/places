@@ -107,7 +107,9 @@ Favorites show a ★ marker in `p list`. The desktop app has a clickable star to
 - **>_** — open cmd.exe at that directory
 - **dir** — open Explorer at that directory
 
-Each place also has a virtual desktop selector (D1–D4). When set, the app switches to that desktop before launching any tool. Uses `VirtualDesktopAccessor.dll` (place it next to `places-app.exe`).
+Each place also has a virtual desktop selector (D1–D4). When set, the app switches to that desktop before launching any tool. A **→** button next to the selector lets you jump to that desktop without launching anything. Uses `VirtualDesktopAccessor.dll` (place it next to `places-app.exe`).
+
+Press **Win+Alt+P** from anywhere to open the dashboard. If it's on another virtual desktop, you are switched there automatically.
 
 The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, or date added. A ★ filter button in the sort bar shows only favorites. Each place has a clickable star to toggle its favorite status.
 

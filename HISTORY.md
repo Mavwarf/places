@@ -2,6 +2,8 @@
 
 ## Features
 
+- Global hotkey (Win+Alt+P) — system-wide shortcut to open the dashboard; switches to the dashboard's virtual desktop if on a different one *(Mar 2)*
+- Desktop switch button — → button next to the virtual desktop dropdown jumps to that desktop without launching a tool *(Mar 2)*
 - Virtual desktop (`places desktop <name> <0-4>`) — assign a Windows virtual desktop to a place; dashboard and tray switch to that desktop before launching tools; uses VirtualDesktopAccessor.dll *(Mar 2)*
 - Auto-refresh in desktop app — polls /api/places every 3 seconds so CLI-added places appear automatically *(Mar 2)*
 - Usage tracking from app/tray — clicking action buttons (PS, cl, VS, >_, dir) now increments use count and updates last-used timestamp; UI refreshes immediately *(Mar 2)*
@@ -32,6 +34,37 @@
 ---
 
 ## 2026-03-02
+
+### Global hotkey
+
+Press **Win+Alt+P** from anywhere to open the places dashboard. If the
+dashboard is on a different virtual desktop, you are switched to that desktop
+first, then the window is shown.
+
+- Registers `Win+Alt+P` via `RegisterHotKey` on a dedicated OS thread
+- Finds the Wails window by title, queries its desktop via
+  `GetWindowDesktopNumber`, switches with `GoToDesktopNumber`
+- Graceful degradation: if the DLL is missing, the window still shows (no
+  desktop switch); if the hotkey is already registered, the app runs without it
+
+### Desktop switch button
+
+Each place row in the desktop app now shows a **→** button next to the virtual
+desktop dropdown (D1–D4). Clicking it switches to that desktop without
+launching any tool. The button only appears when a desktop is assigned.
+
+- New `/api/switch-desktop` endpoint calls `launcher.SwitchDesktop(n)`
+- Button hidden by default, shown via CSS `.visible` class when `p.desktop > 0`
+
+### App icon recolor
+
+Changed the app icon background from blue (Tokyo Night accent) to orange,
+matching the notify app icon. Same white "P" on orange circle.
+
+### `p list` indentation fix
+
+Fixed misaligned output when mixing favorite and non-favorite places. Non-
+favorite entries now pad with two spaces to match the width of the ★ marker.
 
 ### Virtual desktop support
 

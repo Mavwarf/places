@@ -138,7 +138,7 @@ func cmdList(tagFilter string, favOnly bool) {
 		if len(p.Tags) > 0 {
 			tagBadge = fmt.Sprintf(" %s[%s]%s", colorDim, strings.Join(p.Tags, ", "), colorReset)
 		}
-		star := ""
+		star := "  "
 		if p.Favorite {
 			star = fmt.Sprintf("%s★%s ", colorYellow, colorReset)
 		}

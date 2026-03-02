@@ -280,6 +280,19 @@ button:active { opacity: 0.7; }
 }
 .desktop-select:hover { border-color: var(--accent); }
 .desktop-select:focus { border-color: var(--accent); }
+.btn-desktop-go {
+  font-family: var(--font);
+  font-size: 0.7em;
+  padding: 2px 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--fg-dim);
+  cursor: pointer;
+  display: none;
+}
+.btn-desktop-go:hover { color: var(--accent); border-color: var(--accent); }
+.btn-desktop-go.visible { display: inline-block; }
 
 .tag-bar {
   display: flex;
@@ -538,6 +551,7 @@ async function load() {
           <option value="3"${p.desktop===3 ? ' selected' : ''}>D3</option>
           <option value="4"${p.desktop===4 ? ' selected' : ''}>D4</option>
         </select>
+        <button class="btn-desktop-go${p.desktop ? ' visible' : ''}" onclick="switchDesktop(${p.desktop || 0})" title="Switch to desktop ${p.desktop || ''}">\u2192</button>
         <span class="place-name">${esc(dName)}</span>
         <span class="place-path" title="${esc(dPath)}">${esc(dPath)}</span>
         <span class="place-tags">
@@ -665,6 +679,18 @@ async function setDesktop(name, desktop) {
     if (res.ok) { toast('Desktop set'); }
     else { toast(await res.text() || 'Failed', true); load(); }
   } catch (e) { toast('Failed', true); load(); }
+}
+
+async function switchDesktop(n) {
+  if (!n) return;
+  try {
+    const res = await fetch('/api/switch-desktop', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({desktop: n})
+    });
+    if (!res.ok) { toast(await res.text() || 'Failed', true); }
+  } catch (e) { toast('Failed to switch desktop', true); }
 }
 
 function filterTag(tag) {

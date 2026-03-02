@@ -73,6 +73,7 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 	mux.HandleFunc("/api/untag", handleUntag)
 	mux.HandleFunc("/api/fav", handleFav)
 	mux.HandleFunc("/api/desktop", handleDesktop)
+	mux.HandleFunc("/api/switch-desktop", handleSwitchDesktop)
 	if showFn != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
@@ -264,6 +265,27 @@ func handleDesktop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func handleSwitchDesktop(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req desktopReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	if req.Desktop <= 0 {
+		http.Error(w, "no desktop assigned", http.StatusBadRequest)
+		return
+	}
+
+	launcher.SwitchDesktop(req.Desktop)
 	w.WriteHeader(http.StatusNoContent)
 }
 
