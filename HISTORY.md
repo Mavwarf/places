@@ -2,6 +2,7 @@
 
 ## Features
 
+- Drag-and-drop path — drag a folder from Explorer onto the dashboard to fill in the add form's path input *(Mar 2)*
 - Always on top — pin button in the dashboard header toggles the window to stay above all other windows; state persists across restarts via localStorage *(Mar 2)*
 - Claude tab title — launching Claude from the dashboard or tray sets the terminal tab title to "Claude Code - \<name\>"; uses Windows Terminal `--suppressApplicationTitle` to prevent override *(Mar 2)*
 - Place name validation — names restricted to letters, numbers, hyphens, underscores, dots (max 64 chars); enforced in CLI and desktop app *(Mar 2)*
@@ -39,6 +40,17 @@
 ---
 
 ## 2026-03-02
+
+### Drag-and-drop path
+
+Drag a folder from Windows Explorer onto the dashboard window to fill in the add
+form's path input. Uses the WebView2 native `postMessageWithAdditionalObjects`
+API to resolve full file paths from the drop event, bypassing browser security
+restrictions that hide paths from JavaScript.
+
+- `BindingsAllowedOrigins` allowlists the HTTP server origin for WebView2 IPC
+- Go `OnFileDrop` callback stores the resolved path, exposed via `/api/last-drop`
+- JS polls the endpoint after each drop to retrieve the path
 
 ### Always on top
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/energye/systray"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -11,13 +12,22 @@ import (
 
 // App is a minimal struct for the Wails application lifecycle.
 type App struct {
-	ctx   context.Context
-	port  int
-	ready chan struct{} // closed when Wails startup completes
+	ctx      context.Context
+	port     int
+	ready    chan struct{} // closed when Wails startup completes
+	lastDrop string
+	dropMu   sync.Mutex
 }
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	wailsRuntime.OnFileDrop(ctx, func(x, y int, paths []string) {
+		if len(paths) > 0 {
+			a.dropMu.Lock()
+			a.lastDrop = paths[0]
+			a.dropMu.Unlock()
+		}
+	})
 	url := fmt.Sprintf("http://127.0.0.1:%d", a.port)
 	wailsRuntime.WindowExecJS(ctx, fmt.Sprintf("window.location.href = '%s';", url))
 	close(a.ready)
@@ -54,6 +64,15 @@ func (a *App) MinimizeWindow() {
 func (a *App) QuitApp() {
 	systray.Quit()
 	os.Exit(0)
+}
+
+// LastDrop returns and clears the last file path received via drag-and-drop.
+func (a *App) LastDrop() string {
+	a.dropMu.Lock()
+	defer a.dropMu.Unlock()
+	p := a.lastDrop
+	a.lastDrop = ""
+	return p
 }
 
 // BrowseDir opens a native folder picker and returns the selected path.

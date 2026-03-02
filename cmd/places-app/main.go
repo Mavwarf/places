@@ -45,7 +45,7 @@ func main() {
 	a := &App{port: port, ready: make(chan struct{})}
 
 	go func() {
-		if err := app.Serve(port, a.ShowWindow, a.BrowseDir, a.MinimizeWindow, a.QuitApp, setAlwaysOnTop); err != nil {
+		if err := app.Serve(port, a.ShowWindow, a.BrowseDir, a.MinimizeWindow, a.QuitApp, setAlwaysOnTop, a.LastDrop); err != nil {
 			fmt.Fprintf(os.Stderr, "places-app: %v\n", err)
 			os.Exit(1)
 		}
@@ -64,6 +64,7 @@ func main() {
 		w.Write([]byte(`<!DOCTYPE html><html><body style="background:#1a1b26"></body></html>`))
 	})
 
+	origin := fmt.Sprintf("http://127.0.0.1:%d", port)
 	err = wails.Run(&options.App{
 		Title:             "places dashboard",
 		Width:             900,
@@ -73,7 +74,11 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Handler: loader,
 		},
-		BackgroundColour: &options.RGBA{R: 26, G: 27, B: 38, A: 255},
+		BackgroundColour:       &options.RGBA{R: 26, G: 27, B: 38, A: 255},
+		BindingsAllowedOrigins: origin,
+		DragAndDrop: &options.DragAndDrop{
+			EnableFileDrop: true,
+		},
 		OnStartup:        a.startup,
 		OnBeforeClose:    a.beforeClose,
 		OnShutdown:       a.shutdown,

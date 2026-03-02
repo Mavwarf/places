@@ -635,6 +635,38 @@ async function browsePath() {
   } catch (e) { toast('Browse failed', true); }
 }
 
+// Drag-and-drop folder onto path input via WebView2 native API
+(function() {
+  var pathInput = document.querySelector('.add-form input[name="path"]');
+  window.addEventListener('dragover', function(e) {
+    if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
+  });
+  window.addEventListener('drop', function(e) {
+    if (!e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    // Send files to Go via WebView2 native IPC for path resolution
+    if (window.chrome && window.chrome.webview && window.chrome.webview.postMessageWithAdditionalObjects) {
+      var files = e.dataTransfer.items
+        ? Array.from(e.dataTransfer.items).filter(function(i) { return i.kind === 'file'; }).map(function(i) { return i.getAsFile(); })
+        : Array.from(e.dataTransfer.files);
+      chrome.webview.postMessageWithAdditionalObjects('file:drop:' + e.x + ':' + e.y, files);
+    }
+    // Poll for resolved path from Go side
+    (async function() {
+      for (var i = 0; i < 10; i++) {
+        await new Promise(function(r) { setTimeout(r, 50); });
+        try {
+          var res = await fetch('/api/last-drop');
+          if (res.ok && res.status !== 204) {
+            var data = await res.json();
+            if (data.path) { pathInput.value = data.path; return; }
+          }
+        } catch(err) {}
+      }
+    })();
+  });
+})();
+
 async function addPlace(e) {
   e.preventDefault();
   const form = e.target;

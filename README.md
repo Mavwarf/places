@@ -116,7 +116,7 @@ The place list is sorted by last used (most recent on top) by default, with rela
 
 Links in the footer open in the system default browser (not inside the app window).
 
-You can also add and remove places from the app. The **…** button next to the path input opens a native folder picker dialog. Changes are shared with the CLI (same `places.json`).
+You can also add and remove places from the app. The **…** button next to the path input opens a native folder picker dialog, or drag a folder from Explorer onto the window to fill in the path. Changes are shared with the CLI (same `places.json`).
 
 ### Tags in the App
 

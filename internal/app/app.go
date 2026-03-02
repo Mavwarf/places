@@ -69,7 +69,7 @@ type rmReq struct {
 // Serve starts the HTTP server on the given port. If showFn is non-nil,
 // a POST /api/show endpoint is registered that calls it (used to bring
 // the existing window to front when a second instance is launched).
-func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn func(), quitFn func(), topmostFn func(bool)) error {
+func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn func(), quitFn func(), topmostFn func(bool), dropFn func() string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleIndex)
 	mux.HandleFunc("/api/places", handlePlaces)
@@ -146,6 +146,18 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 			}
 			topmostFn(req.OnTop)
 			w.WriteHeader(http.StatusNoContent)
+		})
+	}
+
+	if dropFn != nil {
+		mux.HandleFunc("/api/last-drop", func(w http.ResponseWriter, r *http.Request) {
+			path := dropFn()
+			if path == "" {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{"path": path})
 		})
 	}
 
