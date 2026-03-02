@@ -301,7 +301,7 @@ func cmdApp() {
 		fatal("places-app not found at %s", appExe)
 	}
 	cmd := exec.Command(appExe)
-	if err := cmd.Start(); err != nil {
+	if err := launcher.StartDetached(cmd); err != nil {
 		fatal("cannot start places-app: %v", err)
 	}
 }
