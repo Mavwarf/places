@@ -89,18 +89,32 @@ func addPlaceMenus() {
 		place := cfg.Places[name]
 		path := place.Path
 		desk := place.Desktop
+		placeName := name
 		parent := systray.AddMenuItem(name, path)
 
 		mPS := parent.AddSubMenuItem("PowerShell", "Open PowerShell here")
-		mPS.Click(func() { launcher.SwitchDesktop(desk); launcher.Detach(launcher.PowerShell(path)) })
+		mPS.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.PowerShell(path)) })
 
 		mClaude := parent.AddSubMenuItem("Claude", "Open PowerShell + Claude here")
-		mClaude.Click(func() { launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path)) })
+		mClaude.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path)) })
 
 		mCmd := parent.AddSubMenuItem("cmd", "Open cmd.exe here")
-		mCmd.Click(func() { launcher.SwitchDesktop(desk); launcher.Detach(launcher.Cmd(path)) })
+		mCmd.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Cmd(path)) })
 
 		mExplorer := parent.AddSubMenuItem("Explorer", "Open Explorer here")
-		mExplorer.Click(func() { launcher.SwitchDesktop(desk); launcher.Detach(launcher.Explorer(path)) })
+		mExplorer.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Explorer(path)) })
 	}
+}
+
+func recordTrayUse(name string) {
+	cfg, err := config.Load()
+	if err != nil {
+		return
+	}
+	place, ok := cfg.Places[name]
+	if !ok {
+		return
+	}
+	config.RecordUse(place)
+	config.Save(cfg)
 }

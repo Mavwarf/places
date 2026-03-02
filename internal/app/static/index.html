@@ -588,7 +588,8 @@ async function openAt(name, action) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({name, action})
     });
-    if (!res.ok) {
+    if (res.ok) { load(); }
+    else {
       const t = await res.text();
       toast(t || 'Failed to open', true);
     }

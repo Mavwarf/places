@@ -217,6 +217,12 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	config.RecordUse(place)
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	launcher.SwitchDesktop(place.Desktop)
 
 	if err := launcher.Detach(fn(place.Path)); err != nil {

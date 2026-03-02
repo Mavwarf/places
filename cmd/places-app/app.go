@@ -37,7 +37,7 @@ func (a *App) beforeClose(ctx context.Context) bool {
 	return true // prevent close → hide to tray
 }
 
-// ShowWindow makes the Wails window visible (used by the tray icon).
+// ShowWindow makes the Wails window visible (used by the tray icon and /api/show).
 func (a *App) ShowWindow() {
 	<-a.ready // wait for Wails to be initialized
 	wailsRuntime.WindowShow(a.ctx)
