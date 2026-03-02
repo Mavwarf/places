@@ -425,6 +425,8 @@ button:active { opacity: 0.7; }
   gap: 4px;
   flex-wrap: wrap;
   align-items: center;
+  position: relative;
+  top: 2px;
 }
 
 .empty-state {
@@ -522,6 +524,7 @@ button:active { opacity: 0.7; }
   cursor: pointer;
 }
 .btn-git:hover { color: var(--accent); border-color: var(--accent); }
+.btn-git, .badge-git-clean, .badge-git-dirty, .badge-git-error { position: relative; top: -2px; }
 .badge-git-clean {
   font-size: 0.7em;
   padding: 2px 8px;
