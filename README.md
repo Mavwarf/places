@@ -103,7 +103,7 @@ Favorites show a ★ marker in `p list`. The desktop app has a clickable star to
 `p app` launches a desktop GUI (built with Wails v2) that shows all saved places with action buttons:
 
 - **PS** — open PowerShell at that directory
-- **cl** — open PowerShell at that directory and start Claude Code
+- **cl** — open PowerShell at that directory and start Claude Code (tab titled "Claude Code - \<name\>")
 - **VS** — open VS Code at that directory
 - **>_** — open cmd.exe at that directory
 - **dir** — open Explorer at that directory

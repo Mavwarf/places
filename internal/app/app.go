@@ -233,18 +233,9 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var fn func(string) *exec.Cmd
 	switch req.Action {
-	case "powershell":
-		fn = launcher.PowerShell
-	case "cmd":
-		fn = launcher.Cmd
-	case "claude":
-		fn = launcher.Claude
-	case "code":
-		fn = launcher.Code
-	case "explorer":
-		fn = launcher.Explorer
+	case "powershell", "cmd", "claude", "code", "explorer":
+		// valid
 	default:
 		config.Unlock()
 		http.Error(w, "unknown action", http.StatusBadRequest)
@@ -258,12 +249,27 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := place.Path
+	name := req.Name
 	desk := place.Desktop
 	config.Unlock()
 
 	launcher.SwitchDesktop(desk)
 
-	if err := launcher.Detach(fn(path)); err != nil {
+	var cmd *exec.Cmd
+	switch req.Action {
+	case "powershell":
+		cmd = launcher.PowerShell(path)
+	case "cmd":
+		cmd = launcher.Cmd(path)
+	case "claude":
+		cmd = launcher.Claude(path, name)
+	case "code":
+		cmd = launcher.Code(path)
+	case "explorer":
+		cmd = launcher.Explorer(path)
+	}
+
+	if err := launcher.Detach(cmd); err != nil {
 		http.Error(w, "failed to launch application", http.StatusInternalServerError)
 		return
 	}

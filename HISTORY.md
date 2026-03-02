@@ -2,6 +2,7 @@
 
 ## Features
 
+- Claude tab title — launching Claude from the dashboard or tray sets the terminal tab title to "Claude Code - \<name\>"; uses Windows Terminal `--suppressApplicationTitle` to prevent override *(Mar 2)*
 - Place name validation — names restricted to letters, numbers, hyphens, underscores, dots (max 64 chars); enforced in CLI and desktop app *(Mar 2)*
 - Stable dashboard sorting — places with equal sort keys (e.g. never-used places sorted by last used) now use alphabetical name as tiebreaker; no more shuffling on auto-refresh *(Mar 2)*
 - External links open in system browser — footer links in the dashboard now open in the default browser instead of navigating inside the WebView *(Mar 2)*
@@ -37,6 +38,17 @@
 ---
 
 ## 2026-03-02
+
+### Claude tab title
+
+Launching Claude Code from the dashboard or system tray now sets the terminal
+tab title to **"Claude Code - \<name\>"** (e.g. "Claude Code - notify"). This
+makes it easy to identify which Claude session belongs to which project when
+running multiple sessions.
+
+Uses Windows Terminal's `wt new-tab --suppressApplicationTitle` to prevent
+Claude from overriding the title. Falls back to `cmd /c start` if Windows
+Terminal is not available (title may be overridden in that case).
 
 ### Tech debt: name validation, error sanitization, dedup, ICO errors
 

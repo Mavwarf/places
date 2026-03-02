@@ -37,9 +37,21 @@ func Cmd(path string) *exec.Cmd {
 }
 
 // Claude opens a new PowerShell window at the given directory and starts Claude.
-func Claude(path string) *exec.Cmd {
-	return exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
-		fmt.Sprintf("Set-Location '%s'; claude", psEscape(path)))
+// The tab title is set to "Claude Code - <name>". Uses Windows Terminal when
+// available (--suppressApplicationTitle prevents Claude from overriding the title).
+func Claude(path, name string) *exec.Cmd {
+	title := "Claude Code - " + name
+	psCmd := fmt.Sprintf("Set-Location '%s'; claude", psEscape(path))
+	if runtime.GOOS == "windows" {
+		if _, err := exec.LookPath("wt.exe"); err == nil {
+			// wt uses ; as command separator — escape with \;
+			wtCmd := strings.ReplaceAll(psCmd, ";", "\\;")
+			return exec.Command("wt", "new-tab", "--title", title,
+				"--suppressApplicationTitle", "powershell", "-NoExit", "-Command", wtCmd)
+		}
+	}
+	// Fallback: title may be overridden by Claude on startup.
+	return exec.Command("cmd", "/c", "start", title, "powershell", "-NoExit", "-Command", psCmd)
 }
 
 // Explorer opens the file explorer at the given directory.

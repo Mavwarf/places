@@ -101,7 +101,7 @@ func addPlaceMenus() {
 		mPS.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.PowerShell(path)) })
 
 		mClaude := parent.AddSubMenuItem("Claude", "Open PowerShell + Claude here")
-		mClaude.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path)) })
+		mClaude.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path, placeName)) })
 
 		mCmd := parent.AddSubMenuItem("cmd", "Open cmd.exe here")
 		mCmd.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Cmd(path)) })
