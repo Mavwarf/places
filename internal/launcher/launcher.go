@@ -1,3 +1,11 @@
+// Package launcher provides functions to launch external applications
+// (PowerShell, cmd, Claude, VS Code, Explorer) at a given directory.
+// Each function returns an *exec.Cmd — the caller is responsible for
+// starting it (typically via Detach for fire-and-forget).
+//
+// On Windows, most launchers use "cmd /c start" to open a new console window
+// detached from the caller. On Unix, they run in the current terminal.
+
 package launcher
 
 import (
@@ -37,20 +45,25 @@ func Cmd(path string) *exec.Cmd {
 }
 
 // Claude opens a new PowerShell window at the given directory and starts Claude.
-// The tab title is set to "Claude Code - <name>". Uses Windows Terminal when
-// available (--suppressApplicationTitle prevents Claude from overriding the title).
+// The tab title is set to "Claude Code - <name>".
+//
+// Windows Terminal detection: if wt.exe is on PATH, we use it for better tab
+// title support. --suppressApplicationTitle prevents Claude's own title-setting
+// from overriding our custom title. wt.exe uses `;` as a command separator,
+// so we must escape the PowerShell `;` in our command string with `\;`.
+//
+// Fallback (plain conhost): "cmd /c start <title>" sets the window title, but
+// Claude may override it on startup since conhost doesn't support title pinning.
 func Claude(path, name string) *exec.Cmd {
 	title := "Claude Code - " + name
 	psCmd := fmt.Sprintf("Set-Location '%s'; claude", psEscape(path))
 	if runtime.GOOS == "windows" {
 		if _, err := exec.LookPath("wt.exe"); err == nil {
-			// wt uses ; as command separator — escape with \;
 			wtCmd := strings.ReplaceAll(psCmd, ";", "\\;")
 			return exec.Command("wt", "new-tab", "--title", title,
 				"--suppressApplicationTitle", "powershell", "-NoExit", "-Command", wtCmd)
 		}
 	}
-	// Fallback: title may be overridden by Claude on startup.
 	return exec.Command("cmd", "/c", "start", title, "powershell", "-NoExit", "-Command", psCmd)
 }
 
@@ -75,7 +88,9 @@ func SwitchDesktop(n int) {
 	}
 }
 
-// Detach starts a command and detaches from it (doesn't wait for exit).
+// Detach starts a command and detaches from it (fire-and-forget).
+// The goroutine calling cmd.Wait() is necessary to reap the child process
+// and prevent zombie processes. We don't use the exit status.
 func Detach(cmd *exec.Cmd) error {
 	if err := cmd.Start(); err != nil {
 		return err

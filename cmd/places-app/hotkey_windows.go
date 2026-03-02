@@ -12,22 +12,24 @@ import (
 	"github.com/Mavwarf/places/internal/desktop"
 )
 
+// Windows modifier key bitmasks and virtual key codes for RegisterHotKey.
 const (
-	modAlt      = 0x0001
-	modWin      = 0x0008
-	vkP         = 0x50
-	wmHotkey    = 0x0312
-	hotkeyID    = 1
+	modAlt   = 0x0001
+	modWin   = 0x0008
+	vkP      = 0x50
+	wmHotkey = 0x0312 // WM_HOTKEY message ID
+	hotkeyID = 1      // unique ID for our RegisterHotKey call
 )
 
 var (
 	registerHotKey = user32.NewProc("RegisterHotKey")
 	getMessageW    = user32.NewProc("GetMessageW")
-	findWindowW    = user32.NewProc("FindWindowW")
+	findWindowW    = user32.NewProc("FindWindowW") // also used by topmost_windows.go
 )
 
 type point struct{ x, y int32 }
 
+// msg mirrors the Windows MSG struct used by GetMessageW.
 type msg struct {
 	hwnd    uintptr
 	message uint32
@@ -40,6 +42,8 @@ type msg struct {
 // runHotkey registers Win+Alt+P as a global hotkey and listens for it.
 // Must be called in a goroutine — blocks forever on the message loop.
 func runHotkey(app *App) {
+	// LockOSThread: RegisterHotKey and GetMessageW must run on the same OS
+	// thread — Windows delivers hotkey messages to the thread that registered them.
 	runtime.LockOSThread()
 
 	ret, _, err := registerHotKey.Call(0, hotkeyID, modAlt|modWin, vkP)

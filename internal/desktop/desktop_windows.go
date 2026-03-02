@@ -1,5 +1,16 @@
 //go:build windows
 
+// Virtual desktop control via VirtualDesktopAccessor.dll (third-party DLL).
+// https://github.com/Ciantic/VirtualDesktopAccessor
+//
+// The DLL wraps undocumented Windows COM interfaces for virtual desktop management.
+// It must be placed next to the executable. If the DLL is missing, all functions
+// degrade gracefully (Available() returns false, actions become no-ops).
+//
+// IMPORTANT: All DLL functions use 0-indexed desktop numbers internally,
+// but this package exposes a 1-indexed API (desktop 1 = first desktop) to
+// match user expectations. The conversion happens at each call site.
+
 package desktop
 
 import (
@@ -12,7 +23,7 @@ import (
 var dll *syscall.LazyDLL
 
 func init() {
-	// Look for DLL next to the running executable.
+	// Look for DLL next to the running executable (not on PATH).
 	exe, err := os.Executable()
 	if err == nil {
 		dll = syscall.NewLazyDLL(filepath.Join(filepath.Dir(exe), "VirtualDesktopAccessor.dll"))
@@ -57,8 +68,10 @@ func Current() (int, error) {
 	return int(ret) + 1, nil // convert 0-indexed to 1-indexed
 }
 
-// HideConsole detaches this process from its console window so that
-// Windows has no window to refocus when the process exits.
+// HideConsole detaches this process from its console window using FreeConsole().
+// This is called early in places-app startup so that when the GUI app launches
+// from a terminal, Windows doesn't refocus the console window after launch.
+// Without this, clicking the tray icon would flash the parent console.
 func HideConsole() {
 	kernel32 := syscall.NewLazyDLL("kernel32.dll")
 	proc := kernel32.NewProc("FreeConsole")
@@ -80,7 +93,10 @@ func MoveWindowToDesktop(hwnd uintptr, n int) error {
 }
 
 // WindowDesktop returns the virtual desktop number (1-indexed) for the given window.
-// Returns -1 if the window's desktop cannot be determined (e.g. hidden to tray).
+// Returns -1 if the window's desktop cannot be determined (e.g. hidden to tray,
+// or the window has been moved to "all desktops"). The int32 cast is needed
+// because the DLL returns -1 as a uint32 (0xFFFFFFFF), which Go would interpret
+// as a large positive number without the signed cast.
 func WindowDesktop(hwnd uintptr) (int, error) {
 	if dll == nil {
 		return -1, fmt.Errorf("VirtualDesktopAccessor.dll not found")
@@ -90,7 +106,7 @@ func WindowDesktop(hwnd uintptr) (int, error) {
 		return -1, fmt.Errorf("GetWindowDesktopNumber not found in DLL: %w", err)
 	}
 	ret, _, _ := proc.Call(hwnd)
-	n := int(int32(ret))
+	n := int(int32(ret)) // signed cast: DLL returns -1 for unknown windows
 	if n < 0 {
 		return -1, nil
 	}

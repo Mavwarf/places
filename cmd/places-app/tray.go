@@ -25,26 +25,32 @@ func runTray(app *App) {
 }
 
 // pngToICO wraps raw PNG bytes in a minimal ICO container.
-// Windows LoadImage(IMAGE_ICON) requires ICO format; since Vista,
-// ICO supports embedded PNG data directly.
+// Windows LoadImage(IMAGE_ICON) requires ICO format, but since Vista, ICO
+// supports embedded PNG data directly — no need to decode/re-encode the image.
+//
+// ICO file structure:
+//   ICONDIR header (6 bytes): reserved=0, type=1(icon), count=1
+//   ICONDIRENTRY (16 bytes): dimensions=0(use PNG header), planes=1, bpp=32,
+//     data_size=len(png), data_offset=6+16=22
+//   Raw PNG data follows immediately.
 func pngToICO(png []byte) ([]byte, error) {
 	buf := new(bytes.Buffer)
-	// ICONDIR header
+	// ICONDIR header: {reserved=0, type=1(icon), count=1}
 	for _, v := range []interface{}{uint16(0), uint16(1), uint16(1)} {
 		if err := binary.Write(buf, binary.LittleEndian, v); err != nil {
 			return nil, err
 		}
 	}
 
-	// ICONDIRENTRY
-	buf.Write([]byte{0, 0, 0, 0}) // width, height, color count, reserved
+	// ICONDIRENTRY: width=0, height=0, colors=0, reserved=0 (0 means "read from PNG")
+	buf.Write([]byte{0, 0, 0, 0})
+	// planes=1, bpp=32, data_size, data_offset (header=6 + 1 entry*16 = 22)
 	for _, v := range []interface{}{uint16(1), uint16(32), uint32(len(png)), uint32(6 + 1*16)} {
 		if err := binary.Write(buf, binary.LittleEndian, v); err != nil {
 			return nil, err
 		}
 	}
 
-	// PNG data
 	buf.Write(png)
 	return buf.Bytes(), nil
 }
@@ -111,6 +117,8 @@ func addPlaceMenus() {
 	}
 }
 
+// recordTrayUse increments the use count for a place when launched from the tray.
+// Errors are silently ignored — tray actions shouldn't fail visibly.
 func recordTrayUse(name string) {
 	config.Lock()
 	defer config.Unlock()

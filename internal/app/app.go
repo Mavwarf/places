@@ -1,3 +1,9 @@
+// Package app implements the HTTP server for the desktop dashboard.
+// It serves the embedded HTML frontend and provides a JSON API for managing
+// places. All state-mutating endpoints use config.Lock/Unlock to serialize
+// concurrent read-modify-write cycles (e.g. when the tray and UI both
+// modify config simultaneously).
+
 package app
 
 import (
@@ -66,9 +72,15 @@ type rmReq struct {
 }
 
 // Serve starts the HTTP server on the given port.
-// Serve starts the HTTP server on the given port. If showFn is non-nil,
-// a POST /api/show endpoint is registered that calls it (used to bring
-// the existing window to front when a second instance is launched).
+// Callback functions bridge HTTP endpoints to Wails window operations:
+//   - showFn: bring window to front (single-instance detection)
+//   - browseFn: open native folder picker dialog
+//   - minimizeFn: minimize the window
+//   - quitFn: fully exit the application (called via goroutine to allow response)
+//   - topmostFn: toggle always-on-top via SetWindowPos
+//   - dropFn: retrieve last drag-and-dropped folder path
+//
+// Any callback may be nil, in which case its endpoint is not registered.
 func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn func(), quitFn func(), topmostFn func(bool), dropFn func() string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleIndex)
@@ -197,6 +209,8 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+// handlePlaces returns the full list of places as JSON.
+// No config.Lock needed — this is a read-only endpoint with no modify-save cycle.
 func handlePlaces(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Load()
 	if err != nil {
@@ -229,6 +243,10 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(places)
 }
 
+// handleOpen launches an application (PowerShell, cmd, Claude, Code, Explorer)
+// at a place's directory. Uses manual Lock/Unlock (not defer) because we need
+// to release the lock before launching the external process — launches can
+// take time and we don't want to block other API calls.
 func handleOpen(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -241,6 +259,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Lock for the read-modify(RecordUse)-save cycle.
 	config.Lock()
 	cfg, err := config.Load()
 	if err != nil {
@@ -547,6 +566,7 @@ func handleTag(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// handleOpenURL opens a URL in the default browser. Restricted to https:// only.
 func handleOpenURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

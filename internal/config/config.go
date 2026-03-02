@@ -1,3 +1,12 @@
+// Package config handles loading, saving, and migrating the places.json file.
+// The config file lives at ~/.config/places/places.json and stores bookmarked
+// directories with usage statistics (use count, timestamps, tags, favorites).
+//
+// Concurrency: the exported Lock/Unlock functions serialize read-modify-write
+// cycles within a process (the desktop app has multiple goroutines hitting the
+// config). The Save function uses atomic write (temp file + rename) to prevent
+// corruption from concurrent external reads.
+
 package config
 
 import (
@@ -94,14 +103,16 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("reading config: %w", err)
 	}
 
-	// Try new format first.
+	// Try new format first ({"places": {"name": {Place object}}}).
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return Config{}, fmt.Errorf("parsing config: %w", err)
 	}
 
-	// Migrate from old format: if any place deserialized with an empty path,
-	// the value was a plain string in the old format.
+	// Migration from v1 format: the old format stored places as
+	// {"places": {"name": "/path/to/dir"}} (string values instead of objects).
+	// When json.Unmarshal sees a string where it expects a *Place, the Place
+	// deserializes with all zero values — we detect this by checking for empty Path.
 	if cfg.Places == nil {
 		cfg.Places = make(map[string]*Place)
 	}
@@ -113,13 +124,14 @@ func Load() (Config, error) {
 		}
 	}
 	if needsMigration {
+		// Re-parse with RawMessage to handle the mixed types.
 		var raw struct {
 			Places map[string]json.RawMessage `json:"places"`
 		}
 		json.Unmarshal(data, &raw)
 		migrated := make(map[string]*Place, len(raw.Places))
 		for name, v := range raw.Places {
-			// Try as string (old format).
+			// Try to unmarshal as a bare string (old format).
 			var s string
 			if json.Unmarshal(v, &s) == nil {
 				migrated[name] = &Place{
@@ -128,13 +140,13 @@ func Load() (Config, error) {
 				}
 				continue
 			}
-			// Otherwise keep the parsed Place.
+			// Otherwise keep the already-parsed Place object.
 			if p, ok := cfg.Places[name]; ok {
 				migrated[name] = p
 			}
 		}
 		cfg.Places = migrated
-		// Save migrated format.
+		// Persist the migrated format so this only happens once.
 		if err := Save(cfg); err != nil {
 			return Config{}, fmt.Errorf("saving migrated config: %w", err)
 		}
@@ -149,8 +161,9 @@ func Load() (Config, error) {
 }
 
 // Save writes the config to disk as formatted JSON.
-// Uses atomic write (temp file + rename) to prevent corruption from
-// concurrent reads or interrupted writes.
+// Uses atomic write (write to .tmp file, then rename) to prevent corruption
+// if the process is interrupted mid-write or another process reads concurrently.
+// On Windows, os.Rename replaces the destination atomically.
 func Save(cfg Config) error {
 	p, err := ConfigPath()
 	if err != nil {
@@ -168,7 +181,7 @@ func Save(cfg Config) error {
 		return fmt.Errorf("writing config: %w", err)
 	}
 	if err := os.Rename(tmp, p); err != nil {
-		os.Remove(tmp)
+		os.Remove(tmp) // clean up temp file on rename failure
 		return fmt.Errorf("writing config: %w", err)
 	}
 	return nil

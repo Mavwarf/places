@@ -44,6 +44,9 @@ func main() {
 
 	a := &App{port: port, ready: make(chan struct{})}
 
+	// Start HTTP API server in a goroutine. The dashboard UI is served from
+	// here (not Wails' asset server) so we get a plain HTTP page with full
+	// control. Callbacks bridge HTTP endpoints to Wails window operations.
 	go func() {
 		if err := app.Serve(port, a.ShowWindow, a.BrowseDir, a.MinimizeWindow, a.QuitApp, setAlwaysOnTop, a.LastDrop); err != nil {
 			fmt.Fprintf(os.Stderr, "places-app: %v\n", err)
@@ -59,11 +62,17 @@ func main() {
 	go runTray(a)
 	go runHotkey(a)
 
+	// Wails requires an asset handler, but we redirect to the HTTP server in
+	// startup(). This minimal loader just prevents a flash of white background.
 	loader := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.Write([]byte(`<!DOCTYPE html><html><body style="background:#1a1b26"></body></html>`))
 	})
 
+	// BindingsAllowedOrigins: after startup() redirects the WebView to our
+	// HTTP server, the page origin changes. Without this allowlist, Wails
+	// blocks WebView2 IPC (postMessage) from the HTTP origin, which breaks
+	// OnFileDrop and any other native Wails features.
 	origin := fmt.Sprintf("http://127.0.0.1:%d", port)
 	err = wails.Run(&options.App{
 		Title:             "places dashboard",

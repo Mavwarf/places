@@ -200,10 +200,13 @@ func cmdShell(name string) {
 
 	cmd := launcher.PowerShell(place.Path)
 	if runtime.GOOS == "windows" {
+		// On Windows, PowerShell() uses "cmd /c start" to open a new window,
+		// so we just fire-and-forget (Start without Wait).
 		if err := cmd.Start(); err != nil {
 			fatal("cannot start shell: %v", err)
 		}
 	} else {
+		// On Unix, we replace the current terminal with the new shell session.
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -213,6 +216,8 @@ func cmdShell(name string) {
 	}
 }
 
+// cmdAutostart manages Windows startup registration via the registry.
+// The Run key at HKCU causes programs to launch on user login.
 func cmdAutostart(arg string) {
 	if runtime.GOOS != "windows" {
 		fatal("autostart is only supported on Windows")

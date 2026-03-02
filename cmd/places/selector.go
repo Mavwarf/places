@@ -1,3 +1,7 @@
+// selector.go — Interactive arrow-key menu for picking a place.
+// Platform-independent: uses readKeyCode() from term_windows.go or term_unix.go.
+// All output goes to stderr (os.Stderr) so stdout stays clean for the shell wrapper.
+
 package main
 
 import (
@@ -6,6 +10,9 @@ import (
 	"os"
 )
 
+// Key constants (256+) are above the ASCII range so they can't collide with
+// printable characters. Both term_windows.go and term_unix.go map their
+// platform-specific key events to these values.
 const (
 	keyUp     = 256
 	keyDown   = 257
@@ -35,7 +42,8 @@ func interactiveSelect(items []selectItem, out io.Writer) (int, bool) {
 		}
 	}
 
-	// Hide cursor.
+	// ANSI: hide cursor to prevent flickering during re-renders.
+	// \x1b[?25l = DECTCEM (DEC text cursor enable mode) — hide cursor.
 	fmt.Fprint(out, "\x1b[?25l")
 
 	render := func() {
@@ -43,13 +51,16 @@ func interactiveSelect(items []selectItem, out io.Writer) (int, bool) {
 			if i > 0 {
 				// Move up is handled by clearing — we re-render from top each time.
 			}
+			// \x1b[2K = erase entire line, \r = carriage return to column 0.
+			// \x1b[1m = bold, \x1b[32m = green, \x1b[36m = cyan, \x1b[2m = dim.
+			// \x1b[0m = reset all attributes.
 			if i == cursor {
 				fmt.Fprintf(out, "\x1b[2K\r  \x1b[1m\x1b[32m> %-*s  \x1b[36m%s\x1b[0m", maxNameLen, item.Name, item.Path)
 			} else {
 				fmt.Fprintf(out, "\x1b[2K\r  \x1b[2m  %-*s  %s\x1b[0m", maxNameLen, item.Name, item.Path)
 			}
 			if item.Warning != "" {
-				fmt.Fprintf(out, " \x1b[33m%s\x1b[0m", item.Warning)
+				fmt.Fprintf(out, " \x1b[33m%s\x1b[0m", item.Warning) // \x1b[33m = yellow
 			}
 			fmt.Fprint(out, "\n")
 		}
@@ -58,7 +69,8 @@ func interactiveSelect(items []selectItem, out io.Writer) (int, bool) {
 
 	// Move cursor up to re-render from top.
 	moveToTop := func() {
-		// Move up len(items) lines (items + hint line already printed).
+		// \x1b[1A = cursor up one line. We move up len(items) lines
+		// (the item lines; the hint line is on the current line).
 		for i := 0; i < len(items); i++ {
 			fmt.Fprint(out, "\x1b[1A")
 		}
@@ -92,17 +104,15 @@ func interactiveSelect(items []selectItem, out io.Writer) (int, bool) {
 	}
 }
 
-// cleanup clears the menu lines and shows cursor again.
+// cleanup clears the menu lines and restores the cursor. This erases all
+// visual output so the terminal looks clean after selection or cancellation.
 func cleanup(out io.Writer, itemCount int) {
-	// Clear the hint line.
-	fmt.Fprint(out, "\x1b[2K\r")
-	// Move up and clear each item line.
+	fmt.Fprint(out, "\x1b[2K\r")           // clear hint line
 	for i := 0; i < itemCount; i++ {
-		fmt.Fprint(out, "\x1b[1A\x1b[2K")
+		fmt.Fprint(out, "\x1b[1A\x1b[2K")  // move up + clear each item line
 	}
 	fmt.Fprint(out, "\r")
-	// Show cursor.
-	fmt.Fprint(out, "\x1b[?25h")
+	fmt.Fprint(out, "\x1b[?25h")           // \x1b[?25h = show cursor (DECTCEM)
 }
 
 // runInteractiveSelect sets up raw mode and runs the interactive selector.

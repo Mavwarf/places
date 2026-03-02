@@ -1,5 +1,10 @@
 //go:build windows
 
+// Raw terminal input for Windows using kernel32 Console API.
+// os.Stdin.Read() does NOT work for arrow keys on Windows — it only returns
+// after Enter is pressed (line mode). We must use ReadConsoleInputW which
+// delivers individual KEY_EVENT records with virtual key codes.
+
 package main
 
 import (
@@ -15,29 +20,33 @@ var (
 	procReadConsoleInput = kernel32.NewProc("ReadConsoleInputW")
 )
 
+// Console mode flags and standard handles.
 const (
-	stdInputHandle  = uintptr(0xFFFFFFF6) // -10
-	stdErrorHandle  = uintptr(0xFFFFFFF4) // -12
+	stdInputHandle = uintptr(0xFFFFFFF6) // STD_INPUT_HANDLE (-10)
+	stdErrorHandle = uintptr(0xFFFFFFF4) // STD_ERROR_HANDLE (-12)
 
-	enableProcessedInput            = 0x0001
-	enableLineInput                 = 0x0002
-	enableEchoInput                 = 0x0004
-	enableVirtualTerminalProcessing = 0x0004 // for output handle
+	enableProcessedInput            = 0x0001 // handle Ctrl+C
+	enableLineInput                 = 0x0002 // buffer input until Enter
+	enableEchoInput                 = 0x0004 // echo typed characters
+	enableVirtualTerminalProcessing = 0x0004 // for output handle: enable ANSI escapes
 
-	keyEventFlag = 0x0001
+	keyEventFlag = 0x0001 // INPUT_RECORD.EventType for key events
 
-	vkReturn = 0x0D
-	vkEscape = 0x1B
-	vkUp     = 0x26
-	vkDown   = 0x28
+	vkReturn = 0x0D // VK_RETURN
+	vkEscape = 0x1B // VK_ESCAPE
+	vkUp     = 0x26 // VK_UP
+	vkDown   = 0x28 // VK_DOWN
 )
 
+// inputRecord mirrors the Windows INPUT_RECORD struct.
+// Event is a union — we cast it to keyEventRecord when EventType == keyEventFlag.
 type inputRecord struct {
 	EventType uint16
 	_         uint16
 	Event     [16]byte
 }
 
+// keyEventRecord mirrors KEY_EVENT_RECORD.
 type keyEventRecord struct {
 	KeyDown         int32
 	RepeatCount     uint16
@@ -49,6 +58,9 @@ type keyEventRecord struct {
 
 var stdinHandle uintptr
 
+// enableRawMode disables line buffering and echo on stdin so we receive
+// individual keypresses. Also enables ANSI escape processing on stderr
+// for the interactive menu renderer. Returns a restore function.
 func enableRawMode() (restore func(), err error) {
 	h, _, e := procGetStdHandle.Call(stdInputHandle)
 	if h == 0 || h == ^uintptr(0) {
@@ -62,6 +74,8 @@ func enableRawMode() (restore func(), err error) {
 		return nil, e
 	}
 
+	// Disable line buffering (ENABLE_LINE_INPUT) and echo (ENABLE_ECHO_INPUT).
+	// Keep ENABLE_PROCESSED_INPUT so Ctrl+C still works.
 	raw := orig &^ (enableLineInput | enableEchoInput)
 	raw |= enableProcessedInput
 	r, _, e = procSetConsoleMode.Call(h, uintptr(raw))

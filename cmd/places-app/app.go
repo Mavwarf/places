@@ -19,6 +19,10 @@ type App struct {
 	dropMu   sync.Mutex
 }
 
+// startup redirects the WebView to our HTTP server, bypassing Wails' built-in
+// asset serving. This lets us serve a plain HTML page with vanilla JS (no Wails
+// runtime needed). OnFileDrop is registered before the redirect because the
+// native WebView2 drop handler + IPC still works after navigation.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	wailsRuntime.OnFileDrop(ctx, func(x, y int, paths []string) {

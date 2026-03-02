@@ -1,3 +1,16 @@
+// shellhook.go — Install/uninstall the `p()` shell wrapper function.
+//
+// Shell integration strategy:
+//   - Bash/Zsh: append a p() function to ~/.bashrc or ~/.zshrc between
+//     marker comments (# BEGIN/END places shell-hook) for clean uninstall.
+//   - PowerShell (pwsh + Windows PS): same marker approach in $PROFILE.
+//   - cmd.exe: write a standalone p.bat next to places.exe (no markers needed;
+//     the whole file is owned by us, so uninstall just deletes it).
+//
+// The p() wrapper handles the "child can't cd parent" problem: `places go`
+// prints a path to stdout, and p() captures it and does the actual cd.
+// Known commands are passed through directly to avoid the cd logic.
+
 package main
 
 import (
@@ -9,11 +22,16 @@ import (
 	"strings"
 )
 
+// Marker comments that delimit the shell hook block in rc files.
+// Uninstall finds and removes everything between these markers.
 const (
 	markerBegin = "# BEGIN places shell-hook"
 	markerEnd   = "# END places shell-hook"
 )
 
+// cmdBat is the p.bat wrapper for cmd.exe. It uses a temp file for `select`
+// because cmd.exe can't capture stdout into a variable from an interactive
+// command that also reads stdin (the `for /f` + stdin conflict).
 const cmdBat = `@echo off
 if "%~1"=="" goto :select
 if /i "%~1"=="select" goto :select
@@ -280,6 +298,9 @@ func resolveRCFile(sh string) (string, error) {
 	}
 }
 
+// psProfilePath detects the PowerShell profile path by asking the shell itself.
+// Tries pwsh (PowerShell Core) first, then falls back to powershell (Windows PS).
+// -NoProfile prevents loading the existing profile during detection.
 func psProfilePath() (string, error) {
 	for _, exe := range []string{"pwsh", "powershell"} {
 		out, err := exec.Command(exe, "-NoProfile", "-Command", "$PROFILE").Output()
