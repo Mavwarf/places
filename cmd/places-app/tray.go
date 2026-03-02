@@ -107,6 +107,8 @@ func addPlaceMenus() {
 }
 
 func recordTrayUse(name string) {
+	config.Lock()
+	defer config.Unlock()
 	cfg, err := config.Load()
 	if err != nil {
 		return

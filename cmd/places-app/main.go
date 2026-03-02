@@ -26,7 +26,9 @@ func main() {
 		switch args[i] {
 		case "--port", "-p":
 			if i+1 < len(args) {
-				fmt.Sscanf(args[i+1], "%d", &port)
+				if p, err := strconv.Atoi(args[i+1]); err == nil {
+					port = p
+				}
 				i++
 			}
 		}

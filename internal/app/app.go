@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/Mavwarf/places/internal/config"
@@ -125,7 +126,25 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 	}
 
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
-	return http.ListenAndServe(addr, mux)
+	origin := fmt.Sprintf("http://127.0.0.1:%d", port)
+	return http.ListenAndServe(addr, &originGuard{handler: mux, allowed: origin})
+}
+
+// originGuard rejects requests with an Origin header that does not match
+// the expected local server origin. Browsers always send Origin on cross-origin
+// requests, so this blocks malicious websites from hitting the API. Requests
+// without an Origin header (e.g. curl, the single-instance POST) are allowed.
+type originGuard struct {
+	handler http.Handler
+	allowed string
+}
+
+func (g *originGuard) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if origin := r.Header.Get("Origin"); origin != "" && origin != g.allowed {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	g.handler.ServeHTTP(w, r)
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -149,8 +168,10 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	places := make([]jsonPlace, 0, len(cfg.Places))
-	for name, p := range cfg.Places {
+	names := config.SortedNames(cfg)
+	places := make([]jsonPlace, 0, len(names))
+	for _, name := range names {
+		p := cfg.Places[name]
 		_, statErr := os.Stat(p.Path)
 		jp := jsonPlace{
 			Name:     name,
@@ -184,19 +205,23 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	config.Lock()
 	cfg, err := config.Load()
 	if err != nil {
+		config.Unlock()
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	place, ok := cfg.Places[req.Name]
 	if !ok {
+		config.Unlock()
 		http.Error(w, "place not found", http.StatusNotFound)
 		return
 	}
 
 	if _, err := os.Stat(place.Path); err != nil {
+		config.Unlock()
 		http.Error(w, "directory does not exist", http.StatusBadRequest)
 		return
 	}
@@ -214,19 +239,24 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	case "explorer":
 		fn = launcher.Explorer
 	default:
+		config.Unlock()
 		http.Error(w, "unknown action", http.StatusBadRequest)
 		return
 	}
 
 	config.RecordUse(place)
 	if err := config.Save(cfg); err != nil {
+		config.Unlock()
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	path := place.Path
+	desk := place.Desktop
+	config.Unlock()
 
-	launcher.SwitchDesktop(place.Desktop)
+	launcher.SwitchDesktop(desk)
 
-	if err := launcher.Detach(fn(place.Path)); err != nil {
+	if err := launcher.Detach(fn(path)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -246,6 +276,9 @@ func handleDesktop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	config.Lock()
+	defer config.Unlock()
+
 	cfg, err := config.Load()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -255,6 +288,11 @@ func handleDesktop(w http.ResponseWriter, r *http.Request) {
 	place, ok := cfg.Places[req.Name]
 	if !ok {
 		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+
+	if req.Desktop < 0 || req.Desktop > 4 {
+		http.Error(w, "desktop must be 0-4", http.StatusBadRequest)
 		return
 	}
 
@@ -301,6 +339,9 @@ func handleRm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	config.Lock()
+	defer config.Unlock()
+
 	cfg, err := config.Load()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -338,6 +379,13 @@ func handleAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	absPath, err := filepath.Abs(req.Path)
+	if err != nil {
+		http.Error(w, "invalid path", http.StatusBadRequest)
+		return
+	}
+	req.Path = absPath
+
 	info, err := os.Stat(req.Path)
 	if err != nil {
 		http.Error(w, "path does not exist", http.StatusBadRequest)
@@ -347,6 +395,9 @@ func handleAdd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "path is not a directory", http.StatusBadRequest)
 		return
 	}
+
+	config.Lock()
+	defer config.Unlock()
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -387,6 +438,9 @@ func handleFav(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	config.Lock()
+	defer config.Unlock()
+
 	cfg, err := config.Load()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -421,6 +475,9 @@ func handleTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	config.Lock()
+	defer config.Unlock()
+
 	cfg, err := config.Load()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -454,6 +511,9 @@ func handleUntag(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
+
+	config.Lock()
+	defer config.Unlock()
 
 	cfg, err := config.Load()
 	if err != nil {

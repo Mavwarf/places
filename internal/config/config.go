@@ -7,8 +7,19 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
+
+// mu serializes config read-modify-write cycles within a process.
+// Callers that do Load→modify→Save should wrap the cycle with Lock/Unlock.
+var mu sync.Mutex
+
+// Lock acquires the config mutex. Use before a Load→modify→Save cycle.
+func Lock() { mu.Lock() }
+
+// Unlock releases the config mutex.
+func Unlock() { mu.Unlock() }
 
 // Place holds a bookmarked directory with usage statistics.
 type Place struct {
@@ -104,7 +115,9 @@ func Load() (Config, error) {
 		}
 		cfg.Places = migrated
 		// Save migrated format.
-		Save(cfg)
+		if err := Save(cfg); err != nil {
+			return Config{}, fmt.Errorf("saving migrated config: %w", err)
+		}
 	}
 
 	// Normalize path separators to OS convention.
@@ -116,6 +129,8 @@ func Load() (Config, error) {
 }
 
 // Save writes the config to disk as formatted JSON.
+// Uses atomic write (temp file + rename) to prevent corruption from
+// concurrent reads or interrupted writes.
 func Save(cfg Config) error {
 	p, err := ConfigPath()
 	if err != nil {
@@ -128,7 +143,12 @@ func Save(cfg Config) error {
 	}
 	data = append(data, '\n')
 
-	if err := os.WriteFile(p, data, 0644); err != nil {
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, data, 0644); err != nil {
+		return fmt.Errorf("writing config: %w", err)
+	}
+	if err := os.Rename(tmp, p); err != nil {
+		os.Remove(tmp)
 		return fmt.Errorf("writing config: %w", err)
 	}
 	return nil

@@ -36,14 +36,15 @@
 - [x] ~~**Virtual desktop** (`p desktop <name> <0-4>`)~~ — assign places to Windows virtual desktops; dashboard and tray switch desktop before launching tools; uses `VirtualDesktopAccessor.dll` *(Mar 2)*
 - [x] ~~**Auto-refresh in desktop app**~~ — polls `/api/places` every 3 seconds so CLI-added places appear automatically *(Mar 2)*
 - [x] ~~**Usage tracking from app/tray**~~ — action buttons (PS, cl, VS, >_, dir) now record use count and last-used timestamp *(Mar 2)*
+- [x] ~~**Global hotkey** — Win+Alt+P opens the dashboard from anywhere, switching to its virtual desktop~~ *(Mar 2)*
 - [ ] **Import/export** — `places export > places.json` / `places import < places.json` for syncing across machines
 - [ ] **Notes** (`p add api --note "billing REST API"`) — attach a description, shown in list and desktop app
-- [x] ~~**Global hotkey** — Win+Alt+P opens the dashboard from anywhere, switching to its virtual desktop~~ *(Mar 2)*
 - [ ] **Type-to-filter in select** — start typing in the interactive picker to narrow results instead of just arrow keys
 - [ ] **Git info in desktop app** — show current branch and dirty/clean status next to each place
 - [ ] **Custom actions** — user-defined commands per place or globally, beyond the built-in PS/cmd/Claude/Explorer
 - [ ] **Frecency sorting** — combine frequency + recency into a single score for smarter ordering in select and app
 - [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
+- [ ] **Open links in default browser** — web links clicked in the dashboard (Wails WebView) should open in the system default browser instead of navigating inside the app
 
 ## Script-Friendly
 
@@ -63,27 +64,28 @@
 - [x] ~~**Sorting logic duplicated**~~ — moved `SortedNames()` to `internal/config`, removed duplicates *(Mar 1)*
 - [x] ~~**`fuzzyFind()` doesn't distinguish "not found" from "ambiguous"**~~ — now lists matching names on ambiguous query *(Mar 1)*
 - [x] ~~**Hardcoded port 8822**~~ — now configurable via `PLACES_PORT` env var or `--port` flag *(Mar 1)*
+- [x] ~~**Shell injection via path in launcher**~~ — single quotes in paths escaped with `''` for PowerShell `Set-Location` *(Mar 2)*
+- [x] ~~**Unauthenticated HTTP API**~~ — `Origin` header validation rejects cross-origin requests from malicious websites *(Mar 2)*
+- [x] ~~**Config file race condition**~~ — process-level mutex around Load→modify→Save cycles; atomic write via temp file + rename *(Mar 2)*
+- [x] ~~**Missing `//go:build windows` on `shift_windows.go`**~~ — added explicit build tag *(Mar 2)*
+- [x] ~~**Desktop number not validated in API**~~ — `handleDesktop` now rejects values outside 0–4 *(Mar 2)*
+- [x] ~~**`handleAdd` doesn't resolve relative paths**~~ — HTTP API now calls `filepath.Abs` before storing *(Mar 2)*
+- [x] ~~**`cmdAdd` silently overwrites existing places**~~ — CLI now warns on stderr when overwriting *(Mar 2)*
+- [x] ~~**`beforeClose` reads `a.ctx` without `<-a.ready`**~~ — now waits on ready channel before accessing context *(Mar 2)*
+- [x] ~~**`handlePlaces` returns random order**~~ — now uses `config.SortedNames` for stable alphabetical order *(Mar 2)*
+- [x] ~~**Config migration ignores `Save` error**~~ — now checks and returns the error *(Mar 2)*
+- [x] ~~**`Sscanf` for port parsing**~~ — replaced with `strconv.Atoi` in `places-app/main.go` *(Mar 2)*
 - [ ] **Duplicate `jsonPlace` struct** — defined in both `commands.go` and `internal/app/app.go` (accepted: different fields needed)
-- [ ] **Shell injection via path in launcher** — `Set-Location '%s'` in `launcher.go` can break out if path contains single quotes; needs proper escaping
-- [ ] **Unauthenticated HTTP API** — any local process/browser tab can hit `localhost:8822` endpoints (`/api/open`, `/api/rm`, `/api/quit`); add `Origin` header validation or CSRF token
-- [ ] **Config file race condition** — concurrent Load→modify→Save (HTTP handlers, tray, polling) can silently overwrite each other; needs file locking
 - [ ] **`os.Exit(0)` bypasses cleanup** — `QuitApp()`, tray quit, and `beforeClose` skip deferred functions, Wails shutdown, HTTP graceful shutdown
-- [ ] **Missing `//go:build windows` on `shift_windows.go`** — relies on filename convention only; inconsistent with all other platform files
 - [ ] **Goroutine leak in `Detach`** — `go cmd.Wait()` goroutines accumulate for long-running child processes on non-Windows
 - [ ] **Duplicate tag/fav filtering logic** — `cmdList()` and `cmdListJSON()` implement the same filters separately
-- [ ] **Desktop number not validated in API** — `handleDesktop` accepts any integer; CLI validates 0–4 but API does not
-- [ ] **`handleAdd` doesn't resolve relative paths** — CLI does `filepath.Abs`, HTTP API stores as-is
 - [ ] **No place name validation** — names with quotes, newlines, or special chars can break shell hooks or HTML rendering
-- [ ] **`cmdAdd` silently overwrites existing places** — HTTP API returns 409 Conflict, CLI just replaces without warning
 - [ ] **Unix escape key blocks in selector** — pressing Esc with no following bytes causes `readKeyCode` to block indefinitely (`term_unix.go`)
-- [ ] **`beforeClose` reads `a.ctx` without `<-a.ready`** — potential nil context if close fires before Wails startup completes
-- [ ] **`handlePlaces` returns random order** — map iteration gives unstable order; frontend sorts client-side but other API consumers would not
 - [ ] **Ignored errors in `pngToICO`** — `binary.Write` return values silently dropped (`tray.go`)
 - [ ] **`Cmd()` and `Claude()` launchers have no platform guard** — unconditionally build `cmd.exe` commands, fail on non-Windows
-- [ ] **Config migration ignores `Save` error** — old-format migration calls `Save(cfg)` without checking the error
 - [ ] **`termios` struct is Linux-specific** — ioctl numbers and struct layout in `term_unix.go` won't work on macOS/FreeBSD
-- [ ] **`Sscanf` for port parsing** — `fmt.Sscanf` in `places-app/main.go` silently ignores malformed input; should use `strconv.Atoi`
 - [ ] **Error responses leak internal paths** — HTTP error handlers pass raw `err.Error()` which may contain file system paths
+- [ ] **Unstable sort in dashboard** — places with equal sort keys (e.g. never-used places sorted by last access) shuffle randomly on each 3-second refresh; need a stable fallback (e.g. alphabetical by name)
 
 ## Improvements
 

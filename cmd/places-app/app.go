@@ -28,6 +28,7 @@ func (a *App) shutdown(ctx context.Context) {}
 // beforeClose is called when the user clicks the window close button.
 // Shift+close fully exits; normal close hides to tray.
 func (a *App) beforeClose(ctx context.Context) bool {
+	<-a.ready
 	if isShiftHeld() {
 		systray.Quit()
 		os.Exit(0)

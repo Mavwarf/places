@@ -5,15 +5,22 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"github.com/Mavwarf/places/internal/desktop"
 )
+
+// psEscape escapes a string for embedding in a PowerShell single-quoted string.
+// PowerShell's only escape inside '...' is '' for a literal single quote.
+func psEscape(s string) string {
+	return strings.ReplaceAll(s, "'", "''")
+}
 
 // PowerShell opens a new PowerShell window at the given directory.
 func PowerShell(path string) *exec.Cmd {
 	if runtime.GOOS == "windows" {
 		return exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
-			fmt.Sprintf("Set-Location '%s'", path))
+			fmt.Sprintf("Set-Location '%s'", psEscape(path)))
 	}
 	shell := os.Getenv("SHELL")
 	if shell == "" {
@@ -32,7 +39,7 @@ func Cmd(path string) *exec.Cmd {
 // Claude opens a new PowerShell window at the given directory and starts Claude.
 func Claude(path string) *exec.Cmd {
 	return exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
-		fmt.Sprintf("Set-Location '%s'; claude", path))
+		fmt.Sprintf("Set-Location '%s'; claude", psEscape(path)))
 }
 
 // Explorer opens the file explorer at the given directory.

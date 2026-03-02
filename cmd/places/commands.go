@@ -53,6 +53,10 @@ func cmdAdd(name, path string, tags []string) {
 		fatal("%v", err)
 	}
 
+	if existing, ok := cfg.Places[name]; ok {
+		fmt.Fprintf(os.Stderr, "Warning: overwriting %q (was %s)\n", name, existing.Path)
+	}
+
 	place := &config.Place{
 		Path:    path,
 		AddedAt: time.Now(),
