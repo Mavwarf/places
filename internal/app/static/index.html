@@ -658,11 +658,11 @@ async function load() {
           ${p.exists ? `
             ${renderCustomActions(p)}
             ${renderAssignBtn(p)}
-            <button class="btn-ps" onclick="openAt('${esc(p.name)}','powershell')" title="Open PowerShell here">PS</button>
             <button class="btn-claude" onclick="openAt('${esc(p.name)}','claude')" title="Open Claude Code here">cl</button>
-            <button class="btn-code" onclick="openAt('${esc(p.name)}','code')" title="Open in VS Code">VS</button>
-            <button class="btn-cmd" onclick="openAt('${esc(p.name)}','cmd')" title="Open cmd here">&gt;_</button>
             <button class="btn-explorer" onclick="openAt('${esc(p.name)}','explorer')" title="Open in Explorer">dir</button>
+            <button class="btn-code" onclick="openAt('${esc(p.name)}','code')" title="Open in VS Code">VS</button>
+            <button class="btn-ps" onclick="openAt('${esc(p.name)}','powershell')" title="Open PowerShell here">PS</button>
+            <button class="btn-cmd" onclick="openAt('${esc(p.name)}','cmd')" title="Open cmd here">&gt;_</button>
           ` : ''}
           <button class="btn-rm" onclick="rm('${esc(p.name)}')" title="Remove">\u2715</button>
         </div>
