@@ -178,7 +178,7 @@ Favorites show a ★ marker in `p list`. The desktop app has a clickable star to
 - **>_** — open cmd.exe at that directory
 - **dir** — open Explorer at that directory
 
-Click a place name to rename it inline, or click a path to edit it (Enter to save, Escape to cancel). Places with notes show a muted subtitle below the path. Click a note to edit it inline, or hover over a place without a note to add one. Export and Import buttons in the sort bar allow one-click backup/restore.
+Click a place name to rename it inline, or click a path to edit it (Enter to save, Escape to cancel). Places with notes show a muted subtitle below the path. Click a note to edit it inline, or hover over a place without a note to add one. Export and Import buttons in the sort bar allow one-click backup/restore. A **git** button on each place fetches the current branch and clean/dirty status on demand — shown as a colored badge (green for clean, yellow for dirty, red for errors like non-git directories).
 
 Each place also has a virtual desktop selector (D1–D4). When set, the app switches to that desktop before launching any tool. A **→** button next to the selector lets you jump to that desktop without launching anything. Uses `VirtualDesktopAccessor.dll` (place it next to `places-app.exe`).
 

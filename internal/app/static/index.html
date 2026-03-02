@@ -325,10 +325,10 @@ button:active { opacity: 0.7; }
   border-radius: 4px;
   color: var(--fg-dim);
   cursor: pointer;
-  display: none;
+  visibility: hidden;
 }
 .btn-desktop-go:hover { color: var(--accent); border-color: var(--accent); }
-.btn-desktop-go.visible { display: inline-block; }
+.btn-desktop-go.visible { visibility: visible; }
 
 /* Note subtitle */
 .place-info { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 1px; }
@@ -510,6 +510,39 @@ button:active { opacity: 0.7; }
 .win-btn:hover { color: var(--fg); border-color: var(--fg-dim); }
 .win-btn-pin.active { color: var(--accent); border-color: var(--accent); }
 .win-btn-quit:hover { color: var(--red); border-color: var(--red); }
+
+/* Git status */
+.btn-git {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg-dim);
+  border: 1px dashed var(--border);
+  cursor: pointer;
+}
+.btn-git:hover { color: var(--accent); border-color: var(--accent); }
+.badge-git-clean {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--green) 15%, transparent);
+  color: var(--green);
+}
+.badge-git-dirty {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--yellow) 15%, transparent);
+  color: var(--yellow);
+}
+.badge-git-error {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--red) 15%, transparent);
+  color: var(--red);
+}
 </style>
 </head>
 <body>
@@ -587,6 +620,7 @@ let activeTag = '';
 let favFilter = false;
 let actionDefs = {};  // global action definitions from server
 var lastPlacesData = [];  // cached place data for dropdown lookups
+let gitCache = {};  // place name → {branch, dirty}
 
 function setSort(key) {
   currentSort = key;
@@ -681,15 +715,22 @@ async function load() {
         <button class="btn-desktop-go${p.desktop ? ' visible' : ''}" onclick="switchDesktop(${p.desktop || 0})" title="Switch to desktop ${p.desktop || ''}">\u2192</button>
         <span class="place-name" onclick="editName('${esc(p.name)}',this)" title="Click to rename">${esc(dName)}</span>
         <div class="place-info">
-          <span class="place-path" onclick="editPath('${esc(p.name)}',this)" title="Click to edit path">${esc(dPath)}</span>
-          ${(function(){ var dn = maskNote(p.name, p.note, p.tags); return dn ? `<span class="place-note" onclick="editNote('${esc(p.name)}',this)" title="Click to edit note">${esc(dn)}</span>` : `<span class="place-note-empty" onclick="editNote('${esc(p.name)}',this)">+ note</span>`; })()}
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="place-path" onclick="editPath('${esc(p.name)}',this)" title="Click to edit path">${esc(dPath)}</span>
+            ${p.exists ? `<button class="btn-git" onclick="getGitStatus('${esc(p.name)}')" title="Check git status">git</button>` : ''}
+            ${gitCache[p.name] ? renderGitBadge(gitCache[p.name]) : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${(function(){ var dn = maskNote(p.name, p.note, p.tags); return dn ? `<span class="place-note" onclick="editNote('${esc(p.name)}',this)" title="Click to edit note">${esc(dn)}</span>` : `<span class="place-note-empty" onclick="editNote('${esc(p.name)}',this)">+ note</span>`; })()}
+            <span style="flex:1"></span>
+            <span class="place-tags">
+              ${(p.tags || []).map(t => `<span class="badge-tag">${esc(t)}<span class="tag-x" onclick="removeTag('${esc(p.name)}','${esc(t)}')">\u00d7</span></span>`).join('')}
+              <button class="btn-add-tag" onclick="promptAddTag('${esc(p.name)}')" title="Add tag">+</button>
+            </span>
+          </div>
         </div>
-        <span class="place-tags">
-          ${(p.tags || []).map(t => `<span class="badge-tag">${esc(t)}<span class="tag-x" onclick="removeTag('${esc(p.name)}','${esc(t)}')">\u00d7</span></span>`).join('')}
-          <button class="btn-add-tag" onclick="promptAddTag('${esc(p.name)}')" title="Add tag">+</button>
-        </span>
         ${!p.exists ? '<span class="badge-missing">missing</span>' : ''}
-        <span class="place-stats">${p.use_count}x${p.last_used_at ? ' \u00b7 ' + timeAgo(p.last_used_at) : ''}</span>
+        <span class="place-stats">${p.use_count}x${p.last_used_at ? '<br>' + timeAgo(p.last_used_at) : ''}</span>
         <div class="place-actions">
           ${p.exists ? `
             ${renderCustomActions(p)}
@@ -1026,6 +1067,34 @@ document.addEventListener('keydown', function(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.key === 's' || e.key === 'S') toggleScreenshot();
 });
+
+// Git status
+async function getGitStatus(name) {
+  try {
+    const res = await fetch('/api/git-status', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name})
+    });
+    if (res.ok) {
+      gitCache[name] = await res.json();
+    } else {
+      const msg = (await res.text()).trim();
+      gitCache[name] = { error: msg || 'git failed' };
+    }
+    load();
+  } catch (e) {
+    gitCache[name] = { error: 'git failed' };
+    load();
+  }
+}
+
+function renderGitBadge(info) {
+  if (info.error) return `<span class="badge-git-error">${esc(info.error)}</span>`;
+  const cls = info.dirty ? 'badge-git-dirty' : 'badge-git-clean';
+  const icon = info.dirty ? '\u25CF' : '\u2713';
+  return `<span class="${cls}">${icon} ${esc(info.branch)}</span>`;
+}
 
 // Custom actions
 function renderCustomActions(p) {

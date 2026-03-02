@@ -126,6 +126,7 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 	mux.HandleFunc("/api/update-path", handleUpdatePath)
 	mux.HandleFunc("/api/export", handleExport)
 	mux.HandleFunc("/api/import", handleImport)
+	mux.HandleFunc("/api/git-status", handleGitStatus)
 	if showFn != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
@@ -1025,6 +1026,63 @@ func handleImport(w http.ResponseWriter, r *http.Request) {
 		"places_skipped":  skipped,
 		"actions_added":   actionsAdded,
 		"actions_skipped": actionsSkipped,
+	})
+}
+
+// handleGitStatus returns the current git branch and dirty/clean status for a place.
+// Uses manual Lock/Unlock to release before running git commands.
+func handleGitStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req rmReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	cfg, err := config.Load()
+	if err != nil {
+		config.Unlock()
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		config.Unlock()
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+	path := place.Path
+	config.Unlock()
+
+	if _, err := os.Stat(path); err != nil {
+		http.Error(w, "directory does not exist", http.StatusBadRequest)
+		return
+	}
+
+	branchOut, err := exec.Command("git", "-C", path, "rev-parse", "--abbrev-ref", "HEAD").Output()
+	if err != nil {
+		http.Error(w, "not a git repository", http.StatusBadRequest)
+		return
+	}
+	branch := strings.TrimSpace(string(branchOut))
+
+	statusOut, err := exec.Command("git", "-C", path, "status", "--porcelain").Output()
+	if err != nil {
+		http.Error(w, "failed to read git status", http.StatusInternalServerError)
+		return
+	}
+	dirty := len(strings.TrimSpace(string(statusOut))) > 0
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"branch": branch,
+		"dirty":  dirty,
 	})
 }
 

@@ -39,15 +39,15 @@
 - [x] ~~**Global hotkey** — Win+Alt+P opens the dashboard from anywhere, switching to its virtual desktop~~ *(Mar 2)*
 - [x] ~~**Import/export** — `places export` / `places import <file>` for syncing across machines; dashboard Export/Import buttons~~ *(Mar 2)*
 - [x] ~~**Notes** (`p note <name> [text]`) — attach a description, shown as subtitle in dashboard with inline editing~~ *(Mar 2)*
-- [ ] **Type-to-filter in select** — start typing in the interactive picker to narrow results instead of just arrow keys
-- [ ] **Git info in desktop app** — show current branch and dirty/clean status next to each place
 - [x] ~~**Custom actions** — user-defined commands per place or globally, beyond the built-in PS/cmd/Claude/Explorer~~ *(Mar 2)*
 - [x] ~~**Frecency sorting** — combine frequency + recency into a single score for smarter ordering in select and app~~ *(Mar 2)*
-- [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
-- [ ] **Inline editing in dashboard** — click a place's name or path to edit it inline; rename and path update via API
+- [x] ~~**Inline editing in dashboard** — click a place's name or path to edit it inline; rename and path update via API~~ *(Mar 2)*
 - [x] ~~**Always on top** — dashboard window stays above all other windows~~ *(Mar 2)*
 - [x] ~~**Drag-and-drop path** — dragging a folder from Explorer onto the add form's path input fills in the path~~ *(Mar 2)*
 - [x] ~~**Open links in default browser** — web links clicked in the dashboard (Wails WebView) now open in the system default browser via `/api/open-url` endpoint~~ *(Mar 2)*
+- [ ] **Type-to-filter in select** — start typing in the interactive picker to narrow results instead of just arrow keys
+- [x] ~~**Git info in desktop app** — on-demand git button per place shows current branch and dirty/clean badge~~ *(Mar 2)*
+- [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
 
 ## Script-Friendly
 
@@ -78,17 +78,17 @@
 - [x] ~~**`handlePlaces` returns random order**~~ — now uses `config.SortedNames` for stable alphabetical order *(Mar 2)*
 - [x] ~~**Config migration ignores `Save` error**~~ — now checks and returns the error *(Mar 2)*
 - [x] ~~**`Sscanf` for port parsing**~~ — replaced with `strconv.Atoi` in `places-app/main.go` *(Mar 2)*
+- [x] ~~**Duplicate tag/fav filtering logic** — extracted `config.FilterNames()` shared helper, used by both `cmdList()` and `cmdListJSON()`~~ *(Mar 2)*
+- [x] ~~**No place name validation** — `config.ValidateName()` rejects special chars; enforced in `cmdAdd`, `cmdRename`, and `handleAdd`~~ *(Mar 2)*
+- [x] ~~**Ignored errors in `pngToICO`** — `pngToICO` now returns error; caller falls back to raw PNG on failure~~ *(Mar 2)*
+- [x] ~~**Error responses leak internal paths** — HTTP handlers now return generic messages instead of raw `err.Error()`~~ *(Mar 2)*
+- [x] ~~**Unstable sort in dashboard** — added alphabetical name tiebreaker to all sort modes so equal-key places stay stable across auto-refreshes~~ *(Mar 2)*
 - [ ] **Duplicate `jsonPlace` struct** — defined in both `commands.go` and `internal/app/app.go` (accepted: different fields needed)
 - [ ] **`os.Exit(0)` bypasses cleanup** — `QuitApp()`, tray quit, and `beforeClose` skip deferred functions, Wails shutdown, HTTP graceful shutdown
 - [ ] **Goroutine leak in `Detach`** — `go cmd.Wait()` goroutines accumulate for long-running child processes on non-Windows
-- [x] ~~**Duplicate tag/fav filtering logic** — extracted `config.FilterNames()` shared helper, used by both `cmdList()` and `cmdListJSON()`~~ *(Mar 2)*
-- [x] ~~**No place name validation** — `config.ValidateName()` rejects special chars; enforced in `cmdAdd`, `cmdRename`, and `handleAdd`~~ *(Mar 2)*
 - [ ] **Unix escape key blocks in selector** — pressing Esc with no following bytes causes `readKeyCode` to block indefinitely (`term_unix.go`)
-- [x] ~~**Ignored errors in `pngToICO`** — `pngToICO` now returns error; caller falls back to raw PNG on failure~~ *(Mar 2)*
 - [ ] **`Cmd()` and `Claude()` launchers have no platform guard** — unconditionally build `cmd.exe` commands, fail on non-Windows
 - [ ] **`termios` struct is Linux-specific** — ioctl numbers and struct layout in `term_unix.go` won't work on macOS/FreeBSD
-- [x] ~~**Error responses leak internal paths** — HTTP handlers now return generic messages instead of raw `err.Error()`~~ *(Mar 2)*
-- [x] ~~**Unstable sort in dashboard** — added alphabetical name tiebreaker to all sort modes so equal-key places stay stable across auto-refreshes~~ *(Mar 2)*
 
 ## Improvements
 
