@@ -42,7 +42,7 @@
 - [ ] **Type-to-filter in select** — start typing in the interactive picker to narrow results instead of just arrow keys
 - [ ] **Git info in desktop app** — show current branch and dirty/clean status next to each place
 - [x] ~~**Custom actions** — user-defined commands per place or globally, beyond the built-in PS/cmd/Claude/Explorer~~ *(Mar 2)*
-- [ ] **Frecency sorting** — combine frequency + recency into a single score for smarter ordering in select and app
+- [x] ~~**Frecency sorting** — combine frequency + recency into a single score for smarter ordering in select and app~~ *(Mar 2)*
 - [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
 - [ ] **Inline editing in dashboard** — click a place's name or path to edit it inline; rename and path update via API
 - [x] ~~**Always on top** — dashboard window stays above all other windows~~ *(Mar 2)*

@@ -515,6 +515,7 @@ button:active { opacity: 0.7; }
   <button class="sort-btn" onclick="setSort('use_count')" id="sort-use_count">Most used</button>
   <button class="sort-btn active" onclick="setSort('last_used')" id="sort-last_used">Last used</button>
   <button class="sort-btn" onclick="setSort('added')" id="sort-added">Added</button>
+  <button class="sort-btn" onclick="setSort('frecency')" id="sort-frecency" title="Frequency + recency combined">Frecency</button>
   <button class="sort-btn" onclick="toggleFavFilter()" id="filter-fav" title="Show favorites only">&#9733;</button>
   <span style="flex:1"></span>
   <button class="btn-io" onclick="exportPlaces()" title="Export places as JSON">Export</button>
@@ -575,6 +576,13 @@ function toggleFavFilter() {
   load();
 }
 
+function frecencyScore(p) {
+  if (!p.use_count || !p.last_used_at) return 0;
+  const ageHours = (Date.now() - new Date(p.last_used_at).getTime()) / 3600000;
+  const decay = Math.exp(-ageHours / 168); // half-life ~1 week
+  return p.use_count * decay;
+}
+
 function sortPlaces(places) {
   return places.slice().sort((a, b) => {
     switch (currentSort) {
@@ -582,6 +590,7 @@ function sortPlaces(places) {
       case 'use_count': return (b.use_count - a.use_count) || a.name.localeCompare(b.name);
       case 'last_used': return (b.last_used_at || '').localeCompare(a.last_used_at || '') || a.name.localeCompare(b.name);
       case 'added': return (b.added_at || '').localeCompare(a.added_at || '') || a.name.localeCompare(b.name);
+      case 'frecency': return (frecencyScore(b) - frecencyScore(a)) || a.name.localeCompare(b.name);
       default: return 0;
     }
   });

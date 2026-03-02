@@ -184,7 +184,7 @@ Each place also has a virtual desktop selector (D1–D4). When set, the app swit
 
 Press **Win+Alt+P** from anywhere to open the dashboard. If it's on another virtual desktop, you are switched there automatically.
 
-The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, or date added. Places with equal sort values use alphabetical name as a stable tiebreaker. A ★ filter button in the sort bar shows only favorites. Each place has a clickable star to toggle its favorite status.
+The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, date added, or frecency (frequency × recency). Places with equal sort values use alphabetical name as a stable tiebreaker. A ★ filter button in the sort bar shows only favorites. Each place has a clickable star to toggle its favorite status.
 
 Links in the footer open in the system default browser (not inside the app window).
 
