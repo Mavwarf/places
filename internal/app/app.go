@@ -80,6 +80,16 @@ type noteReq struct {
 	Note string `json:"note"`
 }
 
+type renameReq struct {
+	OldName string `json:"old_name"`
+	NewName string `json:"new_name"`
+}
+
+type updatePathReq struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
 type rmReq struct {
 	Name string `json:"name"`
 }
@@ -112,6 +122,8 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 	mux.HandleFunc("/api/action-assign", handleActionAssign)
 	mux.HandleFunc("/api/action-unassign", handleActionUnassign)
 	mux.HandleFunc("/api/note", handleNote)
+	mux.HandleFunc("/api/rename", handleRename)
+	mux.HandleFunc("/api/update-path", handleUpdatePath)
 	mux.HandleFunc("/api/export", handleExport)
 	mux.HandleFunc("/api/import", handleImport)
 	if showFn != nil {
@@ -809,6 +821,120 @@ func handleNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	place.Note = req.Note
+
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleRename changes a place's name (map key).
+func handleRename(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req renameReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	if req.OldName == "" || req.NewName == "" {
+		http.Error(w, "old_name and new_name are required", http.StatusBadRequest)
+		return
+	}
+
+	if err := config.ValidateName(req.NewName); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	defer config.Unlock()
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+
+	place, ok := cfg.Places[req.OldName]
+	if !ok {
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+
+	if _, exists := cfg.Places[req.NewName]; exists {
+		http.Error(w, "a place with that name already exists", http.StatusConflict)
+		return
+	}
+
+	cfg.Places[req.NewName] = place
+	delete(cfg.Places, req.OldName)
+
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleUpdatePath changes a place's directory path.
+func handleUpdatePath(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req updatePathReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	if req.Name == "" || req.Path == "" {
+		http.Error(w, "name and path are required", http.StatusBadRequest)
+		return
+	}
+
+	absPath, err := filepath.Abs(req.Path)
+	if err != nil {
+		http.Error(w, "invalid path", http.StatusBadRequest)
+		return
+	}
+	req.Path = absPath
+
+	info, err := os.Stat(req.Path)
+	if err != nil {
+		http.Error(w, "path does not exist", http.StatusBadRequest)
+		return
+	}
+	if !info.IsDir() {
+		http.Error(w, "path is not a directory", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	defer config.Unlock()
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+
+	place.Path = req.Path
 
 	if err := config.Save(cfg); err != nil {
 		http.Error(w, "failed to save config", http.StatusInternalServerError)
