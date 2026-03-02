@@ -100,7 +100,7 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 			}
 			path, err := browseFn()
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				http.Error(w, "browse failed", http.StatusInternalServerError)
 				return
 			}
 			if path == "" {
@@ -171,7 +171,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 func handlePlaces(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Load()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
 		return
 	}
 
@@ -216,7 +216,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Load()
 	if err != nil {
 		config.Unlock()
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
 		return
 	}
 
@@ -254,7 +254,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	config.RecordUse(place)
 	if err := config.Save(cfg); err != nil {
 		config.Unlock()
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
 		return
 	}
 	path := place.Path
@@ -264,7 +264,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	launcher.SwitchDesktop(desk)
 
 	if err := launcher.Detach(fn(path)); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to launch application", http.StatusInternalServerError)
 		return
 	}
 
@@ -288,7 +288,7 @@ func handleDesktop(w http.ResponseWriter, r *http.Request) {
 
 	cfg, err := config.Load()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
 		return
 	}
 
@@ -306,7 +306,7 @@ func handleDesktop(w http.ResponseWriter, r *http.Request) {
 	place.Desktop = req.Desktop
 
 	if err := config.Save(cfg); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
 		return
 	}
 
@@ -351,7 +351,7 @@ func handleRm(w http.ResponseWriter, r *http.Request) {
 
 	cfg, err := config.Load()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
 		return
 	}
 
@@ -362,7 +362,7 @@ func handleRm(w http.ResponseWriter, r *http.Request) {
 
 	delete(cfg.Places, req.Name)
 	if err := config.Save(cfg); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
 		return
 	}
 
@@ -383,6 +383,11 @@ func handleAdd(w http.ResponseWriter, r *http.Request) {
 
 	if req.Name == "" || req.Path == "" {
 		http.Error(w, "name and path are required", http.StatusBadRequest)
+		return
+	}
+
+	if err := config.ValidateName(req.Name); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -408,7 +413,7 @@ func handleAdd(w http.ResponseWriter, r *http.Request) {
 
 	cfg, err := config.Load()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
 		return
 	}
 
@@ -426,7 +431,7 @@ func handleAdd(w http.ResponseWriter, r *http.Request) {
 	}
 	cfg.Places[req.Name] = place
 	if err := config.Save(cfg); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
 		return
 	}
 
@@ -450,7 +455,7 @@ func handleFav(w http.ResponseWriter, r *http.Request) {
 
 	cfg, err := config.Load()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
 		return
 	}
 
@@ -463,7 +468,7 @@ func handleFav(w http.ResponseWriter, r *http.Request) {
 	place.Favorite = req.Favorite
 
 	if err := config.Save(cfg); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
 		return
 	}
 
@@ -487,7 +492,7 @@ func handleTag(w http.ResponseWriter, r *http.Request) {
 
 	cfg, err := config.Load()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
 		return
 	}
 
@@ -500,7 +505,7 @@ func handleTag(w http.ResponseWriter, r *http.Request) {
 	config.AddTag(place, req.Tag)
 
 	if err := config.Save(cfg); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
 		return
 	}
 
@@ -558,7 +563,7 @@ func handleUntag(w http.ResponseWriter, r *http.Request) {
 
 	cfg, err := config.Load()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
 		return
 	}
 
@@ -574,7 +579,7 @@ func handleUntag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := config.Save(cfg); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
 		return
 	}
 

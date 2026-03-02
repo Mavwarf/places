@@ -39,6 +39,10 @@ func cmdAdd(name, path string, tags []string) {
 		}
 	}
 
+	if err := config.ValidateName(name); err != nil {
+		fatal("%v", err)
+	}
+
 	// Verify the path exists.
 	info, err := os.Stat(path)
 	if err != nil {
@@ -88,39 +92,14 @@ func cmdList(tagFilter string, favOnly bool) {
 		return
 	}
 
-	names := config.SortedNames(cfg)
-
-	// Filter by tag if specified.
-	if tagFilter != "" {
-		var filtered []string
-		for _, name := range names {
-			for _, t := range cfg.Places[name].Tags {
-				if t == tagFilter {
-					filtered = append(filtered, name)
-					break
-				}
-			}
-		}
-		names = filtered
-		if len(names) == 0 {
+	names := config.FilterNames(cfg, config.SortedNames(cfg), tagFilter, favOnly)
+	if len(names) == 0 {
+		if tagFilter != "" {
 			fmt.Printf("No places with tag %q.\n", tagFilter)
-			return
-		}
-	}
-
-	// Filter by favorites if requested.
-	if favOnly {
-		var filtered []string
-		for _, name := range names {
-			if cfg.Places[name].Favorite {
-				filtered = append(filtered, name)
-			}
-		}
-		names = filtered
-		if len(names) == 0 {
+		} else if favOnly {
 			fmt.Println("No favorite places. Use 'places fav <name>' to mark one.")
-			return
 		}
+		return
 	}
 
 	// Find max name length for alignment.
@@ -388,6 +367,10 @@ func cmdRm(name string) {
 }
 
 func cmdRename(oldName, newName string) {
+	if err := config.ValidateName(newName); err != nil {
+		fatal("%v", err)
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		fatal("%v", err)
@@ -531,27 +514,10 @@ func cmdListJSON(tagFilter string, favOnly bool) {
 		Desktop    int      `json:"desktop,omitempty"`
 	}
 
-	names := config.SortedNames(cfg)
+	names := config.FilterNames(cfg, config.SortedNames(cfg), tagFilter, favOnly)
 	places := make([]jsonPlace, 0, len(names))
 	for _, name := range names {
 		p := cfg.Places[name]
-		// Filter by tag if specified.
-		if tagFilter != "" {
-			found := false
-			for _, t := range p.Tags {
-				if t == tagFilter {
-					found = true
-					break
-				}
-			}
-			if !found {
-				continue
-			}
-		}
-		// Filter by favorites if requested.
-		if favOnly && !p.Favorite {
-			continue
-		}
 		jp := jsonPlace{
 			Name:     name,
 			Path:     p.Path,

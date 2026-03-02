@@ -27,30 +27,35 @@ func runTray(app *App) {
 // pngToICO wraps raw PNG bytes in a minimal ICO container.
 // Windows LoadImage(IMAGE_ICON) requires ICO format; since Vista,
 // ICO supports embedded PNG data directly.
-func pngToICO(png []byte) []byte {
+func pngToICO(png []byte) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	// ICONDIR header
-	binary.Write(buf, binary.LittleEndian, uint16(0)) // reserved
-	binary.Write(buf, binary.LittleEndian, uint16(1)) // type: 1 = ICO
-	binary.Write(buf, binary.LittleEndian, uint16(1)) // count: 1 image
+	for _, v := range []interface{}{uint16(0), uint16(1), uint16(1)} {
+		if err := binary.Write(buf, binary.LittleEndian, v); err != nil {
+			return nil, err
+		}
+	}
 
 	// ICONDIRENTRY
-	buf.WriteByte(0)  // width (0 = 256)
-	buf.WriteByte(0)  // height (0 = 256)
-	buf.WriteByte(0)  // color count
-	buf.WriteByte(0)  // reserved
-	binary.Write(buf, binary.LittleEndian, uint16(1))          // color planes
-	binary.Write(buf, binary.LittleEndian, uint16(32))         // bits per pixel
-	binary.Write(buf, binary.LittleEndian, uint32(len(png)))   // image data size
-	binary.Write(buf, binary.LittleEndian, uint32(6+1*16))     // offset to image data (header + 1 entry)
+	buf.Write([]byte{0, 0, 0, 0}) // width, height, color count, reserved
+	for _, v := range []interface{}{uint16(1), uint16(32), uint32(len(png)), uint32(6 + 1*16)} {
+		if err := binary.Write(buf, binary.LittleEndian, v); err != nil {
+			return nil, err
+		}
+	}
 
 	// PNG data
 	buf.Write(png)
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
 func onTrayReady(app *App) {
-	systray.SetIcon(pngToICO(trayIcon))
+	ico, err := pngToICO(trayIcon)
+	if err != nil {
+		systray.SetIcon(trayIcon) // fallback to raw PNG
+	} else {
+		systray.SetIcon(ico)
+	}
 	systray.SetTooltip("places")
 	systray.SetOnClick(func(menu systray.IMenu) { menu.ShowMenu() })
 	systray.SetOnDClick(func(menu systray.IMenu) { app.ShowWindow() })

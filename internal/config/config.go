@@ -5,11 +5,31 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 )
+
+// validName matches names that are safe for shell hooks and HTML:
+// alphanumeric, hyphens, underscores, dots. Must not start with a dash.
+var validName = regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.\-]*$`)
+
+// ValidateName returns an error if the name contains characters that could
+// break shell hooks or HTML rendering.
+func ValidateName(name string) error {
+	if name == "" {
+		return fmt.Errorf("name cannot be empty")
+	}
+	if len(name) > 64 {
+		return fmt.Errorf("name too long (max 64 characters)")
+	}
+	if !validName.MatchString(name) {
+		return fmt.Errorf("name %q contains invalid characters (use letters, numbers, hyphens, underscores, dots)", name)
+	}
+	return nil
+}
 
 // mu serializes config read-modify-write cycles within a process.
 // Callers that do Load→modify→Save should wrap the cycle with Lock/Unlock.
@@ -168,6 +188,34 @@ func SortedNames(cfg Config) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// FilterNames returns names filtered by tag and/or favorite status.
+func FilterNames(cfg Config, names []string, tagFilter string, favOnly bool) []string {
+	if tagFilter == "" && !favOnly {
+		return names
+	}
+	filtered := make([]string, 0, len(names))
+	for _, name := range names {
+		p := cfg.Places[name]
+		if tagFilter != "" {
+			hasTag := false
+			for _, t := range p.Tags {
+				if t == tagFilter {
+					hasTag = true
+					break
+				}
+			}
+			if !hasTag {
+				continue
+			}
+		}
+		if favOnly && !p.Favorite {
+			continue
+		}
+		filtered = append(filtered, name)
+	}
+	return filtered
 }
 
 // AddTag adds a tag to a place (lowercase, trimmed, deduplicated, sorted).

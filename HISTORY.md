@@ -2,6 +2,7 @@
 
 ## Features
 
+- Place name validation — names restricted to letters, numbers, hyphens, underscores, dots (max 64 chars); enforced in CLI and desktop app *(Mar 2)*
 - Stable dashboard sorting — places with equal sort keys (e.g. never-used places sorted by last used) now use alphabetical name as tiebreaker; no more shuffling on auto-refresh *(Mar 2)*
 - External links open in system browser — footer links in the dashboard now open in the default browser instead of navigating inside the WebView *(Mar 2)*
 - Global hotkey (Win+Alt+P) — system-wide shortcut to open the dashboard; switches to the dashboard's virtual desktop if on a different one *(Mar 2)*
@@ -36,6 +37,22 @@
 ---
 
 ## 2026-03-02
+
+### Tech debt: name validation, error sanitization, dedup, ICO errors
+
+Four tech debt fixes in one pass:
+
+- **Place name validation** — new `config.ValidateName()` rejects names with
+  special characters that could break shell hooks or HTML rendering. Valid names
+  use letters, numbers, hyphens, underscores, dots (max 64 chars, must not start
+  with a dash). Enforced in `cmdAdd`, `cmdRename`, and `handleAdd`.
+- **HTTP error sanitization** — all HTTP error responses from config Load/Save
+  now return generic messages ("failed to load config", "failed to save config")
+  instead of raw `err.Error()` which could leak filesystem paths.
+- **Duplicate filter logic** — extracted `config.FilterNames()` shared helper,
+  replacing duplicate tag/favorite filtering in `cmdList()` and `cmdListJSON()`.
+- **pngToICO error handling** — `pngToICO()` now returns `([]byte, error)`;
+  caller falls back to raw PNG bytes if ICO conversion fails.
 
 ### Stable dashboard sorting
 

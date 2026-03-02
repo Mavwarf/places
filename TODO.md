@@ -78,13 +78,13 @@
 - [ ] **Duplicate `jsonPlace` struct** — defined in both `commands.go` and `internal/app/app.go` (accepted: different fields needed)
 - [ ] **`os.Exit(0)` bypasses cleanup** — `QuitApp()`, tray quit, and `beforeClose` skip deferred functions, Wails shutdown, HTTP graceful shutdown
 - [ ] **Goroutine leak in `Detach`** — `go cmd.Wait()` goroutines accumulate for long-running child processes on non-Windows
-- [ ] **Duplicate tag/fav filtering logic** — `cmdList()` and `cmdListJSON()` implement the same filters separately
-- [ ] **No place name validation** — names with quotes, newlines, or special chars can break shell hooks or HTML rendering
+- [x] ~~**Duplicate tag/fav filtering logic** — extracted `config.FilterNames()` shared helper, used by both `cmdList()` and `cmdListJSON()`~~ *(Mar 2)*
+- [x] ~~**No place name validation** — `config.ValidateName()` rejects special chars; enforced in `cmdAdd`, `cmdRename`, and `handleAdd`~~ *(Mar 2)*
 - [ ] **Unix escape key blocks in selector** — pressing Esc with no following bytes causes `readKeyCode` to block indefinitely (`term_unix.go`)
-- [ ] **Ignored errors in `pngToICO`** — `binary.Write` return values silently dropped (`tray.go`)
+- [x] ~~**Ignored errors in `pngToICO`** — `pngToICO` now returns error; caller falls back to raw PNG on failure~~ *(Mar 2)*
 - [ ] **`Cmd()` and `Claude()` launchers have no platform guard** — unconditionally build `cmd.exe` commands, fail on non-Windows
 - [ ] **`termios` struct is Linux-specific** — ioctl numbers and struct layout in `term_unix.go` won't work on macOS/FreeBSD
-- [ ] **Error responses leak internal paths** — HTTP error handlers pass raw `err.Error()` which may contain file system paths
+- [x] ~~**Error responses leak internal paths** — HTTP handlers now return generic messages instead of raw `err.Error()`~~ *(Mar 2)*
 - [x] ~~**Unstable sort in dashboard** — added alphabetical name tiebreaker to all sort modes so equal-key places stay stable across auto-refreshes~~ *(Mar 2)*
 
 ## Improvements

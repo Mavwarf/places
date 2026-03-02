@@ -20,6 +20,7 @@ Works on Windows (PowerShell, cmd.exe) and Unix (Bash, Zsh). Includes a desktop 
 p                        # Browse saved places interactively and cd
 p <name>                 # Jump to a saved place (supports fuzzy matching)
 p add [name] [path]      # Save current dir (name auto-derived if omitted)
+                         # Names: letters, numbers, hyphens, underscores, dots
 p list                   # List all places with colored output and usage stats
 p list --fav             # List only favorite places
 p list --json            # List all places as JSON
