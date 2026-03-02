@@ -681,14 +681,15 @@ async function load() {
     const allTags = new Set();
     places.forEach(p => (p.tags || []).forEach(t => allTags.add(t)));
     const sortedTags = Array.from(allTags).sort();
+    const gitBtn = '<span style="flex:1"></span><button class="btn-io" onclick="updateAllGit()" title="Fetch git status for all visible places">Update git</button>';
     if (sortedTags.length > 0) {
       tagBar.innerHTML = '<span>Tags:</span>' +
         `<button class="tag-chip${activeTag === '' ? ' active' : ''}" onclick="filterTag('')">All</button>` +
         sortedTags.map(t =>
           `<button class="tag-chip${activeTag === t ? ' active' : ''}" onclick="filterTag('${esc(t)}')">${esc(t)}</button>`
-        ).join('');
+        ).join('') + gitBtn;
     } else {
-      tagBar.innerHTML = '';
+      tagBar.innerHTML = gitBtn;
     }
 
     // Filter by active tag.
@@ -1072,7 +1073,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Git status
-async function getGitStatus(name) {
+async function fetchGitStatus(name) {
   try {
     const res = await fetch('/api/git-status', {
       method: 'POST',
@@ -1085,11 +1086,22 @@ async function getGitStatus(name) {
       const msg = (await res.text()).trim();
       gitCache[name] = { error: msg || 'git failed' };
     }
-    load();
   } catch (e) {
     gitCache[name] = { error: 'git failed' };
-    load();
   }
+}
+
+async function getGitStatus(name) {
+  await fetchGitStatus(name);
+  load();
+}
+
+async function updateAllGit() {
+  const places = lastPlacesData.filter(p => p.exists);
+  if (!places.length) return;
+  await Promise.all(places.map(p => fetchGitStatus(p.name)));
+  load();
+  toast('Git status updated');
 }
 
 function renderGitBadge(info) {
