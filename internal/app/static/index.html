@@ -493,9 +493,9 @@ function sortPlaces(places) {
   return places.slice().sort((a, b) => {
     switch (currentSort) {
       case 'name': return a.name.localeCompare(b.name);
-      case 'use_count': return b.use_count - a.use_count;
-      case 'last_used': return (b.last_used_at || '').localeCompare(a.last_used_at || '');
-      case 'added': return (b.added_at || '').localeCompare(a.added_at || '');
+      case 'use_count': return (b.use_count - a.use_count) || a.name.localeCompare(b.name);
+      case 'last_used': return (b.last_used_at || '').localeCompare(a.last_used_at || '') || a.name.localeCompare(b.name);
+      case 'added': return (b.added_at || '').localeCompare(a.added_at || '') || a.name.localeCompare(b.name);
       default: return 0;
     }
   });
@@ -731,6 +731,17 @@ async function minimizeWindow() {
 async function quitApp() {
   try { await fetch('/api/quit', {method: 'POST'}); } catch(e) {}
 }
+
+document.addEventListener('click', function(e) {
+  var a = e.target.closest('a[target="_blank"]');
+  if (!a) return;
+  e.preventDefault();
+  fetch('/api/open-url', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({url: a.href})
+  }).catch(function() {});
+});
 
 // ---- Screenshot mode ----
 var screenshotMode = localStorage.getItem('places-screenshot') === 'on';

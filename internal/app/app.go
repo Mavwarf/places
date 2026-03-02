@@ -8,11 +8,17 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/Mavwarf/places/internal/config"
 	"github.com/Mavwarf/places/internal/launcher"
 )
+
+type openURLReq struct {
+	URL string `json:"url"`
+}
 
 //go:embed static/index.html
 var staticFS embed.FS
@@ -75,6 +81,7 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 	mux.HandleFunc("/api/fav", handleFav)
 	mux.HandleFunc("/api/desktop", handleDesktop)
 	mux.HandleFunc("/api/switch-desktop", handleSwitchDesktop)
+	mux.HandleFunc("/api/open-url", handleOpenURL)
 	if showFn != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
@@ -497,6 +504,40 @@ func handleTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func handleOpenURL(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req openURLReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	if !strings.HasPrefix(req.URL, "https://") {
+		http.Error(w, "only https URLs allowed", http.StatusBadRequest)
+		return
+	}
+
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", "", req.URL)
+	case "darwin":
+		cmd = exec.Command("open", req.URL)
+	default:
+		cmd = exec.Command("xdg-open", req.URL)
+	}
+	if err := cmd.Start(); err != nil {
+		http.Error(w, "failed to open URL", http.StatusInternalServerError)
+		return
+	}
+	go cmd.Wait()
 	w.WriteHeader(http.StatusNoContent)
 }
 

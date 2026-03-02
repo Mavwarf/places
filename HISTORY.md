@@ -2,6 +2,8 @@
 
 ## Features
 
+- Stable dashboard sorting — places with equal sort keys (e.g. never-used places sorted by last used) now use alphabetical name as tiebreaker; no more shuffling on auto-refresh *(Mar 2)*
+- External links open in system browser — footer links in the dashboard now open in the default browser instead of navigating inside the WebView *(Mar 2)*
 - Global hotkey (Win+Alt+P) — system-wide shortcut to open the dashboard; switches to the dashboard's virtual desktop if on a different one *(Mar 2)*
 - Desktop switch button — → button next to the virtual desktop dropdown jumps to that desktop without launching a tool *(Mar 2)*
 - Virtual desktop (`places desktop <name> <0-4>`) — assign a Windows virtual desktop to a place; dashboard and tray switch to that desktop before launching tools; uses VirtualDesktopAccessor.dll *(Mar 2)*
@@ -34,6 +36,22 @@
 ---
 
 ## 2026-03-02
+
+### Stable dashboard sorting
+
+Sorting in the dashboard now uses the place name as a tiebreaker when the
+primary sort key is equal. Previously, places with the same value (e.g.
+never-used places sorted by "last used") would shuffle randomly on each
+3-second auto-refresh. Affects "most used", "last used", and "added" sort modes.
+
+### External links open in system browser
+
+Footer links (author website, GitHub repo) in the dashboard now open in the
+system default browser instead of navigating inside the Wails WebView. A global
+click interceptor catches all `<a target="_blank">` clicks and routes them
+through a new `/api/open-url` endpoint, which validates the URL (https only)
+and launches the platform browser (`cmd /c start` on Windows, `open` on macOS,
+`xdg-open` on Linux).
 
 ### Global hotkey
 

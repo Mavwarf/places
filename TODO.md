@@ -44,7 +44,7 @@
 - [ ] **Custom actions** — user-defined commands per place or globally, beyond the built-in PS/cmd/Claude/Explorer
 - [ ] **Frecency sorting** — combine frequency + recency into a single score for smarter ordering in select and app
 - [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
-- [ ] **Open links in default browser** — web links clicked in the dashboard (Wails WebView) should open in the system default browser instead of navigating inside the app
+- [x] ~~**Open links in default browser** — web links clicked in the dashboard (Wails WebView) now open in the system default browser via `/api/open-url` endpoint~~ *(Mar 2)*
 
 ## Script-Friendly
 
@@ -85,7 +85,7 @@
 - [ ] **`Cmd()` and `Claude()` launchers have no platform guard** — unconditionally build `cmd.exe` commands, fail on non-Windows
 - [ ] **`termios` struct is Linux-specific** — ioctl numbers and struct layout in `term_unix.go` won't work on macOS/FreeBSD
 - [ ] **Error responses leak internal paths** — HTTP error handlers pass raw `err.Error()` which may contain file system paths
-- [ ] **Unstable sort in dashboard** — places with equal sort keys (e.g. never-used places sorted by last access) shuffle randomly on each 3-second refresh; need a stable fallback (e.g. alphabetical by name)
+- [x] ~~**Unstable sort in dashboard** — added alphabetical name tiebreaker to all sort modes so equal-key places stay stable across auto-refreshes~~ *(Mar 2)*
 
 ## Improvements
 
