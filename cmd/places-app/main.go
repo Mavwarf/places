@@ -55,6 +55,7 @@ func main() {
 	}
 
 	go runTray(a)
+	go runHotkey(a)
 
 	loader := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")

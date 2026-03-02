@@ -23,6 +23,18 @@ func Current() (int, error) {
 // HideConsole is a no-op on non-Windows platforms.
 func HideConsole() {}
 
+// MoveWindowToDesktop moves a window to the given virtual desktop (1-indexed).
+// Not supported on non-Windows platforms.
+func MoveWindowToDesktop(hwnd uintptr, n int) error {
+	return fmt.Errorf("virtual desktop switching is only supported on Windows")
+}
+
+// WindowDesktop returns the virtual desktop number (1-indexed) for the given window.
+// Not supported on non-Windows platforms.
+func WindowDesktop(hwnd uintptr) (int, error) {
+	return -1, fmt.Errorf("virtual desktop switching is only supported on Windows")
+}
+
 // Count returns the number of virtual desktops.
 // Not supported on non-Windows platforms.
 func Count() (int, error) {

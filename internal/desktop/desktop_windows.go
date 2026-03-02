@@ -65,6 +65,38 @@ func HideConsole() {
 	proc.Call()
 }
 
+// MoveWindowToDesktop moves a window to the given virtual desktop (1-indexed).
+func MoveWindowToDesktop(hwnd uintptr, n int) error {
+	if dll == nil {
+		return fmt.Errorf("VirtualDesktopAccessor.dll not found")
+	}
+	proc := dll.NewProc("MoveWindowToDesktopNumber")
+	if err := proc.Find(); err != nil {
+		return fmt.Errorf("MoveWindowToDesktopNumber not found in DLL: %w", err)
+	}
+	// DLL is 0-indexed; callers use 1-indexed.
+	proc.Call(hwnd, uintptr(n-1))
+	return nil
+}
+
+// WindowDesktop returns the virtual desktop number (1-indexed) for the given window.
+// Returns -1 if the window's desktop cannot be determined (e.g. hidden to tray).
+func WindowDesktop(hwnd uintptr) (int, error) {
+	if dll == nil {
+		return -1, fmt.Errorf("VirtualDesktopAccessor.dll not found")
+	}
+	proc := dll.NewProc("GetWindowDesktopNumber")
+	if err := proc.Find(); err != nil {
+		return -1, fmt.Errorf("GetWindowDesktopNumber not found in DLL: %w", err)
+	}
+	ret, _, _ := proc.Call(hwnd)
+	n := int(int32(ret))
+	if n < 0 {
+		return -1, nil
+	}
+	return n + 1, nil // convert 0-indexed to 1-indexed
+}
+
 // Count returns the number of virtual desktops.
 func Count() (int, error) {
 	if dll == nil {

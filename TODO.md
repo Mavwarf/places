@@ -38,7 +38,7 @@
 - [x] ~~**Usage tracking from app/tray**~~ — action buttons (PS, cl, VS, >_, dir) now record use count and last-used timestamp *(Mar 2)*
 - [ ] **Import/export** — `places export > places.json` / `places import < places.json` for syncing across machines
 - [ ] **Notes** (`p add api --note "billing REST API"`) — attach a description, shown in list and desktop app
-- [ ] **Global hotkey** — system-wide keyboard shortcut to open the tray menu or dashboard
+- [x] ~~**Global hotkey** — Win+Alt+P opens the dashboard from anywhere, switching to its virtual desktop~~ *(Mar 2)*
 - [ ] **Type-to-filter in select** — start typing in the interactive picker to narrow results instead of just arrow keys
 - [ ] **Git info in desktop app** — show current branch and dirty/clean status next to each place
 - [ ] **Custom actions** — user-defined commands per place or globally, beyond the built-in PS/cmd/Claude/Explorer
