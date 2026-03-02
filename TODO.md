@@ -32,6 +32,10 @@
 - [x] ~~**Tags/groups** — `p add notify --tag work`, then `p list --tag work` to filter~~ *(Mar 1)*
 - [x] ~~**Screenshot mode**~~ — press S in desktop app to anonymize names and work-tagged paths for screenshots *(Mar 1)*
 - [x] ~~**Window controls**~~ — minimize and quit buttons in desktop app header *(Mar 1)*
+- [x] ~~**Favorites** (`p fav`/`p unfav`)~~ — mark places as favorites, filter with `--fav` in list, star toggle and filter button in desktop app *(Mar 1)*
+- [x] ~~**Virtual desktop** (`p desktop <name> <0-4>`)~~ — assign places to Windows virtual desktops; dashboard and tray switch desktop before launching tools; uses `VirtualDesktopAccessor.dll` *(Mar 2)*
+- [x] ~~**Auto-refresh in desktop app**~~ — polls `/api/places` every 3 seconds so CLI-added places appear automatically *(Mar 2)*
+- [x] ~~**Usage tracking from app/tray**~~ — action buttons (PS, cl, VS, >_, dir) now record use count and last-used timestamp *(Mar 2)*
 - [ ] **Import/export** — `places export > places.json` / `places import < places.json` for syncing across machines
 - [ ] **Notes** (`p add api --note "billing REST API"`) — attach a description, shown in list and desktop app
 - [ ] **Global hotkey** — system-wide keyboard shortcut to open the tray menu or dashboard

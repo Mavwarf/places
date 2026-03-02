@@ -2,6 +2,10 @@
 
 ## Features
 
+- Virtual desktop (`places desktop <name> <0-4>`) — assign a Windows virtual desktop to a place; dashboard and tray switch to that desktop before launching tools; uses VirtualDesktopAccessor.dll *(Mar 2)*
+- Auto-refresh in desktop app — polls /api/places every 3 seconds so CLI-added places appear automatically *(Mar 2)*
+- Usage tracking from app/tray — clicking action buttons (PS, cl, VS, >_, dir) now increments use count and updates last-used timestamp; UI refreshes immediately *(Mar 2)*
+- Favorites (`places fav`/`unfav`) — mark places as favorites; filter with `--fav` in list and `--json`; star toggle per place and ★ filter button in desktop app *(Mar 1)*
 - Interactive arrow-key select — `places select` uses cursor navigation instead of numbered input; Up/Down to move, Enter to confirm, Esc to cancel *(Mar 1)*
 - Init command (`places init`) — one-command setup that installs shell hooks for detected shell + cmd on Windows *(Mar 1)*
 - Edit command (`places edit [editor]`) — open places.json in `$EDITOR` or specified editor *(Mar 1)*
@@ -26,6 +30,35 @@
 - Initial release — Go CLI tool for bookmarking directories with shortcut names *(Feb 28)*
 
 ---
+
+## 2026-03-02
+
+### Virtual desktop support
+
+Each place can be assigned a Windows virtual desktop (1–4) via `places desktop
+<name> <n>`. When launching a tool (PowerShell, Claude, cmd, VS Code, Explorer)
+from the desktop app or system tray, the app switches to that desktop first using
+`VirtualDesktopAccessor.dll`.
+
+- CLI: `p desktop api 2` assigns desktop 2, `p desktop api 0` clears it
+- `p list` shows a `[D2]` badge for places with a desktop set
+- `p list --json` includes `"desktop"` field
+- Desktop app: dropdown selector (—, D1–D4) per place row
+- System tray: submenus switch desktop before launching
+- New `internal/desktop` package (copied from notify tool)
+- `launcher.SwitchDesktop(n)` helper called before `Detach()`
+
+### Auto-refresh in desktop app
+
+The dashboard now polls `/api/places` every 3 seconds. Places added via CLI
+appear automatically without needing to interact with the app.
+
+### Usage tracking from app and tray
+
+Clicking any action button (PS, cl, VS, >_, dir) in the desktop app or system
+tray now records a use — increments `use_count` and updates `last_used_at`. The
+UI refreshes immediately after clicking, so the use count and sort order update
+in place.
 
 ## 2026-03-01
 
