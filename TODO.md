@@ -64,6 +64,26 @@
 - [x] ~~**`fuzzyFind()` doesn't distinguish "not found" from "ambiguous"**~~ — now lists matching names on ambiguous query *(Mar 1)*
 - [x] ~~**Hardcoded port 8822**~~ — now configurable via `PLACES_PORT` env var or `--port` flag *(Mar 1)*
 - [ ] **Duplicate `jsonPlace` struct** — defined in both `commands.go` and `internal/app/app.go` (accepted: different fields needed)
+- [ ] **Shell injection via path in launcher** — `Set-Location '%s'` in `launcher.go` can break out if path contains single quotes; needs proper escaping
+- [ ] **Unauthenticated HTTP API** — any local process/browser tab can hit `localhost:8822` endpoints (`/api/open`, `/api/rm`, `/api/quit`); add `Origin` header validation or CSRF token
+- [ ] **Config file race condition** — concurrent Load→modify→Save (HTTP handlers, tray, polling) can silently overwrite each other; needs file locking
+- [ ] **`os.Exit(0)` bypasses cleanup** — `QuitApp()`, tray quit, and `beforeClose` skip deferred functions, Wails shutdown, HTTP graceful shutdown
+- [ ] **Missing `//go:build windows` on `shift_windows.go`** — relies on filename convention only; inconsistent with all other platform files
+- [ ] **Goroutine leak in `Detach`** — `go cmd.Wait()` goroutines accumulate for long-running child processes on non-Windows
+- [ ] **Duplicate tag/fav filtering logic** — `cmdList()` and `cmdListJSON()` implement the same filters separately
+- [ ] **Desktop number not validated in API** — `handleDesktop` accepts any integer; CLI validates 0–4 but API does not
+- [ ] **`handleAdd` doesn't resolve relative paths** — CLI does `filepath.Abs`, HTTP API stores as-is
+- [ ] **No place name validation** — names with quotes, newlines, or special chars can break shell hooks or HTML rendering
+- [ ] **`cmdAdd` silently overwrites existing places** — HTTP API returns 409 Conflict, CLI just replaces without warning
+- [ ] **Unix escape key blocks in selector** — pressing Esc with no following bytes causes `readKeyCode` to block indefinitely (`term_unix.go`)
+- [ ] **`beforeClose` reads `a.ctx` without `<-a.ready`** — potential nil context if close fires before Wails startup completes
+- [ ] **`handlePlaces` returns random order** — map iteration gives unstable order; frontend sorts client-side but other API consumers would not
+- [ ] **Ignored errors in `pngToICO`** — `binary.Write` return values silently dropped (`tray.go`)
+- [ ] **`Cmd()` and `Claude()` launchers have no platform guard** — unconditionally build `cmd.exe` commands, fail on non-Windows
+- [ ] **Config migration ignores `Save` error** — old-format migration calls `Save(cfg)` without checking the error
+- [ ] **`termios` struct is Linux-specific** — ioctl numbers and struct layout in `term_unix.go` won't work on macOS/FreeBSD
+- [ ] **`Sscanf` for port parsing** — `fmt.Sscanf` in `places-app/main.go` silently ignores malformed input; should use `strconv.Atoi`
+- [ ] **Error responses leak internal paths** — HTTP error handlers pass raw `err.Error()` which may contain file system paths
 
 ## Improvements
 
