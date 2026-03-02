@@ -42,7 +42,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	a := &App{port: port, ready: make(chan struct{})}
+	geom := loadGeometry()
+	a := &App{port: port, ready: make(chan struct{}), geom: geom}
 
 	// Start HTTP API server in a goroutine. The dashboard UI is served from
 	// here (not Wails' asset server) so we get a plain HTTP page with full
@@ -73,11 +74,16 @@ func main() {
 	// HTTP server, the page origin changes. Without this allowlist, Wails
 	// blocks WebView2 IPC (postMessage) from the HTTP origin, which breaks
 	// OnFileDrop and any other native Wails features.
+	width, height := 900, 600
+	if geom != nil {
+		width, height = geom.Width, geom.Height
+	}
+
 	origin := fmt.Sprintf("http://127.0.0.1:%d", port)
 	err = wails.Run(&options.App{
 		Title:             "places dashboard",
-		Width:             900,
-		Height:            600,
+		Width:             width,
+		Height:            height,
 		MinWidth:          700,
 		MinHeight:         400,
 		AssetServer: &assetserver.Options{

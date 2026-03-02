@@ -15,6 +15,7 @@ type App struct {
 	ctx      context.Context
 	port     int
 	ready    chan struct{} // closed when Wails startup completes
+	geom     *WindowGeometry
 	lastDrop string
 	dropMu   sync.Mutex
 }
@@ -32,6 +33,9 @@ func (a *App) startup(ctx context.Context) {
 			a.dropMu.Unlock()
 		}
 	})
+	if a.geom != nil {
+		wailsRuntime.WindowSetPosition(ctx, a.geom.X, a.geom.Y)
+	}
 	url := fmt.Sprintf("http://127.0.0.1:%d", a.port)
 	wailsRuntime.WindowExecJS(ctx, fmt.Sprintf("window.location.href = '%s';", url))
 	close(a.ready)
@@ -39,10 +43,18 @@ func (a *App) startup(ctx context.Context) {
 
 func (a *App) shutdown(ctx context.Context) {}
 
+// saveWindowGeometry persists the current window position and size.
+func (a *App) saveWindowGeometry() {
+	x, y := wailsRuntime.WindowGetPosition(a.ctx)
+	w, h := wailsRuntime.WindowGetSize(a.ctx)
+	saveGeometry(WindowGeometry{X: x, Y: y, Width: w, Height: h})
+}
+
 // beforeClose is called when the user clicks the window close button.
 // Shift+close fully exits; normal close hides to tray.
 func (a *App) beforeClose(ctx context.Context) bool {
 	<-a.ready
+	a.saveWindowGeometry()
 	if isShiftHeld() {
 		systray.Quit()
 		os.Exit(0)
@@ -66,6 +78,7 @@ func (a *App) MinimizeWindow() {
 
 // QuitApp fully exits the application.
 func (a *App) QuitApp() {
+	a.saveWindowGeometry()
 	systray.Quit()
 	os.Exit(0)
 }

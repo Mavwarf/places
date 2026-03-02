@@ -210,6 +210,8 @@ Click the theme toggle button (top-right) to cycle through 6 color schemes: Dark
 
 The header includes **pin** (📌), **minimize** (−), and **quit** (×) buttons in the top-right corner. Pin toggles always-on-top mode (the window stays above all other windows); the state persists across restarts. Minimize hides the window; quit fully exits the app. You can also close the window normally to hide to tray (Shift+close to exit).
 
+The window remembers its position and size between sessions (saved to `~/.config/places/window.json`). On first launch it uses the default 900×600 size.
+
 ### System Tray
 
 The desktop app lives in the system tray. Closing the window hides it to the tray instead of exiting — the app stays running for quick access.
