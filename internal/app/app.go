@@ -22,6 +22,9 @@ import (
 	"github.com/Mavwarf/places/internal/launcher"
 )
 
+// Version is the build version string, injected at compile time via ldflags.
+var Version = "dev"
+
 type openURLReq struct {
 	URL string `json:"url"`
 }
@@ -241,8 +244,9 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+	html := strings.Replace(string(data), "{{version}}", Version, 1)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(data)
+	w.Write([]byte(html))
 }
 
 // handlePlaces returns the full list of places and action definitions as JSON.
@@ -631,7 +635,7 @@ func handleOpenURL(w http.ResponseWriter, r *http.Request) {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
-		cmd = exec.Command("cmd", "/c", "start", "", req.URL)
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", req.URL)
 	case "darwin":
 		cmd = exec.Command("open", req.URL)
 	default:

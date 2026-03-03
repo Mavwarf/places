@@ -13,7 +13,13 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
+// version is set at build time via ldflags:
+//
+//	go build -ldflags "-X main.version=v0.3.3"
+var version = "dev"
+
 func main() {
+	app.Version = version
 	port := 8822
 	if env := os.Getenv("PLACES_PORT"); env != "" {
 		if p, err := strconv.Atoi(env); err == nil {

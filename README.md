@@ -189,7 +189,7 @@ Press **Win+Alt+P** from anywhere to open the dashboard. If it's on another virt
 
 The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, date added, or frecency (frequency × recency). Places with equal sort values use alphabetical name as a stable tiebreaker. Each place has a clickable star to toggle its favorite status.
 
-Links in the footer open in the system default browser (not inside the app window).
+A fixed status bar at the bottom of the window shows author/GitHub links on the left and the build version on the right — always visible regardless of scroll position.
 
 You can also add and remove places from the app. The **…** button next to the path input opens a native folder picker dialog, or drag a folder from Explorer onto the window to fill in the path. Changes are shared with the CLI (same `places.json`).
 
@@ -230,7 +230,7 @@ The desktop app lives in the system tray. Closing the window hides it to the tra
 
 ```
 cd cmd/places-app
-go build -tags production -o places-app.exe .
+go build -tags production -ldflags "-X main.version=$(git describe --tags --always)" -o places-app.exe .
 ```
 
 Copy `places-app.exe` next to `places.exe` on your PATH.

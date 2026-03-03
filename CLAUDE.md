@@ -4,7 +4,7 @@
 
 ```bash
 cd cmd/places && go build -o places.exe . && cp places.exe /c/dev/tools/cli/places.exe
-cd cmd/places-app && go build -tags production -o places-app.exe . && cp places-app.exe /c/dev/tools/cli/places-app.exe
+cd cmd/places-app && go build -tags production -ldflags "-X main.version=$(git describe --tags --always)" -o places-app.exe . && cp places-app.exe /c/dev/tools/cli/places-app.exe
 ```
 
 ## Documentation rules

@@ -95,7 +95,7 @@ body {
   font-family: var(--font);
   background: var(--bg);
   color: var(--fg);
-  padding: 24px;
+  padding: 24px 24px 32px;
   line-height: 1.5;
 }
 h1 {
@@ -217,7 +217,7 @@ button:active { opacity: 0.7; }
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 5px 14px 7px;
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -451,9 +451,26 @@ button:active { opacity: 0.7; }
 }
 
 /* Toast */
+.status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 16px;
+  font-size: 11px;
+  color: var(--fg-dim);
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  z-index: 50;
+}
+.status-bar a { text-decoration: none; }
+.status-bar a:hover { text-decoration: underline; }
+
 .toast {
   position: fixed;
-  bottom: 24px;
+  bottom: 32px;
   right: 24px;
   padding: 10px 20px;
   border-radius: 8px;
@@ -580,8 +597,9 @@ button:active { opacity: 0.7; }
     <button class="win-btn win-btn-quit" onclick="quitApp()" title="Quit">&times;</button>
   </div>
 </div>
-<div style="font-size:12px;color:var(--fg-dim);margin:-12px 0 16px">
-  By <a href="https://mavwarf.netlify.app/" target="_blank" rel="noopener" style="color:var(--fg)">Thomas H&auml;user</a>. <a href="https://github.com/Mavwarf/places" target="_blank" rel="noopener" style="color:var(--cyan)">github.com/Mavwarf/places</a>
+<div class="status-bar">
+  <span>By <a href="https://mavwarf.netlify.app/" target="_blank" rel="noopener" style="color:var(--fg)">Thomas H&auml;user</a> &middot; <a href="https://github.com/Mavwarf/places" target="_blank" rel="noopener" style="color:var(--cyan)">GitHub</a></span>
+  <span>{{version}}</span>
 </div>
 
 <form class="add-form" onsubmit="return addPlace(event)">
@@ -1177,38 +1195,6 @@ async function runCustomAction(placeName, actionName) {
     if (res.ok) { load(); }
     else { toast(await res.text() || 'Failed', true); }
   } catch (e) { toast('Failed to run action', true); }
-}
-
-function showActionDropdown(e, placeName) {
-  e.stopPropagation();
-  document.querySelectorAll('.action-dropdown').forEach(d => d.remove());
-  const allNames = Object.keys(actionDefs).sort();
-  const btn = e.target;
-  const placeData = lastPlacesData.find(p => p.name === placeName);
-  const assigned = (placeData && placeData.actions) || [];
-  const available = allNames.filter(n => !assigned.includes(n));
-  if (!available.length) return;
-  const dd = document.createElement('div');
-  dd.className = 'action-dropdown';
-  available.forEach(function(name) {
-    const item = document.createElement('div');
-    item.className = 'action-dropdown-item';
-    item.textContent = actionDefs[name].label + ' (' + name + ')';
-    item.onclick = function(ev) {
-      ev.stopPropagation();
-      dd.remove();
-      assignAction(placeName, name);
-    };
-    dd.appendChild(item);
-  });
-  btn.style.position = 'relative';
-  btn.appendChild(dd);
-  setTimeout(function() {
-    document.addEventListener('click', function closeDD() {
-      dd.remove();
-      document.removeEventListener('click', closeDD);
-    }, {once: true});
-  }, 0);
 }
 
 function showPlaceMenu(e, placeName) {
