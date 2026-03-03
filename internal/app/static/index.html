@@ -1165,15 +1165,6 @@ function renderCustomActions(p) {
   }).join('');
 }
 
-function renderAssignBtn(p) {
-  const allNames = Object.keys(actionDefs);
-  if (!allNames.length) return '';
-  const assigned = p.actions || [];
-  const available = allNames.filter(n => !assigned.includes(n));
-  if (!available.length) return '';
-  return `<button class="btn-assign-action" onclick="showActionDropdown(event,'${esc(p.name)}')" title="Assign custom action">+</button>`;
-}
-
 async function runCustomAction(placeName, actionName) {
   try {
     var def = actionDefs[actionName];
@@ -1345,7 +1336,6 @@ function confirmUnassign(e, placeName, actionName) {
 
 // Note inline editing
 function editNote(name, el) {
-  const row = el.closest('.place-row');
   const placeData = lastPlacesData.find(p => p.name === name);
   const currentNote = placeData ? (placeData.note || '') : '';
   const input = document.createElement('input');
