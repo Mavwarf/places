@@ -579,7 +579,6 @@ button:active { opacity: 0.7; }
   <button class="sort-btn active" onclick="setSort('last_used')" id="sort-last_used">Last used</button>
   <button class="sort-btn" onclick="setSort('added')" id="sort-added">Added</button>
   <button class="sort-btn" onclick="setSort('frecency')" id="sort-frecency" title="Frequency + recency combined">Frecency</button>
-  <button class="sort-btn" onclick="toggleFavFilter()" id="filter-fav" title="Show favorites only">&#9733;</button>
   <span style="flex:1"></span>
   <button class="btn-io" onclick="exportPlaces()" title="Export places as JSON">Export</button>
   <button class="btn-io" onclick="importPlaces()" title="Import places from JSON">Import</button>
@@ -619,7 +618,7 @@ themeToggle.addEventListener('click', function() {
 });
 
 let currentSort = 'last_used';
-let activeTag = '';
+let activeTags = new Set();
 let favFilter = false;
 let actionDefs = {};  // global action definitions from server
 var lastPlacesData = [];  // cached place data for dropdown lookups
@@ -627,16 +626,13 @@ let gitCache = {};  // place name → {branch, dirty}
 
 function setSort(key) {
   currentSort = key;
-  document.querySelectorAll('.sort-btn').forEach(b => {
-    if (b.id !== 'filter-fav') b.classList.remove('active');
-  });
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('sort-' + key).classList.add('active');
   load();
 }
 
 function toggleFavFilter() {
   favFilter = !favFilter;
-  document.getElementById('filter-fav').classList.toggle('active', favFilter);
   load();
 }
 
@@ -677,24 +673,22 @@ async function load() {
       return;
     }
 
-    // Build tag bar from all tags.
+    // Build filter bar from all tags.
     const allTags = new Set();
     places.forEach(p => (p.tags || []).forEach(t => allTags.add(t)));
     const sortedTags = Array.from(allTags).sort();
     const gitBtn = '<span style="flex:1"></span><button class="btn-io" onclick="updateAllGit()" title="Fetch git status for all visible places">Update git</button>';
-    if (sortedTags.length > 0) {
-      tagBar.innerHTML = '<span>Tags:</span>' +
-        `<button class="tag-chip${activeTag === '' ? ' active' : ''}" onclick="filterTag('')">All</button>` +
-        sortedTags.map(t =>
-          `<button class="tag-chip${activeTag === t ? ' active' : ''}" onclick="filterTag('${esc(t)}')">${esc(t)}</button>`
-        ).join('') + gitBtn;
-    } else {
-      tagBar.innerHTML = gitBtn;
-    }
+    const hasFilters = activeTags.size > 0 || favFilter;
+    const favChip = `<button class="tag-chip${favFilter ? ' active' : ''}" onclick="toggleFavFilter()" title="Show favorites only">&#9733;</button>`;
+    const tagChips = sortedTags.map(t =>
+      `<button class="tag-chip${activeTags.has(t) ? ' active' : ''}" onclick="filterTag('${esc(t)}')">${esc(t)}</button>`
+    ).join('');
+    const clearBtn = hasFilters ? '<button class="tag-chip" onclick="clearFilters()">Clear</button>' : '';
+    tagBar.innerHTML = '<span>Filter:</span>' + favChip + tagChips + clearBtn + gitBtn;
 
-    // Filter by active tag.
-    if (activeTag) {
-      places = places.filter(p => (p.tags || []).includes(activeTag));
+    // Filter by active tags (OR).
+    if (activeTags.size > 0) {
+      places = places.filter(p => (p.tags || []).some(t => activeTags.has(t)));
     }
 
     // Filter by favorites.
@@ -904,7 +898,14 @@ async function switchDesktop(n) {
 }
 
 function filterTag(tag) {
-  activeTag = tag;
+  if (activeTags.has(tag)) activeTags.delete(tag);
+  else activeTags.add(tag);
+  load();
+}
+
+function clearFilters() {
+  activeTags.clear();
+  favFilter = false;
   load();
 }
 

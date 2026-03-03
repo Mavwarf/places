@@ -6,6 +6,7 @@
 - [x] ~~**Windows PowerShell hook install**~~ — `places shell-hook install` now auto-detects PowerShell; use `--shell powershell` to target explicitly *(Feb 28)*
 - [x] ~~**Relative path resolution**~~ — `places add name .` now resolves to absolute path *(Mar 1)*
 - [x] ~~**Path separator normalization**~~ — mixed `/` and `\` normalized to OS-native on load *(Mar 1)*
+- [ ] **Action assign dropdown closes on auto-refresh** — the "+" custom action dropdown gets destroyed when the 3-second `load()` fires; need to skip reload while `.action-dropdown` exists (same pattern as inline edit inputs)
 
 ## Features
 
@@ -48,6 +49,7 @@
 - [ ] **Type-to-filter in select** — start typing in the interactive picker to narrow results instead of just arrow keys
 - [x] ~~**Git info in desktop app** — on-demand git button per place shows current branch and dirty/clean badge~~ *(Mar 2)*
 - [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
+- [x] ~~**Dashboard filter rework** — tags are now toggleable multi-select filters (OR); ★ chip in filter bar alongside tags; "Clear" button resets all filters~~ *(Mar 3)*
 
 ## Script-Friendly
 
