@@ -6,7 +6,7 @@
 - [x] ~~**Windows PowerShell hook install**~~ — `places shell-hook install` now auto-detects PowerShell; use `--shell powershell` to target explicitly *(Feb 28)*
 - [x] ~~**Relative path resolution**~~ — `places add name .` now resolves to absolute path *(Mar 1)*
 - [x] ~~**Path separator normalization**~~ — mixed `/` and `\` normalized to OS-native on load *(Mar 1)*
-- [ ] **Action assign dropdown closes on auto-refresh** — the "+" custom action dropdown gets destroyed when the 3-second `load()` fires; need to skip reload while `.action-dropdown` exists (same pattern as inline edit inputs)
+- [x] ~~**Popups close on auto-refresh** — `load()` now skips reload while action dropdown or desktop select is open (same pattern as inline edit inputs)~~ *(Mar 3)*
 
 ## Features
 

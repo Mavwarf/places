@@ -657,8 +657,9 @@ function sortPlaces(places) {
 }
 
 async function load() {
-  // Skip reload while an inline edit input is active to prevent destroying the field mid-edit.
-  if (document.querySelector('.note-input, .name-input, .path-input')) return;
+  // Skip reload while an inline edit input or popup is active to prevent destroying it mid-interaction.
+  if (document.querySelector('.note-input, .name-input, .path-input, .action-dropdown')) return;
+  if (document.activeElement && document.activeElement.classList.contains('desktop-select')) return;
   const el = document.getElementById('places');
   const tagBar = document.getElementById('tag-bar');
   try {
