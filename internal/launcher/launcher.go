@@ -54,9 +54,16 @@ func Cmd(path string) *exec.Cmd {
 //
 // Fallback (plain conhost): "cmd /c start <title>" sets the window title, but
 // Claude may override it on startup since conhost doesn't support title pinning.
-func Claude(path, name string) *exec.Cmd {
+func Claude(path, name string, cont bool) *exec.Cmd {
 	title := "Claude Code - " + name
-	psCmd := fmt.Sprintf("Set-Location '%s'; claude", psEscape(path))
+	claudeCmd := "claude --continue"
+	if cont {
+		title += " - fresh"
+		claudeCmd = "claude"
+	} else {
+		title += " - cont"
+	}
+	psCmd := fmt.Sprintf("Set-Location '%s'; %s", psEscape(path), claudeCmd)
 	if runtime.GOOS == "windows" {
 		if _, err := exec.LookPath("wt.exe"); err == nil {
 			wtCmd := strings.ReplaceAll(psCmd, ";", "\\;")

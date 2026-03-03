@@ -52,6 +52,7 @@ type actionAssignReq struct {
 type openReq struct {
 	Name   string `json:"name"`
 	Action string `json:"action"`
+	Shift  bool   `json:"shift,omitempty"`
 }
 
 type addReq struct {
@@ -352,7 +353,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	case "cmd":
 		cmd = launcher.Cmd(path)
 	case "claude":
-		cmd = launcher.Claude(path, name)
+		cmd = launcher.Claude(path, name, req.Shift)
 	case "code":
 		cmd = launcher.Code(path)
 	case "explorer":

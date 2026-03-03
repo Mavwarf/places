@@ -122,7 +122,7 @@ func addPlaceMenus() {
 		}
 
 		mClaude := parent.AddSubMenuItem("Claude", "Open PowerShell + Claude here")
-		mClaude.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path, placeName)) })
+		mClaude.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path, placeName, false)) })
 
 		mExplorer := parent.AddSubMenuItem("Explorer", "Open Explorer here")
 		mExplorer.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Explorer(path)) })
