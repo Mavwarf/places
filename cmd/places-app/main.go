@@ -74,7 +74,7 @@ func main() {
 	// HTTP server, the page origin changes. Without this allowlist, Wails
 	// blocks WebView2 IPC (postMessage) from the HTTP origin, which breaks
 	// OnFileDrop and any other native Wails features.
-	width, height := 900, 600
+	width, height := 1100, 600
 	if geom != nil {
 		width, height = geom.Width, geom.Height
 	}
@@ -84,7 +84,7 @@ func main() {
 		Title:             "places dashboard",
 		Width:             width,
 		Height:            height,
-		MinWidth:          700,
+		MinWidth:          1000,
 		MinHeight:         400,
 		AssetServer: &assetserver.Options{
 			Handler: loader,

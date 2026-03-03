@@ -179,7 +179,9 @@ Favorites show a ★ marker in `p list`. The desktop app has a clickable star to
 - **>_** — open cmd.exe at that directory
 - **⋯** — place menu: toggle built-in action visibility, assign/unassign custom actions, remove place
 
-Click a place name to rename it inline, or click a path to edit it (Enter to save, Escape to cancel). Places with notes show a muted subtitle below the path. Click a note to edit it inline, or hover over a place without a note to add one. Export and Import buttons in the sort bar allow one-click backup/restore. A **git** button on each place fetches the current branch and clean/dirty status on demand — shown as a colored badge (green for clean, yellow for dirty, red for errors like non-git directories). Unchecked places show a dim "no status" hint. Right-click any built-in action button to hide it from that place; use the **⋯** menu to show it again.
+Each place row is organized into aligned columns: **name** (fixed width, ellipsis for long names), **path / note** (flexible, fills available space), **stats** (usage count + last-used time), **git + tags** (status badge, tag badges, add-tag button), and **action buttons** (right-aligned). All columns have fixed widths so they align consistently across rows.
+
+Click a place name to rename it inline, or click a path to edit it (Enter to save, Escape to cancel). Notes appear as a subtitle below the path and are truncated with ellipsis when too long; click to edit inline, or hover over a place without a note to add one. Export and Import buttons in the sort bar allow one-click backup/restore. The **git + tags** column shows the current branch badge (green ✓ for clean, yellow ● for dirty, red for errors) followed by a **git** button to fetch/refresh status. Unchecked places show a dim "no status" hint. Right-click any built-in action button to hide it from that place; use the **⋯** menu to show it again.
 
 Each place also has a virtual desktop selector (D1–D4). When set, the app switches to that desktop before launching any tool. A **→** button next to the selector lets you jump to that desktop without launching anything. Uses `VirtualDesktopAccessor.dll` (place it next to `places-app.exe`).
 
@@ -211,7 +213,7 @@ Click the theme toggle button (top-right) to cycle through 6 color schemes: Dark
 
 The header includes **pin** (📌), **minimize** (−), and **quit** (×) buttons in the top-right corner. Pin toggles always-on-top mode (the window stays above all other windows); the state persists across restarts. Minimize hides the window; quit fully exits the app. You can also close the window normally to hide to tray (Shift+close to exit).
 
-The window remembers its position and size between sessions (saved to `~/.config/places/window.json`). On first launch it uses the default 900×600 size.
+The window remembers its position and size between sessions (saved to `~/.config/places/window.json`). On first launch it uses the default 1100×600 size. The minimum width is 1000px to ensure all columns display correctly.
 
 ### System Tray
 
