@@ -189,7 +189,7 @@ Press **Win+Alt+P** from anywhere to open the dashboard. If it's on another virt
 
 The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, date added, or frecency (frequency × recency). Places with equal sort values use alphabetical name as a stable tiebreaker. Each place has a clickable star to toggle its favorite status.
 
-A fixed status bar at the bottom of the window shows author/GitHub links on the left, a place count in the center (e.g. "5 / 12 places" when filtered), and the build version on the right — always visible regardless of scroll position.
+A fixed status bar at the bottom of the window shows author/GitHub/Wiki links on the left, a place count in the center (e.g. "5 / 12 places" when filtered), and the build version on the right — always visible regardless of scroll position.
 
 You can also add and remove places from the app. The **…** button next to the path input opens a native folder picker dialog, or drag a folder from Explorer onto the window to fill in the path. Changes are shared with the CLI (same `places.json`).
 
@@ -198,7 +198,7 @@ You can also add and remove places from the app. The **…** button next to the 
 The desktop app supports tags with:
 - **Tag badges** on each place — click **x** to remove a tag
 - **+** button on each place — click to add a tag via prompt
-- **Filter bar** — click a tag chip to show only places with that tag, click "Clear" to reset all filters
+- **Filter bar** — click a tag chip to include places with that tag; right-click to exclude; type in the text filter to search by name, path, or note; click "Clear" to reset all filters
 - **Tags input** in the add form — comma-separated tags when adding a new place
 
 ### Screenshot Mode

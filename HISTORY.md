@@ -2,6 +2,9 @@
 
 ## Features
 
+- Text filter — search input in the filter bar filters places by name, path, or note (case-insensitive); combines with tag/fav/dirty filters *(Mar 3)*
+- Tag exclusion filter — right-click a tag chip to exclude places with that tag (red + strikethrough); left-click still includes; a tag can only be in one state *(Mar 3)*
+- Wiki link in status bar — added link to the Desktop App wiki page alongside the existing GitHub link *(Mar 3)*
 - Auto git fetch on startup — git status is fetched for all places automatically when the dashboard opens; no manual clicking needed *(Mar 3)*
 - Git dirty filter — new "Git dirty" chip in the filter bar shows only places with uncommitted changes *(Mar 3)*
 - Status bar — fixed bar at the bottom of the window showing author/GitHub links (left), place count with filter ratio (center), and build version (right); always visible regardless of scroll *(Mar 3)*
@@ -60,6 +63,27 @@
 ---
 
 ## 2026-03-03
+
+### Text filter
+
+Search input in the filter bar (after the Git dirty chip) filters places by
+name, path, or note — case-insensitive substring match. The input is a
+persistent DOM element that survives filter bar re-renders, so typing is never
+interrupted. Combines with all other filters (tags, favorites, git dirty) via
+AND. Clear resets the text input along with all other filters.
+
+### Tag exclusion filter
+
+Right-click a tag chip to exclude places with that tag instead of including
+them. Excluded tags appear in red with strikethrough. A tag can be in one of
+three states: inactive, included (left-click, accent color), or excluded
+(right-click, red). Switching between states is automatic — left-clicking an
+excluded tag switches it to included, and vice versa.
+
+### Wiki link in status bar
+
+Added a "Wiki" link to the dashboard status bar (bottom left), pointing to the
+Desktop App wiki page. Appears alongside the existing author and GitHub links.
 
 ### Auto git fetch on startup
 
