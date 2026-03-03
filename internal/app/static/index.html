@@ -435,6 +435,7 @@ button:active { opacity: 0.7; }
 }
 .tag-chip:hover { opacity: 0.85; }
 .tag-chip.active { color: var(--accent); border-color: var(--accent); }
+.tag-chip.excluded { color: var(--red); border-color: var(--red); text-decoration: line-through; }
 
 .place-tags {
   display: flex;
@@ -659,6 +660,7 @@ themeToggle.addEventListener('click', function() {
 
 let currentSort = 'last_used';
 let activeTags = new Set();
+let excludedTags = new Set();
 let favFilter = false;
 let dirtyFilter = false;
 let actionDefs = {};  // global action definitions from server
@@ -725,18 +727,21 @@ async function load() {
     places.forEach(p => (p.tags || []).forEach(t => allTags.add(t)));
     const sortedTags = Array.from(allTags).sort();
     const gitBtn = '<span style="flex:1"></span><button class="btn-io" onclick="updateAllGit()" title="Fetch git status for all visible places">Update git</button>';
-    const hasFilters = activeTags.size > 0 || favFilter || dirtyFilter;
+    const hasFilters = activeTags.size > 0 || excludedTags.size > 0 || favFilter || dirtyFilter;
     const favChip = `<button class="tag-chip${favFilter ? ' active' : ''}" onclick="toggleFavFilter()" title="Show favorites only" style="margin-right:14px">&#9733;</button>`;
     const dirtyChip = `<button class="tag-chip${dirtyFilter ? ' active' : ''}" onclick="toggleDirtyFilter()" title="Show only git-dirty places" style="margin-left:14px">Git dirty</button>`;
     const tagChips = sortedTags.map(t =>
-      `<button class="tag-chip${activeTags.has(t) ? ' active' : ''}" onclick="filterTag('${esc(t)}')">${esc(t)}</button>`
+      `<button class="tag-chip${activeTags.has(t) ? ' active' : ''}${excludedTags.has(t) ? ' excluded' : ''}" onclick="filterTag('${esc(t)}')" oncontextmenu="excludeTag(event,'${esc(t)}')" title="Click to include, right-click to exclude">${esc(t)}</button>`
     ).join('');
     const clearBtn = hasFilters ? '<button class="tag-chip" onclick="clearFilters()" style="margin-left:14px">Clear</button>' : '';
     tagBar.innerHTML = '<span>Filter:</span>' + favChip + tagChips + dirtyChip + clearBtn + gitBtn;
 
-    // Filter by active tags (OR).
+    // Filter by active tags (OR) and excluded tags.
     if (activeTags.size > 0) {
       places = places.filter(p => (p.tags || []).some(t => activeTags.has(t)));
+    }
+    if (excludedTags.size > 0) {
+      places = places.filter(p => !(p.tags || []).some(t => excludedTags.has(t)));
     }
 
     // Filter by favorites.
@@ -957,13 +962,23 @@ async function switchDesktop(n) {
 }
 
 function filterTag(tag) {
+  excludedTags.delete(tag);
   if (activeTags.has(tag)) activeTags.delete(tag);
   else activeTags.add(tag);
   load();
 }
 
+function excludeTag(e, tag) {
+  e.preventDefault();
+  activeTags.delete(tag);
+  if (excludedTags.has(tag)) excludedTags.delete(tag);
+  else excludedTags.add(tag);
+  load();
+}
+
 function clearFilters() {
   activeTags.clear();
+  excludedTags.clear();
   favFilter = false;
   dirtyFilter = false;
   load();
@@ -1160,6 +1175,7 @@ async function getGitStatus(name) {
 async function updateAllGit(silent) {
   let places = lastPlacesData.filter(p => p.exists);
   if (activeTags.size > 0) places = places.filter(p => (p.tags || []).some(t => activeTags.has(t)));
+  if (excludedTags.size > 0) places = places.filter(p => !(p.tags || []).some(t => excludedTags.has(t)));
   if (favFilter) places = places.filter(p => p.favorite);
   if (!places.length) return;
   await Promise.all(places.map(p => fetchGitStatus(p.name)));
