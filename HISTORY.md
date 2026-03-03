@@ -2,6 +2,9 @@
 
 ## Features
 
+- Dashboard filter rework — tags are now toggleable multi-select chips (OR logic); ★ favorite chip moved from sort bar into the unified filter bar alongside tags; "Clear" button appears when any filter is active and resets everything; "All" button removed *(Mar 3)*
+- Git status UX — unchecked places show a dim "no status" hint; bulk "Update git" only fetches for currently visible (filtered) places; git subprocesses run hidden on Windows (no flashing cmd windows) *(Mar 3)*
+- Auto-refresh popup fix — dashboard auto-refresh now skips reload while action assign dropdown or desktop select is open, preventing popup destruction mid-interaction *(Mar 3)*
 - Notes — attach text descriptions to places (`p note <name> [text]`); shown as inline subtitles in the dashboard; click to edit, hover to add; included in JSON output and import/export *(Mar 2)*
 - Import/Export — `p export` dumps all places and actions as JSON; `p import <file>` merges from file (skip existing); dashboard has Export/Import buttons for one-click backup *(Mar 2)*
 - Custom actions — define global actions with shell command templates, assign them to individual places; buttons appear in the dashboard and system tray alongside built-in actions; right-click a custom action button to unassign it from that place; `{path}` and `{name}` placeholders expanded at runtime; Windows uses `SysProcAttr.CmdLine` to bypass Go's quote escaping for `cmd /c` *(Mar 2)*

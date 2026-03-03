@@ -153,7 +153,7 @@ p list --json --tag work              # filtered JSON output
 p tags                                # list all tags with counts
 ```
 
-Tags are lowercase, deduplicated, and sorted alphabetically. The desktop app shows tag badges on each place with click-to-add and click-to-remove, plus a filter bar to show only places with a specific tag.
+Tags are lowercase, deduplicated, and sorted alphabetically. The desktop app shows tag badges on each place with click-to-add and click-to-remove, plus a filter bar with toggleable tag chips (select multiple tags to show places matching any of them).
 
 ### Favorites
 
@@ -166,7 +166,7 @@ p list --fav             # show only favorites
 p list --json --fav      # filtered JSON output
 ```
 
-Favorites show a ★ marker in `p list`. The desktop app has a clickable star toggle per place and a ★ filter button in the sort bar.
+Favorites show a ★ marker in `p list`. The desktop app has a clickable star toggle per place and a ★ chip in the filter bar.
 
 ## Desktop App
 
@@ -178,13 +178,13 @@ Favorites show a ★ marker in `p list`. The desktop app has a clickable star to
 - **>_** — open cmd.exe at that directory
 - **dir** — open Explorer at that directory
 
-Click a place name to rename it inline, or click a path to edit it (Enter to save, Escape to cancel). Places with notes show a muted subtitle below the path. Click a note to edit it inline, or hover over a place without a note to add one. Export and Import buttons in the sort bar allow one-click backup/restore. A **git** button on each place fetches the current branch and clean/dirty status on demand — shown as a colored badge (green for clean, yellow for dirty, red for errors like non-git directories).
+Click a place name to rename it inline, or click a path to edit it (Enter to save, Escape to cancel). Places with notes show a muted subtitle below the path. Click a note to edit it inline, or hover over a place without a note to add one. Export and Import buttons in the sort bar allow one-click backup/restore. A **git** button on each place fetches the current branch and clean/dirty status on demand — shown as a colored badge (green for clean, yellow for dirty, red for errors like non-git directories). Unchecked places show a dim "no status" hint.
 
 Each place also has a virtual desktop selector (D1–D4). When set, the app switches to that desktop before launching any tool. A **→** button next to the selector lets you jump to that desktop without launching anything. Uses `VirtualDesktopAccessor.dll` (place it next to `places-app.exe`).
 
 Press **Win+Alt+P** from anywhere to open the dashboard. If it's on another virtual desktop, you are switched there automatically.
 
-The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, date added, or frecency (frequency × recency). Places with equal sort values use alphabetical name as a stable tiebreaker. A ★ filter button in the sort bar shows only favorites. Each place has a clickable star to toggle its favorite status.
+The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, date added, or frecency (frequency × recency). Places with equal sort values use alphabetical name as a stable tiebreaker. Each place has a clickable star to toggle its favorite status.
 
 Links in the footer open in the system default browser (not inside the app window).
 
