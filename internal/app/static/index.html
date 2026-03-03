@@ -423,6 +423,7 @@ button:active { opacity: 0.7; }
   color: var(--fg-dim);
   flex-wrap: wrap;
 }
+#tag-bar-left, #tag-bar-right { display: flex; gap: 6px; align-items: center; }
 .tag-chip {
   background: transparent;
   color: var(--fg-dim);
@@ -436,6 +437,21 @@ button:active { opacity: 0.7; }
 .tag-chip:hover { opacity: 0.85; }
 .tag-chip.active { color: var(--accent); border-color: var(--accent); }
 .tag-chip.excluded { color: var(--red); border-color: var(--red); text-decoration: line-through; }
+
+.filter-search {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  font-size: 0.85em;
+  border-radius: 6px;
+  font-family: var(--font);
+  margin-left: 14px;
+  width: 120px;
+  outline: none;
+}
+.filter-search:focus { border-color: var(--accent); }
+.filter-search::placeholder { color: var(--fg-dim); }
 
 .place-tags {
   display: flex;
@@ -626,7 +642,7 @@ button:active { opacity: 0.7; }
   <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImportFile(event)">
 </div>
 
-<div class="tag-bar" id="tag-bar"></div>
+<div class="tag-bar" id="tag-bar"><span id="tag-bar-left"></span><input class="filter-search" id="filter-search" type="text" placeholder="Filter..." oninput="textFilter=this.value;load()" /><span id="tag-bar-right"></span><span style="flex:1"></span><span id="tag-bar-git"></span></div>
 <div id="places" class="place-list"></div>
 
 <script>
@@ -663,6 +679,7 @@ let activeTags = new Set();
 let excludedTags = new Set();
 let favFilter = false;
 let dirtyFilter = false;
+let textFilter = '';
 let actionDefs = {};  // global action definitions from server
 var lastPlacesData = [];  // cached place data for dropdown lookups
 let gitCache = {};  // place name → {branch, dirty}
@@ -717,7 +734,8 @@ async function load() {
     let places = data.places || [];
     lastPlacesData = places;
     if (!places.length) {
-      tagBar.innerHTML = '';
+      document.getElementById('tag-bar-left').innerHTML = '';
+      document.getElementById('tag-bar-right').innerHTML = '';
       el.innerHTML = '<div class="empty-state">No places saved yet.<br>Add one above or use <code>places add &lt;name&gt;</code> from the CLI.</div>';
       return;
     }
@@ -726,15 +744,17 @@ async function load() {
     const allTags = new Set();
     places.forEach(p => (p.tags || []).forEach(t => allTags.add(t)));
     const sortedTags = Array.from(allTags).sort();
-    const gitBtn = '<span style="flex:1"></span><button class="btn-io" onclick="updateAllGit()" title="Fetch git status for all visible places">Update git</button>';
-    const hasFilters = activeTags.size > 0 || excludedTags.size > 0 || favFilter || dirtyFilter;
+    const gitBtn = '<button class="btn-io" onclick="updateAllGit()" title="Fetch git status for all visible places">Update git</button>';
+    const hasFilters = activeTags.size > 0 || excludedTags.size > 0 || favFilter || dirtyFilter || textFilter;
     const favChip = `<button class="tag-chip${favFilter ? ' active' : ''}" onclick="toggleFavFilter()" title="Show favorites only" style="margin-right:14px">&#9733;</button>`;
     const dirtyChip = `<button class="tag-chip${dirtyFilter ? ' active' : ''}" onclick="toggleDirtyFilter()" title="Show only git-dirty places" style="margin-left:14px">Git dirty</button>`;
     const tagChips = sortedTags.map(t =>
       `<button class="tag-chip${activeTags.has(t) ? ' active' : ''}${excludedTags.has(t) ? ' excluded' : ''}" onclick="filterTag('${esc(t)}')" oncontextmenu="excludeTag(event,'${esc(t)}')" title="Click to include, right-click to exclude">${esc(t)}</button>`
     ).join('');
     const clearBtn = hasFilters ? '<button class="tag-chip" onclick="clearFilters()" style="margin-left:14px">Clear</button>' : '';
-    tagBar.innerHTML = '<span>Filter:</span>' + favChip + tagChips + dirtyChip + clearBtn + gitBtn;
+    document.getElementById('tag-bar-left').innerHTML = '<span>Filter:</span>' + favChip + tagChips + dirtyChip;
+    document.getElementById('tag-bar-right').innerHTML = clearBtn;
+    document.getElementById('tag-bar-git').innerHTML = gitBtn;
 
     // Filter by active tags (OR) and excluded tags.
     if (activeTags.size > 0) {
@@ -752,6 +772,12 @@ async function load() {
     // Filter by git dirty (only places with fetched dirty status).
     if (dirtyFilter) {
       places = places.filter(p => gitCache[p.name] && gitCache[p.name].dirty);
+    }
+
+    // Filter by text search (name, path, note).
+    if (textFilter) {
+      const q = textFilter.toLowerCase();
+      places = places.filter(p => p.name.toLowerCase().includes(q) || p.path.toLowerCase().includes(q) || (p.note || '').toLowerCase().includes(q));
     }
 
     const total = lastPlacesData.length;
@@ -981,6 +1007,8 @@ function clearFilters() {
   excludedTags.clear();
   favFilter = false;
   dirtyFilter = false;
+  textFilter = '';
+  document.getElementById('filter-search').value = '';
   load();
 }
 
@@ -1177,6 +1205,7 @@ async function updateAllGit(silent) {
   if (activeTags.size > 0) places = places.filter(p => (p.tags || []).some(t => activeTags.has(t)));
   if (excludedTags.size > 0) places = places.filter(p => !(p.tags || []).some(t => excludedTags.has(t)));
   if (favFilter) places = places.filter(p => p.favorite);
+  if (textFilter) { const q = textFilter.toLowerCase(); places = places.filter(p => p.name.toLowerCase().includes(q) || p.path.toLowerCase().includes(q) || (p.note || '').toLowerCase().includes(q)); }
   if (!places.length) return;
   await Promise.all(places.map(p => fetchGitStatus(p.name)));
   load();
