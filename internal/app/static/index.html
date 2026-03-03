@@ -546,6 +546,16 @@ button:active { opacity: 0.7; }
   background: color-mix(in srgb, var(--red) 15%, transparent);
   color: var(--red);
 }
+.badge-git-none {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--fg-dim);
+  cursor: pointer;
+  position: relative;
+  top: -2px;
+}
+.badge-git-none:hover { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -717,7 +727,7 @@ async function load() {
           <div style="display:flex;align-items:center;gap:6px">
             <span class="place-path" onclick="editPath('${esc(p.name)}',this)" title="Click to edit path">${esc(dPath)}</span>
             ${p.exists ? `<button class="btn-git" onclick="getGitStatus('${esc(p.name)}')" title="Check git status">git</button>` : ''}
-            ${gitCache[p.name] ? renderGitBadge(gitCache[p.name]) : ''}
+            ${p.exists ? (gitCache[p.name] ? renderGitBadge(gitCache[p.name]) : '<span class="badge-git-none">no status</span>') : ''}
           </div>
           <div style="display:flex;align-items:center;gap:6px">
             ${(function(){ var dn = maskNote(p.name, p.note, p.tags); return dn ? `<span class="place-note" onclick="editNote('${esc(p.name)}',this)" title="Click to edit note">${esc(dn)}</span>` : `<span class="place-note-empty" onclick="editNote('${esc(p.name)}',this)">+ note</span>`; })()}
@@ -1099,7 +1109,9 @@ async function getGitStatus(name) {
 }
 
 async function updateAllGit() {
-  const places = lastPlacesData.filter(p => p.exists);
+  let places = lastPlacesData.filter(p => p.exists);
+  if (activeTags.size > 0) places = places.filter(p => (p.tags || []).some(t => activeTags.has(t)));
+  if (favFilter) places = places.filter(p => p.favorite);
   if (!places.length) return;
   await Promise.all(places.map(p => fetchGitStatus(p.name)));
   load();

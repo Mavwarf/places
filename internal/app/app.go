@@ -1065,14 +1065,18 @@ func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	branchOut, err := exec.Command("git", "-C", path, "rev-parse", "--abbrev-ref", "HEAD").Output()
+	branchCmd := exec.Command("git", "-C", path, "rev-parse", "--abbrev-ref", "HEAD")
+	hideWindow(branchCmd)
+	branchOut, err := branchCmd.Output()
 	if err != nil {
 		http.Error(w, "not a git repository", http.StatusBadRequest)
 		return
 	}
 	branch := strings.TrimSpace(string(branchOut))
 
-	statusOut, err := exec.Command("git", "-C", path, "status", "--porcelain").Output()
+	statusCmd := exec.Command("git", "-C", path, "status", "--porcelain")
+	hideWindow(statusCmd)
+	statusOut, err := statusCmd.Output()
 	if err != nil {
 		http.Error(w, "failed to read git status", http.StatusInternalServerError)
 		return
