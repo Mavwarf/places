@@ -599,6 +599,7 @@ button:active { opacity: 0.7; }
 </div>
 <div class="status-bar">
   <span>By <a href="https://mavwarf.netlify.app/" target="_blank" rel="noopener" style="color:var(--fg)">Thomas H&auml;user</a> &middot; <a href="https://github.com/Mavwarf/places" target="_blank" rel="noopener" style="color:var(--cyan)">GitHub</a></span>
+  <span id="status-count"></span>
   <span>{{version}}</span>
 </div>
 
@@ -659,6 +660,7 @@ themeToggle.addEventListener('click', function() {
 let currentSort = 'last_used';
 let activeTags = new Set();
 let favFilter = false;
+let dirtyFilter = false;
 let actionDefs = {};  // global action definitions from server
 var lastPlacesData = [];  // cached place data for dropdown lookups
 let gitCache = {};  // place name → {branch, dirty}
@@ -672,6 +674,11 @@ function setSort(key) {
 
 function toggleFavFilter() {
   favFilter = !favFilter;
+  load();
+}
+
+function toggleDirtyFilter() {
+  dirtyFilter = !dirtyFilter;
   load();
 }
 
@@ -718,13 +725,14 @@ async function load() {
     places.forEach(p => (p.tags || []).forEach(t => allTags.add(t)));
     const sortedTags = Array.from(allTags).sort();
     const gitBtn = '<span style="flex:1"></span><button class="btn-io" onclick="updateAllGit()" title="Fetch git status for all visible places">Update git</button>';
-    const hasFilters = activeTags.size > 0 || favFilter;
-    const favChip = `<button class="tag-chip${favFilter ? ' active' : ''}" onclick="toggleFavFilter()" title="Show favorites only">&#9733;</button>`;
+    const hasFilters = activeTags.size > 0 || favFilter || dirtyFilter;
+    const favChip = `<button class="tag-chip${favFilter ? ' active' : ''}" onclick="toggleFavFilter()" title="Show favorites only" style="margin-right:14px">&#9733;</button>`;
+    const dirtyChip = `<button class="tag-chip${dirtyFilter ? ' active' : ''}" onclick="toggleDirtyFilter()" title="Show only git-dirty places" style="margin-left:14px">Git dirty</button>`;
     const tagChips = sortedTags.map(t =>
       `<button class="tag-chip${activeTags.has(t) ? ' active' : ''}" onclick="filterTag('${esc(t)}')">${esc(t)}</button>`
     ).join('');
-    const clearBtn = hasFilters ? '<button class="tag-chip" onclick="clearFilters()">Clear</button>' : '';
-    tagBar.innerHTML = '<span>Filter:</span>' + favChip + tagChips + clearBtn + gitBtn;
+    const clearBtn = hasFilters ? '<button class="tag-chip" onclick="clearFilters()" style="margin-left:14px">Clear</button>' : '';
+    tagBar.innerHTML = '<span>Filter:</span>' + favChip + tagChips + dirtyChip + clearBtn + gitBtn;
 
     // Filter by active tags (OR).
     if (activeTags.size > 0) {
@@ -735,6 +743,15 @@ async function load() {
     if (favFilter) {
       places = places.filter(p => p.favorite);
     }
+
+    // Filter by git dirty (only places with fetched dirty status).
+    if (dirtyFilter) {
+      places = places.filter(p => gitCache[p.name] && gitCache[p.name].dirty);
+    }
+
+    const total = lastPlacesData.length;
+    const shown = places.length;
+    document.getElementById('status-count').textContent = shown === total ? total + ' places' : shown + ' / ' + total + ' places';
 
     places = sortPlaces(places);
     el.innerHTML = places.map(p => {
@@ -948,6 +965,7 @@ function filterTag(tag) {
 function clearFilters() {
   activeTags.clear();
   favFilter = false;
+  dirtyFilter = false;
   load();
 }
 
@@ -1139,14 +1157,14 @@ async function getGitStatus(name) {
   load();
 }
 
-async function updateAllGit() {
+async function updateAllGit(silent) {
   let places = lastPlacesData.filter(p => p.exists);
   if (activeTags.size > 0) places = places.filter(p => (p.tags || []).some(t => activeTags.has(t)));
   if (favFilter) places = places.filter(p => p.favorite);
   if (!places.length) return;
   await Promise.all(places.map(p => fetchGitStatus(p.name)));
   load();
-  toast('Git status updated');
+  if (!silent) toast('Git status updated');
 }
 
 function renderGitBadge(info) {
@@ -1473,7 +1491,7 @@ function toast(msg, err) {
   setTimeout(() => el.remove(), 2500);
 }
 
-load();
+load().then(function() { updateAllGit(true); });
 setInterval(load, 3000);
 </script>
 </body>

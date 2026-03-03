@@ -2,6 +2,10 @@
 
 ## Features
 
+- Auto git fetch on startup — git status is fetched for all places automatically when the dashboard opens; no manual clicking needed *(Mar 3)*
+- Git dirty filter — new "Git dirty" chip in the filter bar shows only places with uncommitted changes *(Mar 3)*
+- Status bar — fixed bar at the bottom of the window showing author/GitHub links (left), place count with filter ratio (center), and build version (right); always visible regardless of scroll *(Mar 3)*
+- Version display — build version injected via `-ldflags` at compile time; shown in the status bar *(Mar 3)*
 - Dashboard filter rework — tags are now toggleable multi-select chips (OR logic); ★ favorite chip moved from sort bar into the unified filter bar alongside tags; "Clear" button appears when any filter is active and resets everything; "All" button removed *(Mar 3)*
 - Git status UX — unchecked places show a dim "no status" hint; bulk "Update git" only fetches for currently visible (filtered) places; git subprocesses run hidden on Windows (no flashing cmd windows) *(Mar 3)*
 - Auto-refresh popup fix — dashboard auto-refresh now skips reload while action assign dropdown or desktop select is open, preventing popup destruction mid-interaction *(Mar 3)*
@@ -43,6 +47,59 @@
 - Shell hook (`places shell-hook`) — marker-based install/uninstall of `p()` function into `.bashrc`/`.zshrc`/PowerShell profile *(Feb 28)*
 - Core commands — `add`, `list`/`ls`, `go`, `rm` for managing directory bookmarks *(Feb 28)*
 - Initial release — Go CLI tool for bookmarking directories with shortcut names *(Feb 28)*
+
+---
+
+## 2026-03-03
+
+### Auto git fetch on startup
+
+Git status is now fetched automatically for all places when the dashboard opens,
+running in parallel via `Promise.all`. Badges populate silently without a toast.
+The manual "Update git" button and per-place **git** button remain for on-demand
+refresh.
+
+### Git dirty filter
+
+New **Git dirty** chip in the filter bar (between the tag chips and the Clear
+button). When active, shows only places where git status has been fetched and
+the working directory has uncommitted changes. Combines with tag and favorite
+filters.
+
+### Status bar
+
+The author/GitHub links moved from a scrollable div below the header to a fixed
+status bar at the bottom of the window. Three sections:
+
+- **Left** — author name + GitHub link
+- **Center** — place count; shows "12 places" when unfiltered, "5 / 12 places" when filtered
+- **Right** — build version (e.g. "v0.3.3")
+
+Always visible regardless of scroll position. Toasts repositioned above the bar.
+
+### Version display
+
+Build version is injected at compile time via `-ldflags "-X main.version=..."`.
+The `app.Version` package variable is replaced into a `{{version}}` placeholder
+in the served HTML. Shows "dev" when built without ldflags.
+
+### Security: URL open fix
+
+Replaced `exec.Command("cmd", "/c", "start", "", url)` with
+`exec.Command("rundll32", "url.dll,FileProtocolHandler", url)` in
+`handleOpenURL`. The old approach passed URLs through cmd.exe's parser, where
+`&` in query strings could be interpreted as command separators. The new
+approach avoids cmd.exe entirely.
+
+### Compact place rows
+
+Reduced vertical padding in place rows from `10px 14px` to `5px 14px 7px` for
+a more compact layout.
+
+### Dead code cleanup
+
+Removed unused `showActionDropdown()` function (31 lines) from the frontend —
+superseded by the place menu (`showPlaceMenu`).
 
 ---
 
