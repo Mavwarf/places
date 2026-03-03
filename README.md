@@ -198,7 +198,7 @@ You can also add and remove places from the app. The **…** button next to the 
 The desktop app supports tags with:
 - **Tag badges** on each place — click **x** to remove a tag
 - **+** button on each place — click to add a tag via prompt
-- **Filter bar** — click a tag chip to show only places with that tag, click "All" to reset
+- **Filter bar** — click a tag chip to show only places with that tag, click "Clear" to reset all filters
 - **Tags input** in the add form — comma-separated tags when adding a new place
 
 ### Screenshot Mode

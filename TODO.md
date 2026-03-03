@@ -46,10 +46,10 @@
 - [x] ~~**Always on top** — dashboard window stays above all other windows~~ *(Mar 2)*
 - [x] ~~**Drag-and-drop path** — dragging a folder from Explorer onto the add form's path input fills in the path~~ *(Mar 2)*
 - [x] ~~**Open links in default browser** — web links clicked in the dashboard (Wails WebView) now open in the system default browser via `/api/open-url` endpoint~~ *(Mar 2)*
-- [ ] **Type-to-filter in select** — start typing in the interactive picker to narrow results instead of just arrow keys
 - [x] ~~**Git info in desktop app** — on-demand git button per place shows current branch and dirty/clean badge~~ *(Mar 2)*
-- [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
 - [x] ~~**Dashboard filter rework** — tags are now toggleable multi-select filters (OR); ★ chip in filter bar alongside tags; "Clear" button resets all filters~~ *(Mar 3)*
+- [ ] **Type-to-filter in select** — start typing in the interactive picker to narrow results instead of just arrow keys
+- [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
 
 ## Script-Friendly
 

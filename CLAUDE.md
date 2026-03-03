@@ -14,6 +14,7 @@ When adding or changing user-facing features, update all of these together:
 - `README.md` — usage section and examples
 - Shell hook passthrough lists in `shellhook.go` (bash, PowerShell, cmd.exe) — add new commands so `p <cmd>` works
 - Wiki at `C:\dev\repos\private\cli_tools\places.wiki\` — CLI-Reference.md, Desktop-App.md, Use-Cases.md as applicable
+- `HISTORY.md` — add a one-line summary to the features list and a detailed section under the current date
 
 ## Shell hooks
 

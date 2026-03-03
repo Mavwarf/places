@@ -24,6 +24,15 @@
 - Virtual desktop (`places desktop <name> <0-4>`) — assign a Windows virtual desktop to a place; dashboard and tray switch to that desktop before launching tools; uses VirtualDesktopAccessor.dll *(Mar 2)*
 - Auto-refresh in desktop app — polls /api/places every 3 seconds so CLI-added places appear automatically *(Mar 2)*
 - Usage tracking from app/tray — clicking action buttons (PS, cl, VS, >_, dir) now increments use count and updates last-used timestamp; UI refreshes immediately *(Mar 2)*
+- Desktop app (`places app`) — Wails v2 native GUI with action buttons (PowerShell, Claude, cmd, VS Code, Explorer), sorted place list, add/remove places from the dashboard; HTTP server + WebView redirect architecture *(Mar 1)*
+- System tray — tray icon with right-click menu for quick access to places, double-click to reopen dashboard; hide-on-close keeps the app running in the background *(Mar 1)*
+- Tags (`places tag`/`untag`/`tags`) — organize places with tags; `p add --tag work`, `p list --tag work`; tag badges and filter bar in the desktop app *(Mar 1)*
+- Color themes — 6 themes (Dark, Light, Nord, Dracula, Solarized, Gruvbox) in the desktop app; toggle button with localStorage persistence *(Mar 1)*
+- Screenshot mode — press S in the desktop app to anonymize place names; work-tagged places also get paths anonymized; mappings persist in localStorage *(Mar 1)*
+- Window controls — minimize and quit buttons in the dashboard header; pin button for always-on-top *(Mar 1)*
+- Browse button in add form — "…" button opens a native folder picker dialog via Wails `OpenDirectoryDialog` *(Mar 1)*
+- Open in VS Code (`places code <name>`) — open a place's directory in VS Code *(Mar 1)*
+- Open terminal (`places shell <name>`) — open a new terminal at a place's directory without shell hook *(Mar 1)*
 - Favorites (`places fav`/`unfav`) — mark places as favorites; filter with `--fav` in list and `--json`; star toggle per place and ★ filter button in desktop app *(Mar 1)*
 - Interactive arrow-key select — `places select` uses cursor navigation instead of numbered input; Up/Down to move, Enter to confirm, Esc to cancel *(Mar 1)*
 - Init command (`places init`) — one-command setup that installs shell hooks for detected shell + cmd on Windows *(Mar 1)*
@@ -275,6 +284,27 @@ tray now records a use — increments `use_count` and updates `last_used_at`. Th
 UI refreshes immediately after clicking, so the use count and sort order update
 in place.
 
+### Notes
+
+Attach text descriptions to places via `p note <name> [text...]`. Omit text to
+print the current note, use `--rm` to clear it. Notes are included in
+`p list --json` output and preserved in import/export.
+
+In the desktop app, notes appear as subtitles below the path — truncated with
+ellipsis when too long. Click a note to edit it inline (Enter saves, Escape
+cancels). Hover over a place without a note to see an "add note" prompt. Notes
+are also anonymized in screenshot mode for work-tagged places.
+
+### Import/Export
+
+`p export` dumps the full config (places + actions) as JSON to stdout.
+`p import <file>` merges from a file — adds new places and actions, skips
+existing ones. The format matches `places.json`, making it round-trippable.
+
+The desktop app has **Export** and **Import** buttons in the sort bar. Export
+downloads a `places-export.json` file. Import opens a file picker, merges the
+selected file, and shows a toast with counts (e.g. "3 places added, 2 skipped").
+
 ## 2026-03-01
 
 ### Interactive arrow-key select
@@ -368,6 +398,68 @@ creates a `p.bat` file next to the `places.exe` binary. The batch file handles:
 - `p add/rm/list/...` — passthrough to `places`
 
 Uninstall with `places shell-hook uninstall --shell cmd` (deletes `p.bat`).
+
+### Desktop app
+
+Wails v2 native GUI launched via `p app`. Shows all saved places with action
+buttons: **PS** (PowerShell), **cl** (Claude Code), **>_** (cmd), **VS** (VS
+Code), **dir** (Explorer). Sort bar with Name, Most used, Last used, Added
+sort modes. Add form with name + path inputs. Remove places via the UI.
+
+Architecture: Go HTTP server on `127.0.0.1:8822` serving vanilla HTML/CSS/JS;
+Wails WebView redirects to the HTTP server URL on startup. Shared config with
+the CLI — changes sync immediately.
+
+### Tags
+
+Tag-based organization for places. CLI commands: `p tag <name> <tag>`,
+`p untag <name> <tag>`, `p tags` (list all with counts). Tags can also be set
+on creation: `p add api --tag work --tag backend`. Filter with `p list --tag work`.
+
+Desktop app: tag badges on each place, **+** button to add via prompt, **×** to
+remove, filter bar with toggleable tag chips.
+
+### System tray
+
+Desktop app runs in the system tray via `energye/systray`. Closing the window
+hides to tray instead of exiting. Double-click to reopen. Right-click (or
+left-click) for context menu: Open Dashboard, per-place submenus with PS/Claude/
+cmd/Explorer actions, Refresh, Quit.
+
+### Color themes
+
+Six color schemes in the desktop app: Dark (Tokyo Night, default), Light, Nord,
+Dracula, Solarized, Gruvbox. Toggle button in the header cycles through them.
+Selection saved in localStorage. All colors use CSS variables.
+
+### Screenshot mode
+
+Press **S** to toggle — anonymizes place names with fantasy names. Work-tagged
+places also get paths anonymized (preserving `C:\dev\repos\` prefix). Mappings
+persist in localStorage for consistency across reloads.
+
+### Window controls
+
+Minimize and quit buttons in the dashboard header. Close hides to tray;
+Shift+close fully exits. Window geometry (position + size) saved to
+`~/.config/places/window.json` and restored on launch.
+
+### Browse button
+
+"…" button in the add form opens a native folder picker dialog (Wails
+`OpenDirectoryDialog`). Selected directory fills the path input.
+
+### Favorites
+
+`p fav <name>` / `p unfav <name>` toggle favorite status. `p list --fav` and
+`p list --json --fav` filter to favorites. `p list` shows ★ marker for favorites.
+
+Desktop app: clickable star per place, ★ filter button in the sort bar.
+
+### Open in VS Code and terminal
+
+`p code <name>` opens a directory in VS Code. `p shell <name>` opens a new
+terminal at that directory (no shell hook needed). Both support fuzzy matching.
 
 ### CLAUDE.md
 
