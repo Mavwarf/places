@@ -39,8 +39,9 @@ type jsonPlace struct {
 	Tags       []string `json:"tags,omitempty"`
 	Favorite   bool     `json:"favorite,omitempty"`
 	Desktop    int      `json:"desktop,omitempty"`
-	Actions    []string `json:"actions,omitempty"`
-	Note       string   `json:"note,omitempty"`
+	Actions        []string `json:"actions,omitempty"`
+	Note           string   `json:"note,omitempty"`
+	HiddenDefaults []string `json:"hidden_defaults,omitempty"`
 }
 
 type actionAssignReq struct {
@@ -127,6 +128,7 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 	mux.HandleFunc("/api/export", handleExport)
 	mux.HandleFunc("/api/import", handleImport)
 	mux.HandleFunc("/api/git-status", handleGitStatus)
+	mux.HandleFunc("/api/toggle-default", handleToggleDefault)
 	if showFn != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
@@ -258,16 +260,17 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 		p := cfg.Places[name]
 		_, statErr := os.Stat(p.Path)
 		jp := jsonPlace{
-			Name:     name,
-			Path:     p.Path,
-			Exists:   statErr == nil,
-			UseCount: p.UseCount,
-			AddedAt:  p.AddedAt.Format(time.RFC3339),
-			Tags:     p.Tags,
-			Favorite: p.Favorite,
-			Desktop:  p.Desktop,
-			Actions:  p.Actions,
-			Note:     p.Note,
+			Name:           name,
+			Path:           p.Path,
+			Exists:         statErr == nil,
+			UseCount:       p.UseCount,
+			AddedAt:        p.AddedAt.Format(time.RFC3339),
+			Tags:           p.Tags,
+			Favorite:       p.Favorite,
+			Desktop:        p.Desktop,
+			Actions:        p.Actions,
+			Note:           p.Note,
+			HiddenDefaults: p.HiddenDefaults,
 		}
 		if !p.LastUsedAt.IsZero() {
 			jp.LastUsedAt = p.LastUsedAt.Format(time.RFC3339)
@@ -1088,6 +1091,66 @@ func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 		"branch": branch,
 		"dirty":  dirty,
 	})
+}
+
+// handleToggleDefault toggles a built-in action's visibility for a place.
+func handleToggleDefault(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req actionAssignReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	switch req.Action {
+	case "claude", "explorer", "code", "powershell", "cmd":
+		// valid
+	default:
+		http.Error(w, "unknown default action", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	defer config.Unlock()
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+
+	// Toggle: if already hidden, show it; otherwise hide it.
+	found := false
+	for i, a := range place.HiddenDefaults {
+		if a == req.Action {
+			place.HiddenDefaults = append(place.HiddenDefaults[:i], place.HiddenDefaults[i+1:]...)
+			if len(place.HiddenDefaults) == 0 {
+				place.HiddenDefaults = nil
+			}
+			found = true
+			break
+		}
+	}
+	if !found {
+		place.HiddenDefaults = append(place.HiddenDefaults, req.Action)
+	}
+
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func handleUntag(w http.ResponseWriter, r *http.Request) {

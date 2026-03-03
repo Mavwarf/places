@@ -81,7 +81,7 @@ The desktop app has Export and Import buttons in the sort bar for one-click back
 
 ### Custom Actions
 
-Define reusable shell commands and assign them to specific places. Custom action buttons appear in the desktop app and system tray alongside the built-in buttons, only on places they're assigned to. Right-click a custom action button in the dashboard to unassign it from that place.
+Define reusable shell commands and assign them to specific places. Custom action buttons appear in the desktop app and system tray alongside the built-in buttons, only on places they're assigned to. Right-click a custom action button in the dashboard to unassign it from that place. Built-in action buttons (cl, dir, VS, PS, >_) can be hidden per place via the **⋯** menu or by right-clicking the button.
 
 `{path}` is replaced with the place's directory, `{name}` with the place's shortcut name. On Windows, commands run via `cmd /c`; on Unix, via `sh -c`. GUI apps need `start ""` on Windows to launch properly.
 
@@ -172,13 +172,14 @@ Favorites show a ★ marker in `p list`. The desktop app has a clickable star to
 
 `p app` launches a desktop GUI (built with Wails v2) that shows all saved places with action buttons:
 
-- **PS** — open PowerShell at that directory
 - **cl** — open PowerShell at that directory and start Claude Code (tab titled "Claude Code - \<name\>")
-- **VS** — open VS Code at that directory
-- **>_** — open cmd.exe at that directory
 - **dir** — open Explorer at that directory
+- **VS** — open VS Code at that directory
+- **PS** — open PowerShell at that directory
+- **>_** — open cmd.exe at that directory
+- **⋯** — place menu: toggle built-in action visibility, assign/unassign custom actions, remove place
 
-Click a place name to rename it inline, or click a path to edit it (Enter to save, Escape to cancel). Places with notes show a muted subtitle below the path. Click a note to edit it inline, or hover over a place without a note to add one. Export and Import buttons in the sort bar allow one-click backup/restore. A **git** button on each place fetches the current branch and clean/dirty status on demand — shown as a colored badge (green for clean, yellow for dirty, red for errors like non-git directories). Unchecked places show a dim "no status" hint.
+Click a place name to rename it inline, or click a path to edit it (Enter to save, Escape to cancel). Places with notes show a muted subtitle below the path. Click a note to edit it inline, or hover over a place without a note to add one. Export and Import buttons in the sort bar allow one-click backup/restore. A **git** button on each place fetches the current branch and clean/dirty status on demand — shown as a colored badge (green for clean, yellow for dirty, red for errors like non-git directories). Unchecked places show a dim "no status" hint. Right-click any built-in action button to hide it from that place; use the **⋯** menu to show it again.
 
 Each place also has a virtual desktop selector (D1–D4). When set, the app switches to that desktop before launching any tool. A **→** button next to the selector lets you jump to that desktop without launching anything. Uses `VirtualDesktopAccessor.dll` (place it next to `places-app.exe`).
 
@@ -342,7 +343,8 @@ Places are stored in `~/.config/places/places.json` with usage statistics:
       "tags": ["backend", "work"],
       "desktop": 2,
       "actions": ["git"],
-      "note": "billing REST API"
+      "note": "billing REST API",
+      "hidden_defaults": ["cmd"]
     }
   }
 }

@@ -66,8 +66,9 @@ type Place struct {
 	Tags       []string  `json:"tags,omitempty"`
 	Favorite   bool      `json:"favorite,omitempty"`
 	Desktop    int       `json:"desktop,omitempty"`
-	Actions    []string  `json:"actions,omitempty"` // names of assigned custom actions
-	Note       string    `json:"note,omitempty"`
+	Actions        []string  `json:"actions,omitempty"`         // names of assigned custom actions
+	Note           string    `json:"note,omitempty"`
+	HiddenDefaults []string  `json:"hidden_defaults,omitempty"` // hidden built-in actions
 }
 
 // Config holds the saved places and custom actions.

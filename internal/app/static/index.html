@@ -743,14 +743,9 @@ async function load() {
         <div class="place-actions">
           ${p.exists ? `
             ${renderCustomActions(p)}
-            ${renderAssignBtn(p)}
-            <button class="btn-claude" onclick="openAt('${esc(p.name)}','claude')" title="Open Claude Code here">cl</button>
-            <button class="btn-explorer" onclick="openAt('${esc(p.name)}','explorer')" title="Open in Explorer">dir</button>
-            <button class="btn-code" onclick="openAt('${esc(p.name)}','code')" title="Open in VS Code">VS</button>
-            <button class="btn-ps" onclick="openAt('${esc(p.name)}','powershell')" title="Open PowerShell here">PS</button>
-            <button class="btn-cmd" onclick="openAt('${esc(p.name)}','cmd')" title="Open cmd here">&gt;_</button>
+            ${renderDefaultActions(p)}
           ` : ''}
-          <button class="btn-rm" onclick="rm('${esc(p.name)}')" title="Remove">\u2715</button>
+          <button class="btn-rm" onclick="showPlaceMenu(event,'${esc(p.name)}')" title="Place menu">&hellip;</button>
         </div>
       </div>
     `}).join('');
@@ -1125,6 +1120,23 @@ function renderGitBadge(info) {
   return `<span class="${cls}">${icon} ${esc(info.branch)}</span>`;
 }
 
+function renderDefaultActions(p) {
+  var hd = p.hidden_defaults || [];
+  var n = esc(p.name);
+  var btns = '';
+  if (!hd.includes('claude')) btns += `<button class="btn-claude" onclick="openAt('${n}','claude')" oncontextmenu="hideDefault(event,'${n}','claude')" title="Open Claude Code here (right-click to hide)">cl</button>`;
+  if (!hd.includes('explorer')) btns += `<button class="btn-explorer" onclick="openAt('${n}','explorer')" oncontextmenu="hideDefault(event,'${n}','explorer')" title="Open in Explorer (right-click to hide)">dir</button>`;
+  if (!hd.includes('code')) btns += `<button class="btn-code" onclick="openAt('${n}','code')" oncontextmenu="hideDefault(event,'${n}','code')" title="Open in VS Code (right-click to hide)">VS</button>`;
+  if (!hd.includes('powershell')) btns += `<button class="btn-ps" onclick="openAt('${n}','powershell')" oncontextmenu="hideDefault(event,'${n}','powershell')" title="Open PowerShell here (right-click to hide)">PS</button>`;
+  if (!hd.includes('cmd')) btns += `<button class="btn-cmd" onclick="openAt('${n}','cmd')" oncontextmenu="hideDefault(event,'${n}','cmd')" title="Open cmd here (right-click to hide)">&gt;_</button>`;
+  return btns;
+}
+
+function hideDefault(e, placeName, action) {
+  e.preventDefault();
+  toggleDefault(placeName, action);
+}
+
 // Custom actions
 function renderCustomActions(p) {
   if (!p.actions || !p.actions.length) return '';
@@ -1186,6 +1198,98 @@ function showActionDropdown(e, placeName) {
       document.removeEventListener('click', closeDD);
     }, {once: true});
   }, 0);
+}
+
+function showPlaceMenu(e, placeName) {
+  e.stopPropagation();
+  document.querySelectorAll('.action-dropdown').forEach(d => d.remove());
+
+  var placeData = lastPlacesData.find(p => p.name === placeName);
+  var hd = (placeData && placeData.hidden_defaults) || [];
+
+  var defaults = [
+    {key: 'claude',     label: 'Claude Code (cl)'},
+    {key: 'explorer',   label: 'Explorer (dir)'},
+    {key: 'code',       label: 'VS Code (VS)'},
+    {key: 'powershell', label: 'PowerShell (PS)'},
+    {key: 'cmd',        label: 'cmd (>_)'},
+  ];
+
+  var dd = document.createElement('div');
+  dd.className = 'action-dropdown';
+
+  defaults.forEach(function(d) {
+    var item = document.createElement('div');
+    item.className = 'action-dropdown-item';
+    var shown = !hd.includes(d.key);
+    item.innerHTML = (shown ? '&#10003; ' : '&nbsp;&nbsp;&nbsp; ') + esc(d.label);
+    item.onclick = function(ev) {
+      ev.stopPropagation();
+      toggleDefault(placeName, d.key);
+      dd.remove();
+    };
+    dd.appendChild(item);
+  });
+
+  // Custom action assign/unassign
+  var allActions = Object.keys(actionDefs).sort();
+  if (allActions.length) {
+    var sep1 = document.createElement('div');
+    sep1.style.cssText = 'border-top:1px solid var(--border);margin:4px 0';
+    dd.appendChild(sep1);
+    var assigned = (placeData && placeData.actions) || [];
+    allActions.forEach(function(name) {
+      var item = document.createElement('div');
+      item.className = 'action-dropdown-item';
+      var isAssigned = assigned.includes(name);
+      item.innerHTML = (isAssigned ? '&#10003; ' : '&nbsp;&nbsp;&nbsp; ') + esc(actionDefs[name].label + ' (' + name + ')');
+      item.style.color = 'var(--cyan)';
+      item.onclick = function(ev) {
+        ev.stopPropagation();
+        dd.remove();
+        if (isAssigned) unassignAction(placeName, name);
+        else assignAction(placeName, name);
+      };
+      dd.appendChild(item);
+    });
+  }
+
+  var sep = document.createElement('div');
+  sep.style.cssText = 'border-top:1px solid var(--border);margin:4px 0';
+  dd.appendChild(sep);
+
+  var rmItem = document.createElement('div');
+  rmItem.className = 'action-dropdown-item';
+  rmItem.style.color = 'var(--red)';
+  rmItem.textContent = 'Remove place';
+  rmItem.onclick = function(ev) {
+    ev.stopPropagation();
+    dd.remove();
+    rm(placeName);
+  };
+  dd.appendChild(rmItem);
+
+  var btn = e.target;
+  btn.style.position = 'relative';
+  btn.appendChild(dd);
+  setTimeout(function() {
+    document.addEventListener('click', function closeDD() {
+      dd.remove();
+      document.removeEventListener('click', closeDD);
+    }, {once: true});
+  }, 0);
+}
+
+async function toggleDefault(placeName, action) {
+  try {
+    var res = await fetch('/api/toggle-default', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: placeName, action: action})
+    });
+    if (res.ok) load();
+    else toast(await res.text() || 'Failed', true);
+  } catch (e) { toast('Failed', true); }
 }
 
 async function assignAction(placeName, actionName) {
