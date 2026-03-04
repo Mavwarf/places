@@ -26,11 +26,6 @@ type selectItem struct {
 	Warning string // e.g. "[missing!]"
 }
 
-// readKey reads a single keystroke using platform-specific readKeyCode().
-func readKey() int {
-	return readKeyCode()
-}
-
 // interactiveSelect presents an arrow-key navigable menu on out (stderr).
 // Returns the selected index and true, or -1 and false if cancelled.
 func interactiveSelect(items []selectItem, out io.Writer) (int, bool) {
@@ -80,7 +75,7 @@ func interactiveSelect(items []selectItem, out io.Writer) (int, bool) {
 	render()
 
 	for {
-		key := readKey()
+		key := readKeyCode()
 		switch key {
 		case keyUp:
 			if cursor > 0 {

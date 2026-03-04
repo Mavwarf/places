@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -56,5 +57,7 @@ func saveGeometry(g WindowGeometry) {
 	}
 	data, _ := json.MarshalIndent(g, "", "  ")
 	data = append(data, '\n')
-	os.WriteFile(p, data, 0644)
+	if err := os.WriteFile(p, data, 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "places-app: failed to save window geometry: %v\n", err)
+	}
 }

@@ -548,22 +548,9 @@ func cmdListJSON(tagFilter string, favOnly bool) {
 }
 
 func cmdDesktop(name string, n int) {
-	cfg, err := config.Load()
-	if err != nil {
-		fatal("%v", err)
-	}
-
-	place, ok := cfg.Places[name]
-	if !ok {
-		fatal("unknown place %q", name)
-	}
-
-	place.Desktop = n
-
-	if err := config.Save(cfg); err != nil {
-		fatal("%v", err)
-	}
-
+	modifyPlace(name, func(p *config.Place) {
+		p.Desktop = n
+	})
 	if n == 0 {
 		fmt.Printf("Cleared desktop for %q\n", name)
 	} else {
@@ -572,84 +559,32 @@ func cmdDesktop(name string, n int) {
 }
 
 func cmdFav(name string) {
-	cfg, err := config.Load()
-	if err != nil {
-		fatal("%v", err)
-	}
-
-	place, ok := cfg.Places[name]
-	if !ok {
-		fatal("unknown place %q", name)
-	}
-
-	place.Favorite = true
-
-	if err := config.Save(cfg); err != nil {
-		fatal("%v", err)
-	}
-
+	modifyPlace(name, func(p *config.Place) {
+		p.Favorite = true
+	})
 	fmt.Printf("Marked %q as favorite\n", name)
 }
 
 func cmdUnfav(name string) {
-	cfg, err := config.Load()
-	if err != nil {
-		fatal("%v", err)
-	}
-
-	place, ok := cfg.Places[name]
-	if !ok {
-		fatal("unknown place %q", name)
-	}
-
-	place.Favorite = false
-
-	if err := config.Save(cfg); err != nil {
-		fatal("%v", err)
-	}
-
+	modifyPlace(name, func(p *config.Place) {
+		p.Favorite = false
+	})
 	fmt.Printf("Unmarked %q as favorite\n", name)
 }
 
 func cmdTag(name, tag string) {
-	cfg, err := config.Load()
-	if err != nil {
-		fatal("%v", err)
-	}
-
-	place, ok := cfg.Places[name]
-	if !ok {
-		fatal("unknown place %q", name)
-	}
-
-	config.AddTag(place, tag)
-
-	if err := config.Save(cfg); err != nil {
-		fatal("%v", err)
-	}
-
+	modifyPlace(name, func(p *config.Place) {
+		config.AddTag(p, tag)
+	})
 	fmt.Printf("Tagged %q with %q\n", name, strings.ToLower(strings.TrimSpace(tag)))
 }
 
 func cmdUntag(name, tag string) {
-	cfg, err := config.Load()
-	if err != nil {
-		fatal("%v", err)
-	}
-
-	place, ok := cfg.Places[name]
-	if !ok {
-		fatal("unknown place %q", name)
-	}
-
-	if !config.RemoveTag(place, tag) {
-		fatal("place %q does not have tag %q", name, tag)
-	}
-
-	if err := config.Save(cfg); err != nil {
-		fatal("%v", err)
-	}
-
+	modifyPlace(name, func(p *config.Place) {
+		if !config.RemoveTag(p, tag) {
+			fatal("place %q does not have tag %q", name, tag)
+		}
+	})
 	fmt.Printf("Removed tag %q from %q\n", strings.ToLower(strings.TrimSpace(tag)), name)
 }
 
@@ -1012,6 +947,25 @@ func fuzzyFind(cfg config.Config, query string) (*config.Place, string) {
 		fatal("ambiguous place %q — matches: %s", query, strings.Join(matches, ", "))
 	}
 	return nil, query
+}
+
+// modifyPlace loads the config, finds the named place, applies fn, and saves.
+func modifyPlace(name string, fn func(*config.Place)) {
+	cfg, err := config.Load()
+	if err != nil {
+		fatal("%v", err)
+	}
+
+	place, ok := cfg.Places[name]
+	if !ok {
+		fatal("unknown place %q", name)
+	}
+
+	fn(place)
+
+	if err := config.Save(cfg); err != nil {
+		fatal("%v", err)
+	}
 }
 
 // ANSI color helpers.

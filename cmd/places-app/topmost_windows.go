@@ -23,7 +23,7 @@ const (
 
 // setAlwaysOnTop finds the Wails window by title and toggles its z-order.
 func setAlwaysOnTop(on bool) {
-	title, _ := syscall.UTF16PtrFromString("places dashboard")
+	title, _ := syscall.UTF16PtrFromString(appTitle)
 	hwnd, _, _ := findWindowW.Call(0, uintptr(unsafe.Pointer(title)))
 	if hwnd == 0 {
 		return

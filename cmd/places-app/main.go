@@ -13,6 +13,10 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
+// appTitle is the window title used by Wails and for FindWindowW lookups
+// in topmost_windows.go and hotkey_windows.go.
+const appTitle = "places dashboard"
+
 // version is set at build time via ldflags:
 //
 //	go build -ldflags "-X main.version=v0.3.3"
@@ -87,7 +91,7 @@ func main() {
 
 	origin := fmt.Sprintf("http://127.0.0.1:%d", port)
 	err = wails.Run(&options.App{
-		Title:             "places dashboard",
+		Title:             appTitle,
 		Width:             width,
 		Height:            height,
 		MinWidth:          1000,

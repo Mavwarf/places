@@ -67,7 +67,7 @@ func runHotkey(app *App) {
 func onHotkeyPressed(app *App) {
 	// Switch to the virtual desktop where the dashboard window lives.
 	if desktop.Available() {
-		title, _ := syscall.UTF16PtrFromString("places dashboard")
+		title, _ := syscall.UTF16PtrFromString(appTitle)
 		hwnd, _, _ := findWindowW.Call(0, uintptr(unsafe.Pointer(title)))
 		if hwnd != 0 {
 			winDesk, err := desktop.WindowDesktop(hwnd)
