@@ -104,6 +104,12 @@ body {
 }
 .header-section {
   flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin-left: -24px;
+  margin-right: -24px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 h1 {
   font-size: 1.3em;
@@ -115,11 +121,32 @@ h1 span { color: var(--fg-dim); font-weight: 400; }
 
 /* Add form */
 .add-form {
-  display: flex;
+  display: none;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 10px;
   align-items: center;
 }
+.add-form.open {
+  display: flex;
+}
+.btn-add-toggle {
+  background: transparent;
+  color: var(--fg-dim);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-add-toggle:hover { color: var(--accent); border-color: var(--accent); }
+.btn-add-toggle.open { color: var(--accent); border-color: var(--accent); }
 .add-form input {
   font-family: var(--font);
   font-size: 0.85em;
@@ -202,7 +229,7 @@ button:active { opacity: 0.7; }
 .sort-bar {
   display: flex;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   align-items: center;
   font-size: 0.8em;
   color: var(--fg-dim);
@@ -424,7 +451,7 @@ button:active { opacity: 0.7; }
 .tag-bar {
   display: flex;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
   align-items: center;
   font-size: 0.8em;
   color: var(--fg-dim);
@@ -510,7 +537,7 @@ button:active { opacity: 0.7; }
 }
 
 /* Theme toggle */
-.header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; }
+.header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
 .header h1 { margin-bottom: 0; }
 .theme-toggle {
   background: transparent;
@@ -541,7 +568,7 @@ button:active { opacity: 0.7; }
   margin-left: auto;
 }
 .screenshot-badge.visible { display: inline-block; }
-.screenshot-badge:not(.visible) ~ .theme-toggle { margin-left: auto; }
+.screenshot-badge:not(.visible) ~ .btn-add-toggle { margin-left: auto; }
 
 /* Window controls */
 .window-controls {
@@ -615,6 +642,7 @@ button:active { opacity: 0.7; }
 <div class="header">
   <h1>places dashboard <span>directory bookmarks</span></h1>
   <span class="screenshot-badge" id="screenshot-badge">screenshot</span>
+  <button class="btn-add-toggle" id="add-toggle" onclick="toggleAddForm()" title="Add new place">+</button>
   <button class="theme-toggle" id="theme-toggle" title="Toggle theme"></button>
   <div class="window-controls">
     <button class="win-btn win-btn-pin" id="pin-btn" onclick="togglePin()" title="Pin on top">&#128204;</button>
@@ -655,6 +683,15 @@ button:active { opacity: 0.7; }
 <div id="places" class="place-list"></div>
 
 <script>
+// Add form toggle
+function toggleAddForm() {
+  var form = document.querySelector('.add-form');
+  var btn = document.getElementById('add-toggle');
+  var open = form.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  if (open) form.querySelector('input[name="name"]').focus();
+}
+
 // Theme cycle
 var THEMES = [
   { name: 'dark',      icon: '\u263D', label: 'Dark' },
@@ -952,6 +989,8 @@ async function addPlace(e) {
     });
     if (res.ok) {
       form.reset();
+      form.classList.remove('open');
+      document.getElementById('add-toggle').classList.remove('open');
       load();
       toast('Added');
     } else {
