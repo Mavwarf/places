@@ -2,6 +2,7 @@
 
 ## Features
 
+- Sticky header with collapsible add form — header, sort bar, and filter bar stay fixed while places list scrolls; add form hidden behind a "+" toggle button; full-width header border matches footer *(Mar 4)*
 - Text filter — search input in the filter bar filters places by name, path, or note (case-insensitive); combines with tag/fav/dirty filters *(Mar 3)*
 - Tag exclusion filter — right-click a tag chip to exclude places with that tag (red + strikethrough); left-click still includes; a tag can only be in one state *(Mar 3)*
 - Wiki link in status bar — added link to the Desktop App wiki page alongside the existing GitHub link *(Mar 3)*
@@ -59,6 +60,30 @@
 - Shell hook (`places shell-hook`) — marker-based install/uninstall of `p()` function into `.bashrc`/`.zshrc`/PowerShell profile *(Feb 28)*
 - Core commands — `add`, `list`/`ls`, `go`, `rm` for managing directory bookmarks *(Feb 28)*
 - Initial release — Go CLI tool for bookmarking directories with shortcut names *(Feb 28)*
+
+---
+
+## 2026-03-04
+
+### Sticky header
+
+The dashboard header section (title bar, add form, sort bar, filter bar) is now
+fixed at the top of the window. Only the places list scrolls. Uses CSS flexbox
+with `overflow-y: auto` on the place list container. A full-width border at the
+bottom of the header matches the status bar border at the bottom.
+
+### Collapsible add form
+
+The add-new-place form is now hidden by default behind a **+** button in the
+header row (left of the theme toggle). Clicking it expands the form; the form
+auto-collapses after a successful add. Reclaims vertical space for the place
+list in the common case.
+
+### Tighter header spacing
+
+Reduced vertical gaps throughout the header section: header margin 20→10px,
+sort bar margin 12→6px, tag bar margin 12→0, header padding 12→8px, add form
+margin 24→10px.
 
 ---
 
