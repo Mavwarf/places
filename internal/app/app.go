@@ -25,6 +25,15 @@ import (
 // Version is the build version string, injected at compile time via ldflags.
 var Version = "dev"
 
+// defaultActions lists the built-in action names used by handleOpen and handleToggleDefault.
+var defaultActions = map[string]bool{
+	"powershell": true,
+	"cmd":        true,
+	"claude":     true,
+	"code":       true,
+	"explorer":   true,
+}
+
 type openURLReq struct {
 	URL string `json:"url"`
 }
@@ -99,17 +108,19 @@ type rmReq struct {
 	Name string `json:"name"`
 }
 
-// Serve starts the HTTP server on the given port.
-// Callback functions bridge HTTP endpoints to Wails window operations:
-//   - showFn: bring window to front (single-instance detection)
-//   - browseFn: open native folder picker dialog
-//   - minimizeFn: minimize the window
-//   - quitFn: fully exit the application (called via goroutine to allow response)
-//   - topmostFn: toggle always-on-top via SetWindowPos
-//   - dropFn: retrieve last drag-and-dropped folder path
-//
+// Callbacks bridges HTTP endpoints to Wails window operations.
 // Any callback may be nil, in which case its endpoint is not registered.
-func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn func(), quitFn func(), topmostFn func(bool), dropFn func() string) error {
+type Callbacks struct {
+	Show     func()                 // bring window to front (single-instance detection)
+	Browse   func() (string, error) // open native folder picker dialog
+	Minimize func()                 // minimize the window
+	Quit     func()                 // fully exit the application (called via goroutine to allow response)
+	Topmost  func(bool)             // toggle always-on-top via SetWindowPos
+	LastDrop func() string          // retrieve last drag-and-dropped folder path
+}
+
+// Serve starts the HTTP server on the given port.
+func Serve(port int, cb Callbacks) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleIndex)
 	mux.HandleFunc("/api/places", handlePlaces)
@@ -133,23 +144,23 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 	mux.HandleFunc("/api/import", handleImport)
 	mux.HandleFunc("/api/git-status", handleGitStatus)
 	mux.HandleFunc("/api/toggle-default", handleToggleDefault)
-	if showFn != nil {
+	if cb.Show != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
-			showFn()
+			cb.Show()
 			w.WriteHeader(http.StatusNoContent)
 		})
 	}
-	if browseFn != nil {
+	if cb.Browse != nil {
 		mux.HandleFunc("/api/browse", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
-			path, err := browseFn()
+			path, err := cb.Browse()
 			if err != nil {
 				http.Error(w, "browse failed", http.StatusInternalServerError)
 				return
@@ -162,27 +173,27 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 			json.NewEncoder(w).Encode(map[string]string{"path": path})
 		})
 	}
-	if minimizeFn != nil {
+	if cb.Minimize != nil {
 		mux.HandleFunc("/api/minimize", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
-			minimizeFn()
+			cb.Minimize()
 			w.WriteHeader(http.StatusNoContent)
 		})
 	}
-	if quitFn != nil {
+	if cb.Quit != nil {
 		mux.HandleFunc("/api/quit", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
-			go quitFn()
+			go cb.Quit()
 		})
 	}
-	if topmostFn != nil {
+	if cb.Topmost != nil {
 		mux.HandleFunc("/api/topmost", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -195,14 +206,14 @@ func Serve(port int, showFn func(), browseFn func() (string, error), minimizeFn 
 				http.Error(w, "bad request", http.StatusBadRequest)
 				return
 			}
-			topmostFn(req.OnTop)
+			cb.Topmost(req.OnTop)
 			w.WriteHeader(http.StatusNoContent)
 		})
 	}
 
-	if dropFn != nil {
+	if cb.LastDrop != nil {
 		mux.HandleFunc("/api/last-drop", func(w http.ResponseWriter, r *http.Request) {
-			path := dropFn()
+			path := cb.LastDrop()
 			if path == "" {
 				w.WriteHeader(http.StatusNoContent)
 				return
@@ -328,10 +339,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	switch req.Action {
-	case "powershell", "cmd", "claude", "code", "explorer":
-		// valid
-	default:
+	if !defaultActions[req.Action] {
 		config.Unlock()
 		http.Error(w, "unknown action", http.StatusBadRequest)
 		return
@@ -1113,10 +1121,7 @@ func handleToggleDefault(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	switch req.Action {
-	case "claude", "explorer", "code", "powershell", "cmd":
-		// valid
-	default:
+	if !defaultActions[req.Action] {
 		http.Error(w, "unknown default action", http.StatusBadRequest)
 		return
 	}

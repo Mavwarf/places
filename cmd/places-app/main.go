@@ -59,7 +59,14 @@ func main() {
 	// here (not Wails' asset server) so we get a plain HTTP page with full
 	// control. Callbacks bridge HTTP endpoints to Wails window operations.
 	go func() {
-		if err := app.Serve(port, a.ShowWindow, a.BrowseDir, a.MinimizeWindow, a.QuitApp, setAlwaysOnTop, a.LastDrop); err != nil {
+		if err := app.Serve(port, app.Callbacks{
+			Show:     a.ShowWindow,
+			Browse:   a.BrowseDir,
+			Minimize: a.MinimizeWindow,
+			Quit:     a.QuitApp,
+			Topmost:  setAlwaysOnTop,
+			LastDrop: a.LastDrop,
+		}); err != nil {
 			fmt.Fprintf(os.Stderr, "places-app: %v\n", err)
 			os.Exit(1)
 		}

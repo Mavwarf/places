@@ -416,9 +416,11 @@ func cmdStats() {
 	mostUses := -1
 	leastUses := -1
 
-	for name, p := range cfg.Places {
+	// Iterate in sorted order for deterministic output when counts are equal.
+	for _, name := range config.SortedNames(cfg) {
+		p := cfg.Places[name]
 		totalUses += p.UseCount
-		if mostUses < 0 || p.UseCount > mostUses {
+		if p.UseCount > mostUses {
 			mostUses = p.UseCount
 			mostUsedName = name
 		}
