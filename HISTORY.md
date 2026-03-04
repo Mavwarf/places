@@ -2,6 +2,7 @@
 
 ## Features
 
+- Tech debt cleanup (9 items) — CSS variable button colors, geometry save errors, appTitle const, modifyPlace helper, readKey removal, dropdown-sep class, deterministic stats, Serve callbacks struct, shared action allowlist *(Mar 4)*
 - Sticky header with collapsible add form — header, sort bar, and filter bar stay fixed while places list scrolls; add form hidden behind a "+" toggle button; full-width header border matches footer *(Mar 4)*
 - Text filter — search input in the filter bar filters places by name, path, or note (case-insensitive); combines with tag/fav/dirty filters *(Mar 3)*
 - Tag exclusion filter — right-click a tag chip to exclude places with that tag (red + strikethrough); left-click still includes; a tag can only be in one state *(Mar 3)*
@@ -12,6 +13,7 @@
 - Version display — build version injected via `-ldflags` at compile time; shown in the status bar *(Mar 3)*
 - Dashboard filter rework — tags are now toggleable multi-select chips (OR logic); ★ favorite chip moved from sort bar into the unified filter bar alongside tags; "Clear" button appears when any filter is active and resets everything; "All" button removed *(Mar 3)*
 - Git status UX — unchecked places show a dim "no status" hint; bulk "Update git" only fetches for currently visible (filtered) places; git subprocesses run hidden on Windows (no flashing cmd windows) *(Mar 3)*
+- Per-place action hiding — right-click built-in action buttons (PS, cmd, Claude, Code, Explorer) to hide them for a specific place; toggle visibility via the place menu; persisted in `hidden_defaults` field *(Mar 3)*
 - Auto-refresh popup fix — dashboard auto-refresh now skips reload while action assign dropdown or desktop select is open, preventing popup destruction mid-interaction *(Mar 3)*
 - Notes — attach text descriptions to places (`p note <name> [text]`); shown as inline subtitles in the dashboard; click to edit, hover to add; included in JSON output and import/export *(Mar 2)*
 - Import/Export — `p export` dumps all places and actions as JSON; `p import <file>` merges from file (skip existing); dashboard has Export/Import buttons for one-click backup *(Mar 2)*
@@ -85,6 +87,18 @@ Reduced vertical gaps throughout the header section: header margin 20→10px,
 sort bar margin 12→6px, tag bar margin 12→0, header padding 12→8px, add form
 margin 24→10px.
 
+### Tech debt cleanup (9 items)
+
+- Added `--claude`/`--code` CSS variables to all 6 theme blocks (were hard-coded hex)
+- `saveGeometry()` logs to stderr on write failure (was silently ignored)
+- Extracted `appTitle` constant replacing 3 hard-coded `"places dashboard"` strings
+- Extracted `modifyPlace()` helper for load-modify-save boilerplate in 5 commands
+- Removed redundant `readKey()` wrapper, calling `readKeyCode()` directly
+- Added `.dropdown-sep` CSS class replacing inline `style.cssText` on separator divs
+- `cmdStats` iterates `SortedNames()` for deterministic most/least used output
+- `Serve()` replaced 7 callback params with `Callbacks` struct
+- Shared `defaultActions` map for `handleOpen` and `handleToggleDefault` allowlists
+
 ---
 
 ## 2026-03-03
@@ -140,6 +154,15 @@ Always visible regardless of scroll position. Toasts repositioned above the bar.
 Build version is injected at compile time via `-ldflags "-X main.version=..."`.
 The `app.Version` package variable is replaced into a `{{version}}` placeholder
 in the served HTML. Shows "dev" when built without ldflags.
+
+### Per-place action hiding
+
+Right-click any built-in action button (PS, cmd, Claude, Code, Explorer) on a
+place to hide it. Hidden actions are tracked in the `hidden_defaults` field of
+each place. The place menu ("...") shows all default actions with checkmarks to
+toggle visibility. State persists in `places.json` and survives restarts. The
+`/api/toggle-default` endpoint handles the toggle; a shared `defaultActions` map
+validates action names.
 
 ### Security: URL open fix
 

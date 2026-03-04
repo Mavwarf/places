@@ -48,6 +48,13 @@
 - [x] ~~**Open links in default browser** — web links clicked in the dashboard (Wails WebView) now open in the system default browser via `/api/open-url` endpoint~~ *(Mar 2)*
 - [x] ~~**Git info in desktop app** — on-demand git button per place shows current branch and dirty/clean badge~~ *(Mar 2)*
 - [x] ~~**Dashboard filter rework** — tags are now toggleable multi-select filters (OR); ★ chip in filter bar alongside tags; "Clear" button resets all filters~~ *(Mar 3)*
+- [x] ~~**Text filter** — search input in filter bar filters places by name, path, or note; combines with tag/fav/dirty filters~~ *(Mar 3)*
+- [x] ~~**Tag exclusion filter** — right-click a tag chip to exclude (red + strikethrough); left-click includes; combines with other filters~~ *(Mar 3)*
+- [x] ~~**Git dirty filter** — "Git dirty" chip in filter bar shows only places with uncommitted changes~~ *(Mar 3)*
+- [x] ~~**Auto git fetch on startup** — git status fetched for all places automatically when dashboard opens~~ *(Mar 3)*
+- [x] ~~**Status bar** — fixed bottom bar with author/GitHub/wiki links, place count with filter ratio, and build version~~ *(Mar 3)*
+- [x] ~~**Per-place action hiding** — right-click built-in action buttons to hide them per place; toggle via place menu; persisted in `hidden_defaults`~~ *(Mar 3)*
+- [x] ~~**Sticky header with collapsible add form** — header/sort/filter bar stay fixed; add form hidden behind "+" toggle; scrollable place list~~ *(Mar 4)*
 - [ ] **Type-to-filter in select** — start typing in the interactive picker to narrow results instead of just arrow keys
 - [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
 
@@ -85,12 +92,6 @@
 - [x] ~~**Ignored errors in `pngToICO`** — `pngToICO` now returns error; caller falls back to raw PNG on failure~~ *(Mar 2)*
 - [x] ~~**Error responses leak internal paths** — HTTP handlers now return generic messages instead of raw `err.Error()`~~ *(Mar 2)*
 - [x] ~~**Unstable sort in dashboard** — added alphabetical name tiebreaker to all sort modes so equal-key places stay stable across auto-refreshes~~ *(Mar 2)*
-- [ ] **Duplicate `jsonPlace` struct** — defined in both `commands.go` and `internal/app/app.go` (accepted: different fields needed)
-- [ ] **`os.Exit(0)` bypasses cleanup** — `QuitApp()`, tray quit, and `beforeClose` skip deferred functions, Wails shutdown, HTTP graceful shutdown
-- [ ] **Goroutine leak in `Detach`** — `go cmd.Wait()` goroutines accumulate for long-running child processes on non-Windows
-- [ ] **Unix escape key blocks in selector** — pressing Esc with no following bytes causes `readKeyCode` to block indefinitely (`term_unix.go`)
-- [ ] **`Cmd()` and `Claude()` launchers have no platform guard** — unconditionally build `cmd.exe` commands, fail on non-Windows
-- [ ] **`termios` struct is Linux-specific** — ioctl numbers and struct layout in `term_unix.go` won't work on macOS/FreeBSD
 - [x] ~~**Hard-coded button colors** — added `--claude`/`--code` CSS variables to all 6 theme blocks~~ *(Mar 4)*
 - [x] ~~**Silent geometry save errors** — `saveGeometry()` now logs to stderr on write failure~~ *(Mar 4)*
 - [x] ~~**Hard-coded window title** — extracted `appTitle` constant in `main.go`, used by `topmost_windows.go` and `hotkey_windows.go`~~ *(Mar 4)*
@@ -100,6 +101,12 @@
 - [x] ~~**`cmdStats` nondeterministic output** — iterate `SortedNames()` for stable most/least used output~~ *(Mar 4)*
 - [x] ~~**`Serve()` takes 7 callback params** — extracted `Callbacks` struct for Wails window operations~~ *(Mar 4)*
 - [x] ~~**Duplicated default action allowlist** — shared `defaultActions` map used by `handleOpen` and `handleToggleDefault`~~ *(Mar 4)*
+- [ ] **Duplicate `jsonPlace` struct** — defined in both `commands.go` and `internal/app/app.go` (accepted: different fields needed)
+- [ ] **`os.Exit(0)` bypasses cleanup** — `QuitApp()`, tray quit, and `beforeClose` skip deferred functions, Wails shutdown, HTTP graceful shutdown
+- [ ] **Goroutine leak in `Detach`** — `go cmd.Wait()` goroutines accumulate for long-running child processes on non-Windows
+- [ ] **Unix escape key blocks in selector** — pressing Esc with no following bytes causes `readKeyCode` to block indefinitely (`term_unix.go`)
+- [ ] **`Cmd()` and `Claude()` launchers have no platform guard** — unconditionally build `cmd.exe` commands, fail on non-Windows
+- [ ] **`termios` struct is Linux-specific** — ioctl numbers and struct layout in `term_unix.go` won't work on macOS/FreeBSD
 
 ## Improvements
 
