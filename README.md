@@ -191,7 +191,7 @@ The place list is sorted by last used (most recent on top) by default, with rela
 
 A fixed status bar at the bottom of the window shows author/GitHub/Wiki links on the left, a place count in the center (e.g. "5 / 12 places" when filtered), and the build version on the right — always visible regardless of scroll position.
 
-You can also add and remove places from the app. The **…** button next to the path input opens a native folder picker dialog, or drag a folder from Explorer onto the window to fill in the path. Changes are shared with the CLI (same `places.json`).
+The header section (title, sort bar, filter bar) stays fixed at the top while the place list scrolls independently. The add form is hidden by default — click the **+** button in the header to expand it. After adding a place, the form auto-collapses. Click the **…** button next to the path input to open a native folder picker, or drag a folder from Explorer onto the window to fill in the path. Changes are shared with the CLI (same `places.json`).
 
 ### Tags in the App
 
@@ -230,7 +230,7 @@ The desktop app lives in the system tray. Closing the window hides it to the tra
 
 ```
 cd cmd/places-app
-go build -tags production -ldflags "-X main.version=$(git describe --tags --always)" -o places-app.exe .
+go build -tags production -ldflags "-X main.version=$(git describe --tags --always) -H windowsgui" -o places-app.exe .
 ```
 
 Copy `places-app.exe` next to `places.exe` on your PATH.
