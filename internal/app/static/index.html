@@ -95,8 +95,15 @@ body {
   font-family: var(--font);
   background: var(--bg);
   color: var(--fg);
-  padding: 24px 24px 32px;
+  padding: 24px 24px 0;
   line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+.header-section {
+  flex-shrink: 0;
 }
 h1 {
   font-size: 1.3em;
@@ -211,7 +218,7 @@ button:active { opacity: 0.7; }
 .sort-btn.active { color: var(--accent); border-color: var(--accent); }
 
 /* Place list */
-.place-list { display: flex; flex-direction: column; gap: 6px; }
+.place-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 28px; }
 
 .place-row {
   display: flex;
@@ -604,6 +611,7 @@ button:active { opacity: 0.7; }
 </style>
 </head>
 <body>
+<div class="header-section">
 <div class="header">
   <h1>places dashboard <span>directory bookmarks</span></h1>
   <span class="screenshot-badge" id="screenshot-badge">screenshot</span>
@@ -643,6 +651,7 @@ button:active { opacity: 0.7; }
 </div>
 
 <div class="tag-bar" id="tag-bar"><span id="tag-bar-left"></span><input class="filter-search" id="filter-search" type="text" placeholder="Filter..." oninput="textFilter=this.value;load()" /><span id="tag-bar-right"></span><span style="flex:1"></span><span id="tag-bar-git"></span></div>
+</div>
 <div id="places" class="place-list"></div>
 
 <script>
