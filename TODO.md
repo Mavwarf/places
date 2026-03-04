@@ -97,6 +97,9 @@
 - [x] ~~**Load-Modify-Save boilerplate** — extracted `modifyPlace()` helper, used by `cmdFav`, `cmdUnfav`, `cmdTag`, `cmdUntag`, `cmdDesktop`~~ *(Mar 4)*
 - [x] ~~**Redundant `readKey()` wrapper** — removed, calling `readKeyCode()` directly~~ *(Mar 4)*
 - [x] ~~**Inline styles in dashboard JS** — added `.dropdown-sep` CSS class for separator divs~~ *(Mar 4)*
+- [ ] **`cmdStats` nondeterministic output** — map iteration makes "most used" / "least used" vary between runs when places have equal use counts (`commands.go:419`)
+- [ ] **`Serve()` takes 7 callback params** — long function signature in `app.go:112`; could use an options struct (low priority, single call site)
+- [ ] **Duplicated default action allowlist** — `handleOpen` (`app.go:332`) and `handleToggleDefault` (`app.go:1117`) both list `powershell/cmd/claude/code/explorer` independently
 
 ## Improvements
 
