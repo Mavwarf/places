@@ -91,12 +91,12 @@
 - [ ] **Unix escape key blocks in selector** — pressing Esc with no following bytes causes `readKeyCode` to block indefinitely (`term_unix.go`)
 - [ ] **`Cmd()` and `Claude()` launchers have no platform guard** — unconditionally build `cmd.exe` commands, fail on non-Windows
 - [ ] **`termios` struct is Linux-specific** — ioctl numbers and struct layout in `term_unix.go` won't work on macOS/FreeBSD
-- [ ] **Hard-coded button colors** — `.btn-claude` (`#d4a373`) and `.btn-code` (`#2b7cd3`, `#fff`) don't use CSS variables, so they won't adapt to themes
-- [ ] **Silent geometry save errors** — `saveGeometry()` in `geometry.go` ignores `os.WriteFile` errors; window position/size loss has no user feedback
-- [ ] **Hard-coded window title** — `"places dashboard"` string duplicated in `topmost_windows.go` and `hotkey_windows.go`; should be a shared constant
-- [ ] **Load-Modify-Save boilerplate** — duplicated across 7+ command functions (`cmdFav`, `cmdUnfav`, `cmdTag`, `cmdUntag`, `cmdDesktop`, `cmdNote`, etc.); could extract an `updatePlace()` helper
-- [ ] **Redundant `readKey()` wrapper** — `selector.go` wraps `readKeyCode()` with no added logic; could call `readKeyCode()` directly
-- [ ] **Inline styles in dashboard JS** — tag dropdown separators use `style.cssText`, file input uses `style="display:none"`; could use CSS classes
+- [x] ~~**Hard-coded button colors** — added `--claude`/`--code` CSS variables to all 6 theme blocks~~ *(Mar 4)*
+- [x] ~~**Silent geometry save errors** — `saveGeometry()` now logs to stderr on write failure~~ *(Mar 4)*
+- [x] ~~**Hard-coded window title** — extracted `appTitle` constant in `main.go`, used by `topmost_windows.go` and `hotkey_windows.go`~~ *(Mar 4)*
+- [x] ~~**Load-Modify-Save boilerplate** — extracted `modifyPlace()` helper, used by `cmdFav`, `cmdUnfav`, `cmdTag`, `cmdUntag`, `cmdDesktop`~~ *(Mar 4)*
+- [x] ~~**Redundant `readKey()` wrapper** — removed, calling `readKeyCode()` directly~~ *(Mar 4)*
+- [x] ~~**Inline styles in dashboard JS** — added `.dropdown-sep` CSS class for separator divs~~ *(Mar 4)*
 
 ## Improvements
 
