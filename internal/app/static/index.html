@@ -275,7 +275,7 @@ button:active { opacity: 0.7; }
 .sort-btn.active { color: var(--accent); border-color: var(--accent); }
 
 /* Place list */
-.place-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 28px; }
+.place-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; min-height: 0; padding-top: 4px; padding-bottom: 28px; }
 
 .place-row {
   display: flex;
@@ -527,7 +527,7 @@ button:active { opacity: 0.7; }
 .empty-state {
   text-align: center;
   color: var(--fg-dim);
-  padding: 48px 0;
+  margin: auto 0;
   font-size: 0.9em;
 }
 
@@ -861,6 +861,10 @@ async function load() {
     document.getElementById('status-count').textContent = shown === total ? total + ' places' : shown + ' / ' + total + ' places';
 
     places = sortPlaces(places);
+    if (!places.length) {
+      el.innerHTML = '<div class="empty-state">No places match the current filters.</div>';
+      return;
+    }
     el.innerHTML = places.map(p => {
       const dName = maskName(p.name);
       const dPath = maskPath(p.name, p.path, p.tags);
