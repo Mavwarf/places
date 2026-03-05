@@ -36,7 +36,8 @@ func loadGeometry() *WindowGeometry {
 		return nil
 	}
 	var g WindowGeometry
-	if json.Unmarshal(data, &g) != nil {
+	if err := json.Unmarshal(data, &g); err != nil {
+		fmt.Fprintf(os.Stderr, "places-app: failed to parse window geometry: %v\n", err)
 		return nil
 	}
 	if g.Width < 100 || g.Height < 100 {
@@ -55,7 +56,11 @@ func saveGeometry(g WindowGeometry) {
 	if err != nil {
 		return
 	}
-	data, _ := json.MarshalIndent(g, "", "  ")
+	data, err := json.MarshalIndent(g, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "places-app: failed to marshal window geometry: %v\n", err)
+		return
+	}
 	data = append(data, '\n')
 	if err := os.WriteFile(p, data, 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "places-app: failed to save window geometry: %v\n", err)

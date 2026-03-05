@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/binary"
+	"fmt"
 	"os"
 	"runtime"
 
@@ -99,6 +100,9 @@ func addPlaceMenus() {
 
 	for _, name := range names {
 		place := cfg.Places[name]
+		if place == nil {
+			continue
+		}
 		path := place.Path
 		desk := place.Desktop
 		placeName := name
@@ -150,5 +154,7 @@ func recordTrayUse(name string) {
 		return
 	}
 	config.RecordUse(place)
-	config.Save(cfg)
+	if err := config.Save(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "places-app: warning: failed to save config: %v\n", err)
+	}
 }

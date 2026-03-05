@@ -17,9 +17,6 @@ import (
 // in topmost_windows.go and hotkey_windows.go.
 const appTitle = "places dashboard"
 
-// version and buildDate are set at build time via ldflags:
-//
-//	go build -ldflags "-X main.version=v0.3.3 -X main.buildDate=2026-03-05"
 // version and buildTime are set at build time via ldflags:
 //
 //	go build -ldflags "-X main.version=v0.3.8 -X 'main.buildTime=2026-03-05 09:30'"

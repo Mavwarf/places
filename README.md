@@ -230,7 +230,7 @@ The desktop app lives in the system tray. Closing the window hides it to the tra
 
 ```
 cd cmd/places-app
-go build -tags production -ldflags "-X main.version=$(git describe --tags --always) -H windowsgui" -o places-app.exe .
+go build -tags production -ldflags "-X main.version=$(git describe --tags --always) -X 'main.buildTime=$(date -u +%Y-%m-%d\ %H:%M\ UTC)' -H windowsgui" -o places-app.exe .
 ```
 
 Copy `places-app.exe` next to `places.exe` on your PATH.

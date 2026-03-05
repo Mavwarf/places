@@ -207,7 +207,7 @@ button:active { opacity: 0.7; }
   margin-left: -6px;
 }
 .btn-browse:hover { color: var(--accent); border-color: var(--accent); }
-.btn-rm { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 4px 10px; font-size: 0.75em; }
+.btn-rm { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 4px 10px; font-size: 0.75em; position: relative; }
 .btn-rm:hover { background: var(--red); color: var(--bg); }
 .btn-custom { background: color-mix(in srgb, var(--cyan) 15%, var(--bg2)); color: var(--cyan); border: 1px solid color-mix(in srgb, var(--cyan) 40%, transparent); padding: 4px 10px; font-size: 0.75em; }
 .btn-custom:hover { background: var(--cyan); color: var(--bg); }
@@ -242,7 +242,10 @@ button:active { opacity: 0.7; }
 }
 .action-dropdown-item:hover { background: var(--bg3); color: var(--accent); }
 .dropdown-sep { border-top: 1px solid var(--border); margin: 4px 0; }
+.dropdown-item-custom { color: var(--cyan); }
+.dropdown-item-rm { color: var(--red); }
 .spacer { flex: 1; }
+.hidden { display: none; }
 .place-info-row { display: flex; align-items: center; gap: 6px; }
 .place-note-row { overflow: hidden; min-width: 0; }
 .chip-gap-left { margin-left: 14px; }
@@ -680,7 +683,7 @@ button:active { opacity: 0.7; }
 <div class="status-bar">
   <span>By <a href="https://mavwarf.netlify.app/" target="_blank" rel="noopener" class="status-link">Thomas H&auml;user</a> &middot; <a href="https://github.com/Mavwarf/places" target="_blank" rel="noopener" class="status-link-accent">GitHub</a> &middot; <a href="https://github.com/Mavwarf/places/wiki/Desktop-App" target="_blank" rel="noopener" class="status-link-accent">Wiki</a></span>
   <span id="status-count"></span>
-  <span>{{build_date}}{{version}}</span>
+  <span>{{build_time}}{{version}}</span>
 </div>
 
 <form class="add-form" onsubmit="return addPlace(event)">
@@ -702,7 +705,7 @@ button:active { opacity: 0.7; }
   <span class="spacer"></span>
   <button class="btn-io" onclick="exportPlaces()" title="Export places as JSON">Export</button>
   <button class="btn-io" onclick="importPlaces()" title="Import places from JSON">Import</button>
-  <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImportFile(event)">
+  <input type="file" id="import-file" accept=".json" class="hidden" onchange="handleImportFile(event)">
 </div>
 
 <div class="tag-bar" id="tag-bar"><span id="tag-bar-left"></span><input class="filter-search" id="filter-search" type="text" placeholder="Filter..." oninput="textFilter=this.value;load()" /><span id="tag-bar-right"></span><span class="spacer"></span><span id="tag-bar-git"></span></div>
@@ -712,15 +715,15 @@ button:active { opacity: 0.7; }
 <script>
 // Add form toggle
 function toggleAddForm() {
-  var form = document.querySelector('.add-form');
-  var btn = document.getElementById('add-toggle');
-  var open = form.classList.toggle('open');
+  const form = document.querySelector('.add-form');
+  const btn = document.getElementById('add-toggle');
+  const open = form.classList.toggle('open');
   btn.classList.toggle('open', open);
   if (open) form.querySelector('input[name="name"]').focus();
 }
 
 // Theme cycle
-var THEMES = [
+const THEMES = [
   { name: 'dark',      icon: '\u263D', label: 'Dark' },
   { name: 'light',     icon: '\u2600', label: 'Light' },
   { name: 'nord',      icon: '\u2744', label: 'Nord' },
@@ -728,13 +731,13 @@ var THEMES = [
   { name: 'solarized', icon: '\u25D0', label: 'Solarized' },
   { name: 'gruvbox',   icon: '\u25A3', label: 'Gruvbox' },
 ];
-var themeToggle = document.getElementById('theme-toggle');
-var savedTheme = localStorage.getItem('places-theme');
-var themeIdx = Math.max(0, THEMES.findIndex(function(t) { return t.name === savedTheme; }));
+const themeToggle = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('places-theme');
+let themeIdx = Math.max(0, THEMES.findIndex(function(t) { return t.name === savedTheme; }));
 document.documentElement.dataset.theme = THEMES[themeIdx].name;
 
 function updateToggleIcon() {
-  var t = THEMES[themeIdx];
+  const t = THEMES[themeIdx];
   themeToggle.textContent = t.icon + ' ' + t.label;
   themeToggle.title = 'Theme: ' + t.label + ' (click to cycle)';
 }
@@ -754,7 +757,7 @@ let favFilter = false;
 let dirtyFilter = false;
 let textFilter = '';
 let actionDefs = {};  // global action definitions from server
-var lastPlacesData = [];  // cached place data for dropdown lookups
+let lastPlacesData = [];  // cached place data for dropdown lookups
 let gitCache = {};  // place name → {branch, dirty}
 
 function setSort(key) {
@@ -859,8 +862,8 @@ async function load() {
 
     places = sortPlaces(places);
     el.innerHTML = places.map(p => {
-      var dName = maskName(p.name);
-      var dPath = maskPath(p.name, p.path, p.tags);
+      const dName = maskName(p.name);
+      const dPath = maskPath(p.name, p.path, p.tags);
       return `
       <div class="place-row">
         <button class="btn-fav${p.favorite ? ' active' : ''}" onclick="toggleFav('${esc(p.name)}',${!p.favorite})" title="${p.favorite ? 'Unfavorite' : 'Favorite'}">${p.favorite ? '\u2605' : '\u2606'}</button>
@@ -879,7 +882,7 @@ async function load() {
             ${!p.exists ? '<span class="badge-missing">missing</span>' : ''}
           </div>
           <div class="place-note-row">
-            ${(function(){ var dn = maskNote(p.name, p.note, p.tags); return dn ? `<span class="place-note" onclick="editNote('${esc(p.name)}',this)" title="Click to edit note">${esc(dn)}</span>` : `<span class="place-note-empty" onclick="editNote('${esc(p.name)}',this)">+ note</span>`; })()}
+            ${renderNote(p)}
           </div>
         </div>
         <span class="place-stats">${p.use_count}x${p.last_used_at ? '<br>' + timeAgo(p.last_used_at) : ''}</span>
@@ -925,10 +928,16 @@ function esc(s) {
   return d.innerHTML.replace(/'/g, "\\'");
 }
 
-var actionLabels = {claude:'Claude',explorer:'Explorer',code:'VS Code',powershell:'PowerShell',cmd:'cmd'};
+function renderNote(p) {
+  const dn = maskNote(p.name, p.note, p.tags);
+  if (dn) return `<span class="place-note" onclick="editNote('${esc(p.name)}',this)" title="Click to edit note">${esc(dn)}</span>`;
+  return `<span class="place-note-empty" onclick="editNote('${esc(p.name)}',this)">+ note</span>`;
+}
+
+const actionLabels = {claude:'Claude',explorer:'Explorer',code:'VS Code',powershell:'PowerShell',cmd:'cmd'};
 async function openAt(name, action, shift) {
   try {
-    var label = actionLabels[action] || action;
+    let label = actionLabels[action] || action;
     if (action === 'claude') label = shift ? 'fresh Claude session' : 'Claude session';
     toast('Opening ' + label + ' at ' + name);
     const res = await fetch('/api/open', {
@@ -969,7 +978,7 @@ async function browsePath() {
 
 // Drag-and-drop folder onto path input via WebView2 native API
 (function() {
-  var pathInput = document.querySelector('.add-form input[name="path"]');
+  const pathInput = document.querySelector('.add-form input[name="path"]');
   window.addEventListener('dragover', function(e) {
     if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
   });
@@ -978,19 +987,19 @@ async function browsePath() {
     e.preventDefault();
     // Send files to Go via WebView2 native IPC for path resolution
     if (window.chrome && window.chrome.webview && window.chrome.webview.postMessageWithAdditionalObjects) {
-      var files = e.dataTransfer.items
+      const files = e.dataTransfer.items
         ? Array.from(e.dataTransfer.items).filter(function(i) { return i.kind === 'file'; }).map(function(i) { return i.getAsFile(); })
         : Array.from(e.dataTransfer.files);
       chrome.webview.postMessageWithAdditionalObjects('file:drop:' + e.x + ':' + e.y, files);
     }
     // Poll for resolved path from Go side
     (async function() {
-      for (var i = 0; i < 10; i++) {
+      for (let i = 0; i < 10; i++) {
         await new Promise(function(r) { setTimeout(r, 50); });
         try {
-          var res = await fetch('/api/last-drop');
+          const res = await fetch('/api/last-drop');
           if (res.ok && res.status !== 204) {
-            var data = await res.json();
+            const data = await res.json();
             if (data.path) { pathInput.value = data.path; return; }
           }
         } catch(err) {}
@@ -1122,9 +1131,9 @@ async function quitApp() {
 }
 
 // Pin on top
-var pinned = localStorage.getItem('places-pin') === 'on';
+let pinned = localStorage.getItem('places-pin') === 'on';
 function updatePinBtn() {
-  var btn = document.getElementById('pin-btn');
+  const btn = document.getElementById('pin-btn');
   btn.classList.toggle('active', pinned);
   btn.title = pinned ? 'Unpin from top' : 'Pin on top';
 }
@@ -1140,7 +1149,7 @@ if (pinned) {
 }
 
 document.addEventListener('click', function(e) {
-  var a = e.target.closest('a[target="_blank"]');
+  const a = e.target.closest('a[target="_blank"]');
   if (!a) return;
   e.preventDefault();
   fetch('/api/open-url', {
@@ -1151,23 +1160,23 @@ document.addEventListener('click', function(e) {
 });
 
 // ---- Screenshot mode ----
-var screenshotMode = localStorage.getItem('places-screenshot') === 'on';
-var screenshotMap = (function() {
+let screenshotMode = localStorage.getItem('places-screenshot') === 'on';
+const screenshotMap = (function() {
   try { return JSON.parse(localStorage.getItem('places-screenshot-map')) || {}; }
   catch(e) { return {}; }
 })();
-var namePool = ['aurora','nebula','cascade','prism','ember','frost','echo','drift','summit','coral','meridian','vertex'];
-var pathPool = [
+const namePool = ['aurora','nebula','cascade','prism','ember','frost','echo','drift','summit','coral','meridian','vertex'];
+const pathPool = [
   'acme\\horizon-api','starlight\\web-client','ironforge\\dashboard','moonbeam\\core-service',
   'skyward\\data-pipeline','crystalworks\\admin-panel','redwood\\auth-gateway','cobalt\\analytics',
   'silverpine\\scheduler','tidepool\\marketplace','northwind\\inventory','sunstone\\portal'
 ];
-var namePoolIdx = 0;
-var pathPoolIdx = 0;
+let namePoolIdx = 0;
+let pathPoolIdx = 0;
 // Restore pool indices from existing map.
 (function() {
-  var usedNames = new Set(Object.values(screenshotMap).map(v => v.name).filter(Boolean));
-  var usedPaths = new Set(Object.values(screenshotMap).map(v => v.path).filter(Boolean));
+  const usedNames = new Set(Object.values(screenshotMap).map(v => v.name).filter(Boolean));
+  const usedPaths = new Set(Object.values(screenshotMap).map(v => v.path).filter(Boolean));
   namePoolIdx = namePool.findIndex(n => !usedNames.has(n));
   if (namePoolIdx < 0) namePoolIdx = usedNames.size;
   pathPoolIdx = pathPool.findIndex(p => !usedPaths.has(p));
@@ -1178,7 +1187,7 @@ function maskName(realName) {
   if (!screenshotMode) return realName;
   if (!screenshotMap[realName]) screenshotMap[realName] = {};
   if (screenshotMap[realName].name) return screenshotMap[realName].name;
-  var fake = namePoolIdx < namePool.length ? namePool[namePoolIdx] : 'project-' + (namePoolIdx + 1);
+  const fake = namePoolIdx < namePool.length ? namePool[namePoolIdx] : 'project-' + (namePoolIdx + 1);
   namePoolIdx++;
   screenshotMap[realName].name = fake;
   localStorage.setItem('places-screenshot-map', JSON.stringify(screenshotMap));
@@ -1187,18 +1196,18 @@ function maskName(realName) {
 
 function maskPath(realName, realPath, tags) {
   if (!screenshotMode) return realPath;
-  var isWork = (tags || []).includes('work');
+  const isWork = (tags || []).includes('work');
   if (!isWork) return realPath;
   if (!screenshotMap[realName]) screenshotMap[realName] = {};
   if (screenshotMap[realName].path) return 'C:\\dev\\repos\\' + screenshotMap[realName].path;
-  var fake = pathPoolIdx < pathPool.length ? pathPool[pathPoolIdx] : 'project\\service-' + (pathPoolIdx + 1);
+  const fake = pathPoolIdx < pathPool.length ? pathPool[pathPoolIdx] : 'project\\service-' + (pathPoolIdx + 1);
   pathPoolIdx++;
   screenshotMap[realName].path = fake;
   localStorage.setItem('places-screenshot-map', JSON.stringify(screenshotMap));
   return 'C:\\dev\\repos\\' + fake;
 }
 
-var notePool = [
+const notePool = [
   'Internal API for billing and payments',
   'Customer-facing web portal',
   'Infrastructure monitoring service',
@@ -1212,9 +1221,9 @@ var notePool = [
   'Inventory tracking system',
   'Self-service developer portal'
 ];
-var notePoolIdx = 0;
+let notePoolIdx = 0;
 (function() {
-  var usedNotes = new Set(Object.values(screenshotMap).map(v => v.note).filter(Boolean));
+  const usedNotes = new Set(Object.values(screenshotMap).map(v => v.note).filter(Boolean));
   notePoolIdx = notePool.findIndex(n => !usedNotes.has(n));
   if (notePoolIdx < 0) notePoolIdx = usedNotes.size;
 })();
@@ -1222,11 +1231,11 @@ var notePoolIdx = 0;
 function maskNote(realName, realNote, tags) {
   if (!screenshotMode) return realNote;
   if (!realNote) return realNote;
-  var isWork = (tags || []).includes('work');
+  const isWork = (tags || []).includes('work');
   if (!isWork) return realNote;
   if (!screenshotMap[realName]) screenshotMap[realName] = {};
   if (screenshotMap[realName].note) return screenshotMap[realName].note;
-  var fake = notePoolIdx < notePool.length ? notePool[notePoolIdx] : 'Project description ' + (notePoolIdx + 1);
+  const fake = notePoolIdx < notePool.length ? notePool[notePoolIdx] : 'Project description ' + (notePoolIdx + 1);
   notePoolIdx++;
   screenshotMap[realName].note = fake;
   localStorage.setItem('places-screenshot-map', JSON.stringify(screenshotMap));
@@ -1234,7 +1243,7 @@ function maskNote(realName, realNote, tags) {
 }
 
 function updateScreenshotBadge() {
-  var badge = document.getElementById('screenshot-badge');
+  const badge = document.getElementById('screenshot-badge');
   if (badge) badge.classList.toggle('visible', screenshotMode);
 }
 updateScreenshotBadge();
@@ -1295,9 +1304,9 @@ function renderGitBadge(info) {
 }
 
 function renderDefaultActions(p) {
-  var hd = p.hidden_defaults || [];
-  var n = esc(p.name);
-  var btns = '';
+  const hd = p.hidden_defaults || [];
+  const n = esc(p.name);
+  let btns = '';
   if (!hd.includes('claude')) btns += `<button class="btn-claude" onclick="openAt('${n}','claude',event.shiftKey)" oncontextmenu="hideDefault(event,'${n}','claude')" title="Continue last Claude session (Shift+click for fresh session, right-click to hide)">cl</button>`;
   if (!hd.includes('explorer')) btns += `<button class="btn-explorer" onclick="openAt('${n}','explorer')" oncontextmenu="hideDefault(event,'${n}','explorer')" title="Open in Explorer (right-click to hide)">dir</button>`;
   if (!hd.includes('code')) btns += `<button class="btn-code" onclick="openAt('${n}','code')" oncontextmenu="hideDefault(event,'${n}','code')" title="Open in VS Code (right-click to hide)">VS</button>`;
@@ -1323,7 +1332,7 @@ function renderCustomActions(p) {
 
 async function runCustomAction(placeName, actionName) {
   try {
-    var def = actionDefs[actionName];
+    const def = actionDefs[actionName];
     toast('Running ' + (def ? def.label : actionName) + ' at ' + placeName);
     const res = await fetch('/api/run-action', {
       method: 'POST',
@@ -1339,10 +1348,10 @@ function showPlaceMenu(e, placeName) {
   e.stopPropagation();
   document.querySelectorAll('.action-dropdown').forEach(d => d.remove());
 
-  var placeData = lastPlacesData.find(p => p.name === placeName);
-  var hd = (placeData && placeData.hidden_defaults) || [];
+  const placeData = lastPlacesData.find(p => p.name === placeName);
+  const hd = (placeData && placeData.hidden_defaults) || [];
 
-  var defaults = [
+  const defaults = [
     {key: 'claude',     label: 'Claude Code (cl)'},
     {key: 'explorer',   label: 'Explorer (dir)'},
     {key: 'code',       label: 'VS Code (VS)'},
@@ -1350,13 +1359,13 @@ function showPlaceMenu(e, placeName) {
     {key: 'cmd',        label: 'cmd (>_)'},
   ];
 
-  var dd = document.createElement('div');
+  const dd = document.createElement('div');
   dd.className = 'action-dropdown';
 
   defaults.forEach(function(d) {
-    var item = document.createElement('div');
+    const item = document.createElement('div');
     item.className = 'action-dropdown-item';
-    var shown = !hd.includes(d.key);
+    const shown = !hd.includes(d.key);
     item.innerHTML = (shown ? '&#10003; ' : '&nbsp;&nbsp;&nbsp; ') + esc(d.label);
     item.onclick = function(ev) {
       ev.stopPropagation();
@@ -1367,18 +1376,17 @@ function showPlaceMenu(e, placeName) {
   });
 
   // Custom action assign/unassign
-  var allActions = Object.keys(actionDefs).sort();
+  const allActions = Object.keys(actionDefs).sort();
   if (allActions.length) {
-    var sep1 = document.createElement('div');
+    const sep1 = document.createElement('div');
     sep1.className = 'dropdown-sep';
     dd.appendChild(sep1);
-    var assigned = (placeData && placeData.actions) || [];
+    const assigned = (placeData && placeData.actions) || [];
     allActions.forEach(function(name) {
-      var item = document.createElement('div');
-      item.className = 'action-dropdown-item';
-      var isAssigned = assigned.includes(name);
+      const item = document.createElement('div');
+      item.className = 'action-dropdown-item dropdown-item-custom';
+      const isAssigned = assigned.includes(name);
       item.innerHTML = (isAssigned ? '&#10003; ' : '&nbsp;&nbsp;&nbsp; ') + esc(actionDefs[name].label + ' (' + name + ')');
-      item.style.color = 'var(--cyan)';
       item.onclick = function(ev) {
         ev.stopPropagation();
         dd.remove();
@@ -1389,13 +1397,12 @@ function showPlaceMenu(e, placeName) {
     });
   }
 
-  var sep = document.createElement('div');
+  const sep = document.createElement('div');
   sep.className = 'dropdown-sep';
   dd.appendChild(sep);
 
-  var rmItem = document.createElement('div');
-  rmItem.className = 'action-dropdown-item';
-  rmItem.style.color = 'var(--red)';
+  const rmItem = document.createElement('div');
+  rmItem.className = 'action-dropdown-item dropdown-item-rm';
   rmItem.textContent = 'Remove place';
   rmItem.onclick = function(ev) {
     ev.stopPropagation();
@@ -1404,8 +1411,7 @@ function showPlaceMenu(e, placeName) {
   };
   dd.appendChild(rmItem);
 
-  var btn = e.target;
-  btn.style.position = 'relative';
+  const btn = e.target;
   btn.appendChild(dd);
   setTimeout(function() {
     document.addEventListener('click', function closeDD() {
@@ -1417,7 +1423,7 @@ function showPlaceMenu(e, placeName) {
 
 async function toggleDefault(placeName, action) {
   try {
-    var res = await fetch('/api/toggle-default', {
+    const res = await fetch('/api/toggle-default', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({name: placeName, action: action})
@@ -1491,7 +1497,7 @@ function editNote(name, el) {
 
   input.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); save(); }
-    if (e.key === 'Escape') { e.preventDefault(); finish(); load(); }
+    if (e.key === 'Escape') { e.preventDefault(); input.removeEventListener('blur', save); finish(); load(); }
   });
   input.addEventListener('blur', save);
 }
@@ -1529,7 +1535,7 @@ function editName(name, el) {
 
   input.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); save(); }
-    if (e.key === 'Escape') { e.preventDefault(); finish(); load(); }
+    if (e.key === 'Escape') { e.preventDefault(); input.removeEventListener('blur', save); finish(); load(); }
   });
   input.addEventListener('blur', save);
 }
@@ -1567,7 +1573,7 @@ function editPath(name, el) {
 
   input.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); save(); }
-    if (e.key === 'Escape') { e.preventDefault(); finish(); load(); }
+    if (e.key === 'Escape') { e.preventDefault(); input.removeEventListener('blur', save); finish(); load(); }
   });
   input.addEventListener('blur', save);
 }
@@ -1607,6 +1613,8 @@ function toast(msg, err) {
   const el = document.createElement('div');
   el.className = 'toast ' + (err ? 'error' : 'ok');
   el.textContent = msg;
+  const existing = document.querySelectorAll('.toast');
+  el.style.bottom = (20 + existing.length * 48) + 'px';
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2500);
 }

@@ -41,7 +41,7 @@ jobs:
           CGO_ENABLED: "0"
         run: |
           VERSION="${GITHUB_REF_NAME}"
-          BUILD_TIME="$(date -u +%Y-%m-%d\ %H:%M)"
+          BUILD_TIME="$(date -u '+%Y-%m-%d %H:%M UTC')"
           go build -ldflags "-w -s -X main.version=${VERSION} -X 'main.buildTime=${BUILD_TIME}'" \
             -o ${{ matrix.binary }} ./cmd/places
       - uses: actions/upload-artifact@v4
@@ -91,7 +91,7 @@ jobs:
             fi
           fi
           VERSION="${GITHUB_REF_NAME}"
-          BUILD_TIME="$(date -u +%Y-%m-%d\ %H:%M)"
+          BUILD_TIME="$(date -u '+%Y-%m-%d %H:%M UTC')"
           go build -tags production \
             -ldflags "-w -s -X main.version=${VERSION} -X 'main.buildTime=${BUILD_TIME}' ${{ matrix.extra_ldflags }}" \
             -o ${{ matrix.binary }} ./cmd/places-app

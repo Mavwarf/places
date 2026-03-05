@@ -119,6 +119,28 @@
 - [x] ~~**`--shell` flag not validated** — `resolveShell()` now rejects unknown shells with error message~~ *(Mar 5)*
 - [x] ~~**Hard-coded shadow in `.action-dropdown`** — added `--shadow` CSS variable to all 6 themes~~ *(Mar 5)*
 - [x] ~~**Remaining inline `style=` attributes** — extracted `.spacer`, `.place-info-row`, `.place-note-row`, `.chip-gap-*`, `.status-link*`, `.input-tags/note` CSS classes~~ *(Mar 5)*
+- [x] ~~**Duplicate stale comment in `main.go`** — removed old `buildDate` comment block, kept single `buildTime` comment~~ *(Mar 5)*
+- [x] ~~**`cmdEscape` double-quotes + caret conflict** — simplified to just double-quoting (caret-escaping removed)~~ *(Mar 5)*
+- [x] ~~**Unused `version`/`buildTime` vars in CLI** — removed unused variables from `cmd/places/main.go`~~ *(Mar 5)*
+- [x] ~~**`{{build_date}}` placeholder name is stale** — renamed to `{{build_time}}` in Go and HTML~~ *(Mar 5)*
+- [x] ~~**CI vs local build time timezone mismatch** — both CI and local builds now use UTC with " UTC" suffix~~ *(Mar 5)*
+- [x] ~~**`timeAgo()` and `use_count` unescaped in HTML** — false positive: `use_count` is numeric and `timeAgo()` returns hardcoded strings; no XSS risk~~ *(Mar 5)*
+- [x] ~~**Inline edit blur fires `save()` after Escape** — Escape now removes blur listener before calling `finish()`, preventing unnecessary `save()` invocation~~ *(Mar 5)*
+- [x] ~~**Toast stacking** — active toasts now offset vertically (48px per existing toast)~~ *(Mar 5)*
+- [x] ~~**`var` vs `let`/`const` inconsistency in dashboard JS** — standardized all globals to `const` (immutable) or `let` (mutable)~~ *(Mar 5)*
+- [x] ~~**IIFE in place row template** — extracted `renderNote(p)` helper function~~ *(Mar 5)*
+- [x] ~~**README.md missing `buildTime` ldflags** — added `-X 'main.buildTime=...'` to desktop app build command in README~~ *(Mar 5)*
+- [x] ~~**Inline dropdown styles use JS `.style.color`** — extracted `.dropdown-item-custom` and `.dropdown-item-rm` CSS classes~~ *(Mar 5)*
+- [x] ~~**Function-local `var` in dashboard JS** — converted all ~40 function-local `var` to `const`/`let`~~ *(Mar 5)*
+- [x] ~~**`ExpandAction()` doesn't escape expanded placeholders** — documented quoting requirement in function comment; users must quote `"{path}"` in templates~~ *(Mar 5)*
+- [x] ~~**`loadGeometry()` silently discards JSON parse errors** — now logs parse errors to stderr~~ *(Mar 5)*
+- [x] ~~**Dropdown button positioning via JS** — moved `position: relative` to `.btn-rm` CSS class~~ *(Mar 5)*
+- [x] ~~**File input inline `style="display:none"`** — replaced with `.hidden` CSS class~~ *(Mar 5)*
+- [x] ~~**Long HTTP handlers in `app.go`** — extracted `gitStatus()` helper from `handleGitStatus` and `mergeConfig()` from `handleImport`; `handleOpen` left as-is (linear validation chain)~~ *(Mar 5)*
+- [x] ~~**`json.MarshalIndent` error ignored in `saveGeometry`** — now checks error and logs to stderr~~ *(Mar 5)*
+- [x] ~~**`recordTrayUse` ignores `config.Save` error** — now logs warning to stderr on save failure~~ *(Mar 5)*
+- [x] ~~**Nil place check in tray menu loop** — added nil guard, skips null places~~ *(Mar 5)*
+- [x] ~~**`cmdListJSON` ignores encode error** — now checks error and calls `fatal()`~~ *(Mar 5)*
 
 ## Improvements
 

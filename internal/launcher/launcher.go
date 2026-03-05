@@ -40,11 +40,9 @@ func PowerShell(path string) *exec.Cmd {
 }
 
 // cmdEscape quotes a string for safe use as a cmd.exe argument.
-// Wraps in double quotes and escapes internal metacharacters.
+// Double quotes neutralize all cmd.exe metacharacters (&, |, <, >, ^, etc.)
+// which is sufficient for cd /d paths.
 func cmdEscape(s string) string {
-	for _, c := range []string{"&", "^", "%", "<", ">", "|", "(", ")"} {
-		s = strings.ReplaceAll(s, c, "^"+c)
-	}
 	return `"` + s + `"`
 }
 
@@ -97,6 +95,11 @@ func Code(path string) *exec.Cmd {
 }
 
 // ExpandAction replaces {path} and {name} placeholders in a command template.
+// Placeholders are substituted verbatim — the template must include any
+// quoting needed for paths with spaces or special characters, e.g.:
+//
+//	cd /d "{path}" && my-tool
+//	echo {name}
 func ExpandAction(cmdTpl, path, name string) string {
 	s := strings.ReplaceAll(cmdTpl, "{path}", path)
 	return strings.ReplaceAll(s, "{name}", name)

@@ -528,7 +528,9 @@ func cmdListJSON(tagFilter string, favOnly bool) {
 
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
-	enc.Encode(places)
+	if err := enc.Encode(places); err != nil {
+		fatal("encoding list: %v", err)
+	}
 }
 
 func cmdDesktop(name string, n int) {

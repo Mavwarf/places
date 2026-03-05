@@ -264,7 +264,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	if BuildTime != "" {
 		bt = BuildTime + " &middot; "
 	}
-	html = strings.Replace(html, "{{build_date}}", bt, 1)
+	html = strings.Replace(html, "{{build_time}}", bt, 1)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(html))
 }
@@ -1008,9 +1008,20 @@ func handleImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	added := 0
-	skipped := 0
+	result := mergeConfig(cfg, &incoming)
 
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+// mergeConfig merges incoming places and actions into cfg, skipping existing entries.
+func mergeConfig(cfg config.Config, incoming *config.Config) map[string]interface{} {
+	added, skipped := 0, 0
 	if incoming.Places != nil {
 		for name, place := range incoming.Places {
 			if place == nil {
@@ -1029,8 +1040,7 @@ func handleImport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	actionsAdded := 0
-	actionsSkipped := 0
+	actionsAdded, actionsSkipped := 0, 0
 	if incoming.Actions != nil {
 		for name, action := range incoming.Actions {
 			if action == nil {
@@ -1045,18 +1055,12 @@ func handleImport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := config.Save(cfg); err != nil {
-		http.Error(w, "failed to save config", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	return map[string]interface{}{
 		"places_added":    added,
 		"places_skipped":  skipped,
 		"actions_added":   actionsAdded,
 		"actions_skipped": actionsSkipped,
-	})
+	}
 }
 
 // handleGitStatus returns the current git branch and dirty/clean status for a place.
@@ -1097,32 +1101,41 @@ func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
-
-	branchCmd := exec.CommandContext(ctx, "git", "-C", path, "rev-parse", "--abbrev-ref", "HEAD")
-	hideWindow(branchCmd)
-	branchOut, err := branchCmd.Output()
+	branch, dirty, err := gitStatus(r.Context(), path)
 	if err != nil {
-		http.Error(w, "not a git repository", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	branch := strings.TrimSpace(string(branchOut))
-
-	statusCmd := exec.CommandContext(ctx, "git", "-C", path, "status", "--porcelain")
-	hideWindow(statusCmd)
-	statusOut, err := statusCmd.Output()
-	if err != nil {
-		http.Error(w, "failed to read git status", http.StatusInternalServerError)
-		return
-	}
-	dirty := len(strings.TrimSpace(string(statusOut))) > 0
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"branch": branch,
 		"dirty":  dirty,
 	})
+}
+
+// gitStatus returns the current branch name and dirty flag for a git repo.
+func gitStatus(parent context.Context, path string) (string, bool, error) {
+	ctx, cancel := context.WithTimeout(parent, 10*time.Second)
+	defer cancel()
+
+	branchCmd := exec.CommandContext(ctx, "git", "-C", path, "rev-parse", "--abbrev-ref", "HEAD")
+	hideWindow(branchCmd)
+	branchOut, err := branchCmd.Output()
+	if err != nil {
+		return "", false, fmt.Errorf("not a git repository")
+	}
+
+	statusCmd := exec.CommandContext(ctx, "git", "-C", path, "status", "--porcelain")
+	hideWindow(statusCmd)
+	statusOut, err := statusCmd.Output()
+	if err != nil {
+		return "", false, fmt.Errorf("failed to read git status")
+	}
+
+	branch := strings.TrimSpace(string(branchOut))
+	dirty := len(strings.TrimSpace(string(statusOut))) > 0
+	return branch, dirty, nil
 }
 
 // handleToggleDefault toggles a built-in action's visibility for a place.
