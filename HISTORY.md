@@ -2,6 +2,7 @@
 
 ## Features
 
+- Dashboard polish — subtitle changed to "workspace navigator", empty state message when filters hide all places, place list top padding *(Mar 5)*
 - Tech debt cleanup (22 items) — UTC build time, inline edit Escape fix, toast stacking, JS var→const/let, renderNote helper, dropdown CSS classes, gitStatus/mergeConfig extraction, geometry error logging, tray nil guard and save error check, cmdListJSON error check, README buildTime ldflags, ExpandAction doc comment *(Mar 5)*
 - Build timestamp in dashboard footer — status bar shows "2026-03-05 09:30 UTC · v0.3.8" with build time injected via ldflags; consistent UTC format across CI and local builds *(Mar 5)*
 - Tech debt cleanup (9 items) — CSS variable button colors, geometry save errors, appTitle const, modifyPlace helper, readKey removal, dropdown-sep class, deterministic stats, Serve callbacks struct, shared action allowlist *(Mar 4)*
