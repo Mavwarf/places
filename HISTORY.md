@@ -2,6 +2,8 @@
 
 ## Features
 
+- Tech debt cleanup (22 items) — UTC build time, inline edit Escape fix, toast stacking, JS var→const/let, renderNote helper, dropdown CSS classes, gitStatus/mergeConfig extraction, geometry error logging, tray nil guard and save error check, cmdListJSON error check, README buildTime ldflags, ExpandAction doc comment *(Mar 5)*
+- Build timestamp in dashboard footer — status bar shows "2026-03-05 09:30 UTC · v0.3.8" with build time injected via ldflags; consistent UTC format across CI and local builds *(Mar 5)*
 - Tech debt cleanup (9 items) — CSS variable button colors, geometry save errors, appTitle const, modifyPlace helper, readKey removal, dropdown-sep class, deterministic stats, Serve callbacks struct, shared action allowlist *(Mar 4)*
 - Sticky header with collapsible add form — header, sort bar, and filter bar stay fixed while places list scrolls; add form hidden behind a "+" toggle button; full-width header border matches footer *(Mar 4)*
 - Text filter — search input in the filter bar filters places by name, path, or note (case-insensitive); combines with tag/fav/dirty filters *(Mar 3)*
@@ -62,6 +64,44 @@
 - Shell hook (`places shell-hook`) — marker-based install/uninstall of `p()` function into `.bashrc`/`.zshrc`/PowerShell profile *(Feb 28)*
 - Core commands — `add`, `list`/`ls`, `go`, `rm` for managing directory bookmarks *(Feb 28)*
 - Initial release — Go CLI tool for bookmarking directories with shortcut names *(Feb 28)*
+
+---
+
+## 2026-03-05
+
+### Build timestamp
+
+The dashboard status bar now shows the build date and time next to the version
+tag (e.g. "2026-03-05 09:30 UTC · v0.3.8"). Build time is injected via
+`-ldflags "-X 'main.buildTime=...'"` at compile time. Both CI (`release.yml`)
+and local builds (`CLAUDE.md`, `SKILL.md`) use UTC with a " UTC" suffix for
+consistency.
+
+### Tech debt cleanup (22 items)
+
+Comprehensive review-driven cleanup across CLI, desktop app, and dashboard:
+
+- **Inline edit Escape fix** — pressing Escape in name/path/note edit now removes
+  the blur listener before finishing, preventing a spurious `save()` call
+- **Toast stacking** — multiple simultaneous toasts offset vertically (48px each)
+  instead of overlapping at the same position
+- **JS modernization** — all `var` declarations (global and local) converted to
+  `const`/`let` throughout the dashboard; zero `var` remaining
+- **renderNote() helper** — extracted from inline IIFE in place card template
+- **CSS cleanup** — dropdown item colors via classes (`.dropdown-item-custom`,
+  `.dropdown-item-rm`) instead of inline `style.color`; file input uses `.hidden`
+  class; `.btn-rm` gets `position: relative` in CSS instead of JS
+- **HTTP handler extraction** — `gitStatus()` helper from `handleGitStatus`,
+  `mergeConfig()` helper from `handleImport`
+- **Error handling** — geometry save/load logs marshal/unmarshal errors to stderr;
+  tray `recordTrayUse` logs save failures; `cmdListJSON` checks encode error
+- **Defensive coding** — nil place guard in tray menu loop
+- **Build consistency** — UTC build time in CI, local, and SKILL.md; README
+  build command includes `buildTime` ldflags
+- **Code cleanup** — removed unused `version`/`buildTime` vars from CLI, stale
+  `buildDate` comment from places-app, simplified `cmdEscape` to double-quoting,
+  renamed `{{build_date}}` placeholder to `{{build_time}}`
+- **Documentation** — `ExpandAction()` doc comment documents quoting requirement
 
 ---
 
