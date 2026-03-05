@@ -39,9 +39,18 @@ func PowerShell(path string) *exec.Cmd {
 	return cmd
 }
 
+// cmdEscape quotes a string for safe use as a cmd.exe argument.
+// Wraps in double quotes and escapes internal metacharacters.
+func cmdEscape(s string) string {
+	for _, c := range []string{"&", "^", "%", "<", ">", "|", "(", ")"} {
+		s = strings.ReplaceAll(s, c, "^"+c)
+	}
+	return `"` + s + `"`
+}
+
 // Cmd opens a new cmd.exe window at the given directory (Windows only).
 func Cmd(path string) *exec.Cmd {
-	return exec.Command("cmd", "/c", "start", "", "cmd", "/k", "cd", "/d", path)
+	return exec.Command("cmd", "/c", "start", "", "cmd", "/k", "cd", "/d", cmdEscape(path))
 }
 
 // Claude opens a new PowerShell window at the given directory and starts Claude.

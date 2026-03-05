@@ -7,6 +7,7 @@
 package app
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -24,6 +25,9 @@ import (
 
 // Version is the build version string, injected at compile time via ldflags.
 var Version = "dev"
+
+// BuildTime is the build timestamp, injected at compile time via ldflags.
+var BuildTime = ""
 
 // defaultActions lists the built-in action names used by handleOpen and handleToggleDefault.
 var defaultActions = map[string]bool{
@@ -256,6 +260,11 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	html := strings.Replace(string(data), "{{version}}", Version, 1)
+	bt := ""
+	if BuildTime != "" {
+		bt = BuildTime + " &middot; "
+	}
+	html = strings.Replace(html, "{{build_date}}", bt, 1)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(html))
 }
@@ -983,6 +992,7 @@ func handleImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20) // 10 MB limit
 	var incoming config.Config
 	if err := json.NewDecoder(r.Body).Decode(&incoming); err != nil {
 		http.Error(w, "bad request", http.StatusBadRequest)
@@ -1004,6 +1014,10 @@ func handleImport(w http.ResponseWriter, r *http.Request) {
 	if incoming.Places != nil {
 		for name, place := range incoming.Places {
 			if place == nil {
+				continue
+			}
+			if err := config.ValidateName(name); err != nil {
+				skipped++
 				continue
 			}
 			if _, exists := cfg.Places[name]; exists {
@@ -1083,7 +1097,10 @@ func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	branchCmd := exec.Command("git", "-C", path, "rev-parse", "--abbrev-ref", "HEAD")
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	branchCmd := exec.CommandContext(ctx, "git", "-C", path, "rev-parse", "--abbrev-ref", "HEAD")
 	hideWindow(branchCmd)
 	branchOut, err := branchCmd.Output()
 	if err != nil {
@@ -1092,7 +1109,7 @@ func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	branch := strings.TrimSpace(string(branchOut))
 
-	statusCmd := exec.Command("git", "-C", path, "status", "--porcelain")
+	statusCmd := exec.CommandContext(ctx, "git", "-C", path, "status", "--porcelain")
 	hideWindow(statusCmd)
 	statusOut, err := statusCmd.Output()
 	if err != nil {

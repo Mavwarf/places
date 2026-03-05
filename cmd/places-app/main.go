@@ -17,13 +17,18 @@ import (
 // in topmost_windows.go and hotkey_windows.go.
 const appTitle = "places dashboard"
 
-// version is set at build time via ldflags:
+// version and buildDate are set at build time via ldflags:
 //
-//	go build -ldflags "-X main.version=v0.3.3"
+//	go build -ldflags "-X main.version=v0.3.3 -X main.buildDate=2026-03-05"
+// version and buildTime are set at build time via ldflags:
+//
+//	go build -ldflags "-X main.version=v0.3.8 -X 'main.buildTime=2026-03-05 09:30'"
 var version = "dev"
+var buildTime = ""
 
 func main() {
 	app.Version = version
+	app.BuildTime = buildTime
 	port := 8822
 	if env := os.Getenv("PLACES_PORT"); env != "" {
 		if p, err := strconv.Atoi(env); err == nil {

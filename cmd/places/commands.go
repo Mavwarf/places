@@ -78,7 +78,7 @@ func cmdAdd(name, path string, tags []string) {
 	if len(place.Tags) > 0 {
 		tagStr = fmt.Sprintf(" %s[%s]%s", colorDim, strings.Join(place.Tags, ", "), colorReset)
 	}
-	fmt.Printf("Saved %q -> %s%s\n", name, path, tagStr)
+	fmt.Fprintf(os.Stderr, "Saved %q -> %s%s\n", name, path, tagStr)
 }
 
 func cmdList(tagFilter string, favOnly bool) {
@@ -88,16 +88,16 @@ func cmdList(tagFilter string, favOnly bool) {
 	}
 
 	if len(cfg.Places) == 0 {
-		fmt.Println("No places saved. Use 'places add <name>' to save one.")
+		fmt.Fprintln(os.Stderr, "No places saved. Use 'places add <name>' to save one.")
 		return
 	}
 
 	names := config.FilterNames(cfg, config.SortedNames(cfg), tagFilter, favOnly)
 	if len(names) == 0 {
 		if tagFilter != "" {
-			fmt.Printf("No places with tag %q.\n", tagFilter)
+			fmt.Fprintf(os.Stderr, "No places with tag %q.\n", tagFilter)
 		} else if favOnly {
-			fmt.Println("No favorite places. Use 'places fav <name>' to mark one.")
+			fmt.Fprintln(os.Stderr, "No favorite places. Use 'places fav <name>' to mark one.")
 		}
 		return
 	}
@@ -129,24 +129,28 @@ func cmdList(tagFilter string, favOnly bool) {
 		if p.Desktop > 0 {
 			deskBadge = fmt.Sprintf(" %s[D%d]%s", colorDim, p.Desktop, colorReset)
 		}
-		fmt.Printf("  %s%s%-*s%s  %s%s%s  %s%s%s%s\n", star, colorGreen, maxLen, name, colorReset, colorCyan, p.Path, colorReset, stats, tagBadge, deskBadge, warning)
+		fmt.Fprintf(os.Stderr, "  %s%s%-*s%s  %s%s%s  %s%s%s%s\n", star, colorGreen, maxLen, name, colorReset, colorCyan, p.Path, colorReset, stats, tagBadge, deskBadge, warning)
 	}
 }
 
-func cmdGo(name string) {
+// lookupPlace loads config, finds the named place (with fuzzy fallback), and returns both.
+func lookupPlace(name string) (config.Config, *config.Place, string) {
 	cfg, err := config.Load()
 	if err != nil {
 		fatal("%v", err)
 	}
-
 	place, ok := cfg.Places[name]
 	if !ok {
-		// Try fuzzy (substring) match.
 		place, name = fuzzyFind(cfg, name)
 		if place == nil {
 			fatal("unknown place %q", name)
 		}
 	}
+	return cfg, place, name
+}
+
+func cmdGo(name string) {
+	cfg, place, _ := lookupPlace(name)
 
 	config.RecordUse(place)
 	if err := config.Save(cfg); err != nil {
@@ -158,18 +162,7 @@ func cmdGo(name string) {
 }
 
 func cmdCode(name string) {
-	cfg, err := config.Load()
-	if err != nil {
-		fatal("%v", err)
-	}
-
-	place, ok := cfg.Places[name]
-	if !ok {
-		place, name = fuzzyFind(cfg, name)
-		if place == nil {
-			fatal("unknown place %q", name)
-		}
-	}
+	_, place, _ := lookupPlace(name)
 
 	if _, err := os.Stat(place.Path); err != nil {
 		fatal("directory does not exist: %s", place.Path)
@@ -181,18 +174,7 @@ func cmdCode(name string) {
 }
 
 func cmdShell(name string) {
-	cfg, err := config.Load()
-	if err != nil {
-		fatal("%v", err)
-	}
-
-	place, ok := cfg.Places[name]
-	if !ok {
-		place, name = fuzzyFind(cfg, name)
-		if place == nil {
-			fatal("unknown place %q", name)
-		}
-	}
+	_, place, _ := lookupPlace(name)
 
 	if _, err := os.Stat(place.Path); err != nil {
 		fatal("directory does not exist: %s", place.Path)
@@ -243,20 +225,20 @@ func cmdAutostart(arg string) {
 		if out, err := cmd.CombinedOutput(); err != nil {
 			fatal("failed to enable autostart: %s", strings.TrimSpace(string(out)))
 		}
-		fmt.Println("Autostart enabled — places-app will start on login.")
+		fmt.Fprintln(os.Stderr, "Autostart enabled — places-app will start on login.")
 	case "off":
 		cmd := exec.Command("reg", "delete", regKey, "/v", regName, "/f")
 		if out, err := cmd.CombinedOutput(); err != nil {
 			fatal("failed to disable autostart: %s", strings.TrimSpace(string(out)))
 		}
-		fmt.Println("Autostart disabled.")
+		fmt.Fprintln(os.Stderr, "Autostart disabled.")
 	default:
 		// Show status.
 		cmd := exec.Command("reg", "query", regKey, "/v", regName)
 		if err := cmd.Run(); err != nil {
-			fmt.Println("Autostart: off")
+			fmt.Fprintln(os.Stderr, "Autostart: off")
 		} else {
-			fmt.Println("Autostart: on")
+			fmt.Fprintln(os.Stderr, "Autostart: on")
 		}
 	}
 }
@@ -368,7 +350,7 @@ func cmdRm(name string) {
 		fatal("%v", err)
 	}
 
-	fmt.Printf("Removed %q\n", name)
+	fmt.Fprintf(os.Stderr, "Removed %q\n", name)
 }
 
 func cmdRename(oldName, newName string) {
@@ -397,7 +379,7 @@ func cmdRename(oldName, newName string) {
 		fatal("%v", err)
 	}
 
-	fmt.Printf("Renamed %q -> %q\n", oldName, newName)
+	fmt.Fprintf(os.Stderr, "Renamed %q -> %q\n", oldName, newName)
 }
 
 func cmdStats() {
@@ -407,7 +389,7 @@ func cmdStats() {
 	}
 
 	if len(cfg.Places) == 0 {
-		fmt.Println("No places saved.")
+		fmt.Fprintln(os.Stderr, "No places saved.")
 		return
 	}
 
@@ -430,13 +412,13 @@ func cmdStats() {
 		}
 	}
 
-	fmt.Printf("Places: %d\n", len(cfg.Places))
-	fmt.Printf("Total uses: %d\n", totalUses)
+	fmt.Fprintf(os.Stderr, "Places: %d\n", len(cfg.Places))
+	fmt.Fprintf(os.Stderr, "Total uses: %d\n", totalUses)
 	if mostUses > 0 {
-		fmt.Printf("Most used: %s (%d uses)\n", mostUsedName, mostUses)
+		fmt.Fprintf(os.Stderr, "Most used: %s (%d uses)\n", mostUsedName, mostUses)
 	}
 	if leastUsedName != mostUsedName {
-		fmt.Printf("Least used: %s (%d uses)\n", leastUsedName, leastUses)
+		fmt.Fprintf(os.Stderr, "Least used: %s (%d uses)\n", leastUsedName, leastUses)
 	}
 }
 
@@ -455,7 +437,7 @@ func cmdPrune() {
 	}
 
 	if len(pruned) == 0 {
-		fmt.Println("Nothing to prune — all directories exist.")
+		fmt.Fprintln(os.Stderr, "Nothing to prune — all directories exist.")
 		return
 	}
 
@@ -465,9 +447,9 @@ func cmdPrune() {
 	}
 
 	for _, name := range pruned {
-		fmt.Printf("Removed %s%s%s (directory missing)\n", colorYellow, name, colorReset)
+		fmt.Fprintf(os.Stderr, "Removed %s%s%s (directory missing)\n", colorYellow, name, colorReset)
 	}
-	fmt.Printf("Pruned %d place(s).\n", len(pruned))
+	fmt.Fprintf(os.Stderr, "Pruned %d place(s).\n", len(pruned))
 }
 
 func cmdWhere() {
@@ -482,8 +464,8 @@ func cmdWhere() {
 		fatal("%v", err)
 	}
 
-	for name, p := range cfg.Places {
-		if strings.EqualFold(filepath.Clean(p.Path), cwd) {
+	for _, name := range config.SortedNames(cfg) {
+		if strings.EqualFold(filepath.Clean(cfg.Places[name].Path), cwd) {
 			fmt.Println(name)
 			return
 		}
@@ -554,9 +536,9 @@ func cmdDesktop(name string, n int) {
 		p.Desktop = n
 	})
 	if n == 0 {
-		fmt.Printf("Cleared desktop for %q\n", name)
+		fmt.Fprintf(os.Stderr, "Cleared desktop for %q\n", name)
 	} else {
-		fmt.Printf("Set %q to desktop %d\n", name, n)
+		fmt.Fprintf(os.Stderr, "Set %q to desktop %d\n", name, n)
 	}
 }
 
@@ -564,21 +546,21 @@ func cmdFav(name string) {
 	modifyPlace(name, func(p *config.Place) {
 		p.Favorite = true
 	})
-	fmt.Printf("Marked %q as favorite\n", name)
+	fmt.Fprintf(os.Stderr, "Marked %q as favorite\n", name)
 }
 
 func cmdUnfav(name string) {
 	modifyPlace(name, func(p *config.Place) {
 		p.Favorite = false
 	})
-	fmt.Printf("Unmarked %q as favorite\n", name)
+	fmt.Fprintf(os.Stderr, "Unmarked %q as favorite\n", name)
 }
 
 func cmdTag(name, tag string) {
 	modifyPlace(name, func(p *config.Place) {
 		config.AddTag(p, tag)
 	})
-	fmt.Printf("Tagged %q with %q\n", name, strings.ToLower(strings.TrimSpace(tag)))
+	fmt.Fprintf(os.Stderr, "Tagged %q with %q\n", name, strings.ToLower(strings.TrimSpace(tag)))
 }
 
 func cmdUntag(name, tag string) {
@@ -587,7 +569,7 @@ func cmdUntag(name, tag string) {
 			fatal("place %q does not have tag %q", name, tag)
 		}
 	})
-	fmt.Printf("Removed tag %q from %q\n", strings.ToLower(strings.TrimSpace(tag)), name)
+	fmt.Fprintf(os.Stderr, "Removed tag %q from %q\n", strings.ToLower(strings.TrimSpace(tag)), name)
 }
 
 func cmdTags() {
@@ -598,7 +580,7 @@ func cmdTags() {
 
 	tags := config.AllTags(cfg)
 	if len(tags) == 0 {
-		fmt.Println("No tags. Use 'places tag <name> <tag>' to add one.")
+		fmt.Fprintln(os.Stderr, "No tags. Use 'places tag <name> <tag>' to add one.")
 		return
 	}
 
@@ -616,7 +598,7 @@ func cmdTags() {
 		if n != 1 {
 			unit = "places"
 		}
-		fmt.Printf("  %s%s%s  %s(%d %s)%s\n", colorGreen, t, colorReset, colorDim, n, unit, colorReset)
+		fmt.Fprintf(os.Stderr, "  %s%s%s  %s(%d %s)%s\n", colorGreen, t, colorReset, colorDim, n, unit, colorReset)
 	}
 }
 
@@ -705,7 +687,7 @@ func cmdActionAdd(name, label, cmd string) {
 		fatal("%v", err)
 	}
 
-	fmt.Printf("Defined action %q (label=%q)\n", name, label)
+	fmt.Fprintf(os.Stderr, "Defined action %q (label=%q)\n", name, label)
 }
 
 func cmdActionRm(name string) {
@@ -729,7 +711,7 @@ func cmdActionRm(name string) {
 		fatal("%v", err)
 	}
 
-	fmt.Printf("Removed action %q\n", name)
+	fmt.Fprintf(os.Stderr, "Removed action %q\n", name)
 }
 
 func cmdActionList() {
@@ -740,13 +722,13 @@ func cmdActionList() {
 
 	names := config.SortedActionNames(cfg)
 	if len(names) == 0 {
-		fmt.Println("No actions defined. Use 'places action add <name> --label <label> --cmd <cmd>' to define one.")
+		fmt.Fprintln(os.Stderr, "No actions defined. Use 'places action add <name> --label <label> --cmd <cmd>' to define one.")
 		return
 	}
 
 	for _, name := range names {
 		a := cfg.Actions[name]
-		fmt.Printf("  %s%s%s  label=%s%s%s  cmd=%s%s%s\n",
+		fmt.Fprintf(os.Stderr, "  %s%s%s  label=%s%s%s  cmd=%s%s%s\n",
 			colorGreen, name, colorReset,
 			colorCyan, a.Label, colorReset,
 			colorDim, a.Cmd, colorReset)
@@ -774,7 +756,7 @@ func cmdActionAssign(placeName, actionName string) {
 		fatal("%v", err)
 	}
 
-	fmt.Printf("Assigned action %q to place %q\n", actionName, placeName)
+	fmt.Fprintf(os.Stderr, "Assigned action %q to place %q\n", actionName, placeName)
 }
 
 func cmdActionUnassign(placeName, actionName string) {
@@ -796,7 +778,7 @@ func cmdActionUnassign(placeName, actionName string) {
 		fatal("%v", err)
 	}
 
-	fmt.Printf("Unassigned action %q from place %q\n", actionName, placeName)
+	fmt.Fprintf(os.Stderr, "Unassigned action %q from place %q\n", actionName, placeName)
 }
 
 func cmdNote(name string, text string, clear bool) {
@@ -815,14 +797,14 @@ func cmdNote(name string, text string, clear bool) {
 		if err := config.Save(cfg); err != nil {
 			fatal("%v", err)
 		}
-		fmt.Printf("Cleared note for %q\n", name)
+		fmt.Fprintf(os.Stderr, "Cleared note for %q\n", name)
 		return
 	}
 
 	if text == "" {
-		// Print current note.
+		// Print current note to stdout (machine-readable).
 		if place.Note == "" {
-			fmt.Printf("No note for %q\n", name)
+			fmt.Fprintf(os.Stderr, "No note for %q\n", name)
 		} else {
 			fmt.Println(place.Note)
 		}
@@ -833,7 +815,7 @@ func cmdNote(name string, text string, clear bool) {
 	if err := config.Save(cfg); err != nil {
 		fatal("%v", err)
 	}
-	fmt.Printf("Set note for %q\n", name)
+	fmt.Fprintf(os.Stderr, "Set note for %q\n", name)
 }
 
 func cmdExport() {
@@ -868,9 +850,13 @@ func cmdImport(file string) {
 	added := 0
 	skipped := 0
 
-	// Merge places (skip existing).
+	// Merge places (skip existing and invalid names).
 	for name, place := range incoming.Places {
 		if place == nil {
+			continue
+		}
+		if config.ValidateName(name) != nil {
+			skipped++
 			continue
 		}
 		if _, exists := cfg.Places[name]; exists {

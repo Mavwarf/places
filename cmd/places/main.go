@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+// version and buildTime are set at build time via ldflags.
+var version = "dev"
+var buildTime = ""
+
 // fatal prints an error message to stderr and exits with code 1.
 func fatal(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "Error: "+format+"\n", args...)

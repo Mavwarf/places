@@ -39,7 +39,11 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
-        run: go build -ldflags "-w -s" -o ${{ matrix.binary }} ./cmd/places
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          BUILD_TIME="$(date -u +%Y-%m-%d\ %H:%M)"
+          go build -ldflags "-w -s -X main.version=${VERSION} -X 'main.buildTime=${BUILD_TIME}'" \
+            -o ${{ matrix.binary }} ./cmd/places
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.binary }}
@@ -86,8 +90,10 @@ jobs:
               export CGO_LDFLAGS="-arch x86_64 -framework UniformTypeIdentifiers"
             fi
           fi
+          VERSION="${GITHUB_REF_NAME}"
+          BUILD_TIME="$(date -u +%Y-%m-%d\ %H:%M)"
           go build -tags production \
-            -ldflags "-w -s ${{ matrix.extra_ldflags }}" \
+            -ldflags "-w -s -X main.version=${VERSION} -X 'main.buildTime=${BUILD_TIME}' ${{ matrix.extra_ldflags }}" \
             -o ${{ matrix.binary }} ./cmd/places-app
       - uses: actions/upload-artifact@v4
         with:

@@ -81,6 +81,7 @@ func onTrayReady(app *App) {
 
 	mQuit := systray.AddMenuItem("Quit", "Exit places-app")
 	mQuit.Click(func() {
+		app.saveWindowGeometry()
 		systray.Quit()
 		os.Exit(0)
 	})

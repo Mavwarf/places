@@ -19,6 +19,7 @@
   --border: #3b4261;
   --claude: #d4a373;
   --code: #2b7cd3;
+  --shadow: rgba(0,0,0,0.3);
   --font: "Cascadia Code", "Fira Code", "JetBrains Mono", "Consolas", monospace;
 }
 
@@ -36,6 +37,7 @@
   --border: #d1d5db;
   --claude: #c4956a;
   --code: #2b7cd3;
+  --shadow: rgba(0,0,0,0.12);
 }
 
 [data-theme="nord"] {
@@ -52,6 +54,7 @@
   --border: #4c566a;
   --claude: #d4a373;
   --code: #5e81ac;
+  --shadow: rgba(0,0,0,0.3);
 }
 
 [data-theme="dracula"] {
@@ -68,6 +71,7 @@
   --border: #44475a;
   --claude: #d4a373;
   --code: #6272a4;
+  --shadow: rgba(0,0,0,0.3);
 }
 
 [data-theme="solarized"] {
@@ -84,6 +88,7 @@
   --border: #1a4f5c;
   --claude: #cb9a64;
   --code: #268bd2;
+  --shadow: rgba(0,0,0,0.3);
 }
 
 [data-theme="gruvbox"] {
@@ -100,6 +105,7 @@
   --border: #665c54;
   --claude: #d5a06c;
   --code: #458588;
+  --shadow: rgba(0,0,0,0.3);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -190,7 +196,7 @@ button:active { opacity: 0.7; }
 .btn-cmd { background: var(--fg-dim); color: var(--bg); }
 .btn-explorer { background: var(--yellow); color: var(--bg); }
 .btn-claude { background: var(--claude); color: var(--bg); }
-.btn-code { background: var(--code); color: #fff; }
+.btn-code { background: var(--code); color: var(--bg); }
 .btn-browse {
   background: transparent;
   color: var(--fg-dim);
@@ -225,7 +231,7 @@ button:active { opacity: 0.7; }
   padding: 4px 0;
   z-index: 50;
   min-width: 120px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px var(--shadow);
 }
 .action-dropdown-item {
   padding: 6px 12px;
@@ -236,6 +242,15 @@ button:active { opacity: 0.7; }
 }
 .action-dropdown-item:hover { background: var(--bg3); color: var(--accent); }
 .dropdown-sep { border-top: 1px solid var(--border); margin: 4px 0; }
+.spacer { flex: 1; }
+.place-info-row { display: flex; align-items: center; gap: 6px; }
+.place-note-row { overflow: hidden; min-width: 0; }
+.chip-gap-left { margin-left: 14px; }
+.chip-gap-right { margin-right: 14px; }
+.status-link { color: var(--fg); }
+.status-link-accent { color: var(--cyan); }
+.input-tags { width: 160px; }
+.input-note { width: 180px; }
 
 /* Sort bar */
 .sort-bar {
@@ -663,17 +678,17 @@ button:active { opacity: 0.7; }
   </div>
 </div>
 <div class="status-bar">
-  <span>By <a href="https://mavwarf.netlify.app/" target="_blank" rel="noopener" style="color:var(--fg)">Thomas H&auml;user</a> &middot; <a href="https://github.com/Mavwarf/places" target="_blank" rel="noopener" style="color:var(--cyan)">GitHub</a> &middot; <a href="https://github.com/Mavwarf/places/wiki/Desktop-App" target="_blank" rel="noopener" style="color:var(--cyan)">Wiki</a></span>
+  <span>By <a href="https://mavwarf.netlify.app/" target="_blank" rel="noopener" class="status-link">Thomas H&auml;user</a> &middot; <a href="https://github.com/Mavwarf/places" target="_blank" rel="noopener" class="status-link-accent">GitHub</a> &middot; <a href="https://github.com/Mavwarf/places/wiki/Desktop-App" target="_blank" rel="noopener" class="status-link-accent">Wiki</a></span>
   <span id="status-count"></span>
-  <span>{{version}}</span>
+  <span>{{build_date}}{{version}}</span>
 </div>
 
 <form class="add-form" onsubmit="return addPlace(event)">
   <input name="name" placeholder="name" required autocomplete="off">
   <input name="path" placeholder="C:\path\to\directory" required autocomplete="off">
   <button type="button" class="btn-browse" onclick="browsePath()" title="Browse for folder">&hellip;</button>
-  <input name="tags" placeholder="tags (comma-separated)" autocomplete="off" style="width:160px">
-  <input name="note" placeholder="note (optional)" autocomplete="off" style="width:180px">
+  <input name="tags" placeholder="tags (comma-separated)" autocomplete="off" class="input-tags">
+  <input name="note" placeholder="note (optional)" autocomplete="off" class="input-note">
   <button type="submit" class="btn-add">Add</button>
 </form>
 
@@ -684,13 +699,13 @@ button:active { opacity: 0.7; }
   <button class="sort-btn active" onclick="setSort('last_used')" id="sort-last_used">Last used</button>
   <button class="sort-btn" onclick="setSort('added')" id="sort-added">Added</button>
   <button class="sort-btn" onclick="setSort('frecency')" id="sort-frecency" title="Frequency + recency combined">Frecency</button>
-  <span style="flex:1"></span>
+  <span class="spacer"></span>
   <button class="btn-io" onclick="exportPlaces()" title="Export places as JSON">Export</button>
   <button class="btn-io" onclick="importPlaces()" title="Import places from JSON">Import</button>
   <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImportFile(event)">
 </div>
 
-<div class="tag-bar" id="tag-bar"><span id="tag-bar-left"></span><input class="filter-search" id="filter-search" type="text" placeholder="Filter..." oninput="textFilter=this.value;load()" /><span id="tag-bar-right"></span><span style="flex:1"></span><span id="tag-bar-git"></span></div>
+<div class="tag-bar" id="tag-bar"><span id="tag-bar-left"></span><input class="filter-search" id="filter-search" type="text" placeholder="Filter..." oninput="textFilter=this.value;load()" /><span id="tag-bar-right"></span><span class="spacer"></span><span id="tag-bar-git"></span></div>
 </div>
 <div id="places" class="place-list"></div>
 
@@ -804,12 +819,12 @@ async function load() {
     const sortedTags = Array.from(allTags).sort();
     const gitBtn = '<button class="btn-io" onclick="updateAllGit()" title="Fetch git status for all visible places">Update git</button>';
     const hasFilters = activeTags.size > 0 || excludedTags.size > 0 || favFilter || dirtyFilter || textFilter;
-    const favChip = `<button class="tag-chip${favFilter ? ' active' : ''}" onclick="toggleFavFilter()" title="Show favorites only" style="margin-right:14px">&#9733;</button>`;
-    const dirtyChip = `<button class="tag-chip${dirtyFilter ? ' active' : ''}" onclick="toggleDirtyFilter()" title="Show only git-dirty places" style="margin-left:14px">Git dirty</button>`;
+    const favChip = `<button class="tag-chip chip-gap-right${favFilter ? ' active' : ''}" onclick="toggleFavFilter()" title="Show favorites only">&#9733;</button>`;
+    const dirtyChip = `<button class="tag-chip chip-gap-left${dirtyFilter ? ' active' : ''}" onclick="toggleDirtyFilter()" title="Show only git-dirty places">Git dirty</button>`;
     const tagChips = sortedTags.map(t =>
       `<button class="tag-chip${activeTags.has(t) ? ' active' : ''}${excludedTags.has(t) ? ' excluded' : ''}" onclick="filterTag('${esc(t)}')" oncontextmenu="excludeTag(event,'${esc(t)}')" title="Click to include, right-click to exclude">${esc(t)}</button>`
     ).join('');
-    const clearBtn = hasFilters ? '<button class="tag-chip" onclick="clearFilters()" style="margin-left:14px">Clear</button>' : '';
+    const clearBtn = hasFilters ? '<button class="tag-chip chip-gap-left" onclick="clearFilters()">Clear</button>' : '';
     document.getElementById('tag-bar-left').innerHTML = '<span>Filter:</span>' + favChip + tagChips + dirtyChip;
     document.getElementById('tag-bar-right').innerHTML = clearBtn;
     document.getElementById('tag-bar-git').innerHTML = gitBtn;
@@ -859,11 +874,11 @@ async function load() {
         <button class="btn-desktop-go${p.desktop ? ' visible' : ''}" onclick="switchDesktop(${p.desktop || 0})" title="Switch to desktop ${p.desktop || ''}">\u2192</button>
         <span class="place-name" onclick="editName('${esc(p.name)}',this)" title="Click to rename">${esc(dName)}</span>
         <div class="place-info">
-          <div style="display:flex;align-items:center;gap:6px">
+          <div class="place-info-row">
             <span class="place-path" onclick="editPath('${esc(p.name)}',this)" title="Click to edit path">${esc(dPath)}</span>
             ${!p.exists ? '<span class="badge-missing">missing</span>' : ''}
           </div>
-          <div style="overflow:hidden;min-width:0">
+          <div class="place-note-row">
             ${(function(){ var dn = maskNote(p.name, p.note, p.tags); return dn ? `<span class="place-note" onclick="editNote('${esc(p.name)}',this)" title="Click to edit note">${esc(dn)}</span>` : `<span class="place-note-empty" onclick="editNote('${esc(p.name)}',this)">+ note</span>`; })()}
           </div>
         </div>

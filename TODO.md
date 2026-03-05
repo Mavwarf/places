@@ -107,6 +107,18 @@
 - [ ] **Unix escape key blocks in selector** — pressing Esc with no following bytes causes `readKeyCode` to block indefinitely (`term_unix.go`)
 - [ ] **`Cmd()` and `Claude()` launchers have no platform guard** — unconditionally build `cmd.exe` commands, fail on non-Windows
 - [ ] **`termios` struct is Linux-specific** — ioctl numbers and struct layout in `term_unix.go` won't work on macOS/FreeBSD
+- [x] ~~**Import endpoint skips name validation** — `handleImport` and `cmdImport` now call `ValidateName()`, skip invalid names~~ *(Mar 5)*
+- [x] ~~**`Cmd()` launcher doesn't escape path metacharacters** — added `cmdEscape()` to quote `&`, `^`, `%` etc. in paths~~ *(Mar 5)*
+- [x] ~~**Hard-coded `#fff` in `.btn-code`** — changed to `var(--bg)` for theme consistency~~ *(Mar 5)*
+- [x] ~~**Tray Quit skips geometry save** — added `saveWindowGeometry()` call before `os.Exit(0)` in tray Quit~~ *(Mar 5)*
+- [x] ~~**stdout/stderr convention inconsistent** — all human-facing confirmations now use `fmt.Fprintf(os.Stderr, ...)`, stdout reserved for machine-readable output~~ *(Mar 5)*
+- [x] ~~**`cmdWhere` non-deterministic with duplicate paths** — now iterates `config.SortedNames()` for deterministic first match~~ *(Mar 5)*
+- [x] ~~**No request body size limit on API** — added `http.MaxBytesReader` (10 MB) on `/api/import`~~ *(Mar 5)*
+- [x] ~~**`handleGitStatus` has no timeout** — uses `exec.CommandContext` with 10-second deadline~~ *(Mar 5)*
+- [x] ~~**Duplicate load-find-place pattern** — extracted `lookupPlace()` helper, used by `cmdGo`, `cmdCode`, `cmdShell`~~ *(Mar 5)*
+- [x] ~~**`--shell` flag not validated** — `resolveShell()` now rejects unknown shells with error message~~ *(Mar 5)*
+- [x] ~~**Hard-coded shadow in `.action-dropdown`** — added `--shadow` CSS variable to all 6 themes~~ *(Mar 5)*
+- [x] ~~**Remaining inline `style=` attributes** — extracted `.spacer`, `.place-info-row`, `.place-note-row`, `.chip-gap-*`, `.status-link*`, `.input-tags/note` CSS classes~~ *(Mar 5)*
 
 ## Improvements
 

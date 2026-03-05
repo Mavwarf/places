@@ -159,19 +159,19 @@ func cmdInit() {
 	}
 
 	if installed == 0 {
-		fmt.Println("places: everything already set up!")
+		fmt.Fprintln(os.Stderr, "places: everything already set up!")
 	} else {
-		fmt.Println()
+		fmt.Fprintln(os.Stderr)
 		if sh == "powershell" {
-			fmt.Println("Next steps:")
-			fmt.Println("  1. Ensure execution policy allows profile loading:")
-			fmt.Println("     Set-ExecutionPolicy -Scope CurrentUser RemoteSigned")
-			fmt.Println("  2. Restart your shell or run: . $PROFILE")
+			fmt.Fprintln(os.Stderr, "Next steps:")
+			fmt.Fprintln(os.Stderr, "  1. Ensure execution policy allows profile loading:")
+			fmt.Fprintln(os.Stderr, "     Set-ExecutionPolicy -Scope CurrentUser RemoteSigned")
+			fmt.Fprintln(os.Stderr, "  2. Restart your shell or run: . $PROFILE")
 		} else if sh == "cmd" {
-			fmt.Println("Next steps:")
-			fmt.Println("  Restart cmd.exe to use 'p <name>'")
+			fmt.Fprintln(os.Stderr, "Next steps:")
+			fmt.Fprintln(os.Stderr, "  Restart cmd.exe to use 'p <name>'")
 		} else {
-			fmt.Printf("Next steps:\n  Restart your shell or run: source ~/.%src\n", sh)
+			fmt.Fprintf(os.Stderr, "Next steps:\n  Restart your shell or run: source ~/.%src\n", sh)
 		}
 	}
 }
@@ -269,8 +269,15 @@ func shellHookCmd(args []string) {
 	}
 }
 
+var validShells = map[string]bool{
+	"bash": true, "zsh": true, "powershell": true, "cmd": true,
+}
+
 func resolveShell(override string) string {
 	if override != "" {
+		if !validShells[override] {
+			fatal("unknown shell %q (supported: bash, zsh, powershell, cmd)", override)
+		}
 		return override
 	}
 	if runtime.GOOS == "windows" {
