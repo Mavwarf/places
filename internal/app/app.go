@@ -69,6 +69,7 @@ type openReq struct {
 	Name   string `json:"name"`
 	Action string `json:"action"`
 	Shift  bool   `json:"shift,omitempty"`
+	Ctrl   bool   `json:"ctrl,omitempty"`
 }
 
 type addReq struct {
@@ -374,7 +375,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	case "cmd":
 		cmd = launcher.Cmd(path)
 	case "claude":
-		cmd = launcher.Claude(path, name, req.Shift)
+		cmd = launcher.Claude(path, name, req.Shift, req.Ctrl)
 	case "code":
 		cmd = launcher.Code(path)
 	case "explorer":

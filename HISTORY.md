@@ -2,6 +2,7 @@
 
 ## Features
 
+- Claude YOLO mode — Ctrl+click CL button launches Claude with `--dangerously-skip-permissions`; Shift+click (fresh session) now shows a confirmation dialog; tab title simplified to `claude <name>` *(Mar 24)*
 - Dashboard polish — subtitle changed to "workspace navigator", empty state message when filters hide all places, place list top padding *(Mar 5)*
 - Tech debt cleanup (22 items) — UTC build time, inline edit Escape fix, toast stacking, JS var→const/let, renderNote helper, dropdown CSS classes, gitStatus/mergeConfig extraction, geometry error logging, tray nil guard and save error check, cmdListJSON error check, README buildTime ldflags, ExpandAction doc comment *(Mar 5)*
 - Build timestamp in dashboard footer — status bar shows "2026-03-05 09:30 UTC · v0.3.8" with build time injected via ldflags; consistent UTC format across CI and local builds *(Mar 5)*
@@ -24,7 +25,7 @@
 - Code comments — added documentation across all 16 source files covering Windows APIs, ANSI escapes, platform-specific patterns, concurrency model, and architectural decisions *(Mar 2)*
 - Drag-and-drop path — drag a folder from Explorer onto the dashboard to fill in the add form's path input *(Mar 2)*
 - Always on top — pin button in the dashboard header toggles the window to stay above all other windows; state persists across restarts via localStorage *(Mar 2)*
-- Claude tab title — launching Claude from the dashboard or tray sets the terminal tab title to "Claude Code - \<name\>"; uses Windows Terminal `--suppressApplicationTitle` to prevent override *(Mar 2)*
+- Claude tab title — launching Claude from the dashboard or tray sets the terminal tab title to "claude \<name\>"; uses Windows Terminal `--suppressApplicationTitle` to prevent override *(Mar 2)*
 - Place name validation — names restricted to letters, numbers, hyphens, underscores, dots (max 64 chars); enforced in CLI and desktop app *(Mar 2)*
 - Stable dashboard sorting — places with equal sort keys (e.g. never-used places sorted by last used) now use alphabetical name as tiebreaker; no more shuffling on auto-refresh *(Mar 2)*
 - External links open in system browser — footer links in the dashboard now open in the default browser instead of navigating inside the WebView *(Mar 2)*

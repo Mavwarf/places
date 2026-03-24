@@ -939,15 +939,20 @@ function renderNote(p) {
 }
 
 const actionLabels = {claude:'Claude',explorer:'Explorer',code:'VS Code',powershell:'PowerShell',cmd:'cmd'};
-async function openAt(name, action, shift) {
+async function openAt(name, action, shift, ctrl) {
   try {
     let label = actionLabels[action] || action;
-    if (action === 'claude') label = shift ? 'fresh Claude session' : 'Claude session';
+    if (action === 'claude') {
+      if (ctrl) label = 'Claude YOLO session';
+      else if (shift) label = 'fresh Claude session';
+      else label = 'Claude session';
+      if (shift && !confirm('Start a fresh Claude session at ' + name + '?\nThis will NOT continue the previous conversation.')) return;
+    }
     toast('Opening ' + label + ' at ' + name);
     const res = await fetch('/api/open', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name, action, shift: !!shift})
+      body: JSON.stringify({name, action, shift: !!shift, ctrl: !!ctrl})
     });
     if (res.ok) { load(); }
     else {
@@ -1311,7 +1316,7 @@ function renderDefaultActions(p) {
   const hd = p.hidden_defaults || [];
   const n = esc(p.name);
   let btns = '';
-  if (!hd.includes('claude')) btns += `<button class="btn-claude" onclick="openAt('${n}','claude',event.shiftKey)" oncontextmenu="hideDefault(event,'${n}','claude')" title="Continue last Claude session (Shift+click for fresh session, right-click to hide)">cl</button>`;
+  if (!hd.includes('claude')) btns += `<button class="btn-claude" onclick="openAt('${n}','claude',event.shiftKey,event.ctrlKey)" oncontextmenu="hideDefault(event,'${n}','claude')" title="Continue last Claude session (Shift=fresh, Ctrl=YOLO, right-click to hide)">cl</button>`;
   if (!hd.includes('explorer')) btns += `<button class="btn-explorer" onclick="openAt('${n}','explorer')" oncontextmenu="hideDefault(event,'${n}','explorer')" title="Open in Explorer (right-click to hide)">dir</button>`;
   if (!hd.includes('code')) btns += `<button class="btn-code" onclick="openAt('${n}','code')" oncontextmenu="hideDefault(event,'${n}','code')" title="Open in VS Code (right-click to hide)">VS</button>`;
   if (!hd.includes('powershell')) btns += `<button class="btn-ps" onclick="openAt('${n}','powershell')" oncontextmenu="hideDefault(event,'${n}','powershell')" title="Open PowerShell here (right-click to hide)">PS</button>`;
