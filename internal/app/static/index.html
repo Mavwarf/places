@@ -699,7 +699,7 @@ button:active { opacity: 0.7; }
   <span>Sort:</span>
   <button class="sort-btn" onclick="setSort('name')" id="sort-name">Name</button>
   <button class="sort-btn" onclick="setSort('use_count')" id="sort-use_count">Most used</button>
-  <button class="sort-btn active" onclick="setSort('last_used')" id="sort-last_used">Last used</button>
+  <button class="sort-btn" onclick="setSort('last_used')" id="sort-last_used">Last used</button>
   <button class="sort-btn" onclick="setSort('added')" id="sort-added">Added</button>
   <button class="sort-btn" onclick="setSort('frecency')" id="sort-frecency" title="Frequency + recency combined">Frecency</button>
   <span class="spacer"></span>
@@ -708,7 +708,7 @@ button:active { opacity: 0.7; }
   <input type="file" id="import-file" accept=".json" class="hidden" onchange="handleImportFile(event)">
 </div>
 
-<div class="tag-bar" id="tag-bar"><span id="tag-bar-left"></span><input class="filter-search" id="filter-search" type="text" placeholder="Filter..." oninput="textFilter=this.value;load()" /><span id="tag-bar-right"></span><span class="spacer"></span><span id="tag-bar-git"></span></div>
+<div class="tag-bar" id="tag-bar"><span id="tag-bar-left"></span><input class="filter-search" id="filter-search" type="text" placeholder="Filter..." oninput="textFilter=this.value;saveFilters();load()" /><span id="tag-bar-right"></span><span class="spacer"></span><span id="tag-bar-git"></span></div>
 </div>
 <div id="places" class="place-list"></div>
 
@@ -760,20 +760,44 @@ let actionDefs = {};  // global action definitions from server
 let lastPlacesData = [];  // cached place data for dropdown lookups
 let gitCache = {};  // place name → {branch, dirty}
 
+function saveFilters() {
+  localStorage.setItem('places-filters', JSON.stringify({
+    sort: currentSort,
+    activeTags: [...activeTags],
+    excludedTags: [...excludedTags],
+    favFilter, dirtyFilter, textFilter
+  }));
+}
+(function loadFilters() {
+  try {
+    const f = JSON.parse(localStorage.getItem('places-filters'));
+    if (!f) return;
+    if (f.sort) currentSort = f.sort;
+    if (f.activeTags) activeTags = new Set(f.activeTags);
+    if (f.excludedTags) excludedTags = new Set(f.excludedTags);
+    if (f.favFilter) favFilter = true;
+    if (f.dirtyFilter) dirtyFilter = true;
+    if (f.textFilter) textFilter = f.textFilter;
+  } catch (e) {}
+})();
+
 function setSort(key) {
   currentSort = key;
   document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('sort-' + key).classList.add('active');
+  saveFilters();
   load();
 }
 
 function toggleFavFilter() {
   favFilter = !favFilter;
+  saveFilters();
   load();
 }
 
 function toggleDirtyFilter() {
   dirtyFilter = !dirtyFilter;
+  saveFilters();
   load();
 }
 
@@ -1084,6 +1108,7 @@ function filterTag(tag) {
   excludedTags.delete(tag);
   if (activeTags.has(tag)) activeTags.delete(tag);
   else activeTags.add(tag);
+  saveFilters();
   load();
 }
 
@@ -1092,6 +1117,7 @@ function excludeTag(e, tag) {
   activeTags.delete(tag);
   if (excludedTags.has(tag)) excludedTags.delete(tag);
   else excludedTags.add(tag);
+  saveFilters();
   load();
 }
 
@@ -1102,6 +1128,7 @@ function clearFilters() {
   dirtyFilter = false;
   textFilter = '';
   document.getElementById('filter-search').value = '';
+  saveFilters();
   load();
 }
 
@@ -1628,6 +1655,9 @@ function toast(msg, err) {
   setTimeout(() => el.remove(), 2500);
 }
 
+// Restore persisted filter state to UI
+document.getElementById('sort-' + currentSort).classList.add('active');
+if (textFilter) document.getElementById('filter-search').value = textFilter;
 load().then(function() { updateAllGit(true); });
 setInterval(load, 3000);
 </script>
