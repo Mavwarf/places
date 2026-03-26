@@ -190,6 +190,8 @@ Press **Win+Alt+P** from anywhere to open the dashboard. If it's on another virt
 
 The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, date added, frecency (frequency × recency), or desktop (grouped by virtual desktop, unassigned at bottom). Places with equal sort values use alphabetical name as a stable tiebreaker. Each place has a clickable star to toggle its favorite status. Filter and sort state persists across restarts.
 
+A **Compact** toggle in the header switches to a dense single-line view showing name, tags, stats, and action buttons. Typing anywhere auto-focuses the filter input for quick search.
+
 15 color themes: Dark, Light, Nord, Dracula, Solarized, Gruvbox, Catppuccin, Catppuccin Latte, One Dark, Rosé Pine, Rosé Dawn, Kanagawa, Everforest, Everforest Light, Monokai. Click to cycle, right-click to restore startup theme, or use the **...** dropdown picker with live preview on hover.
 
 A fixed status bar at the bottom of the window shows author/GitHub/Wiki links on the left, a place count in the center (e.g. "5 / 12 places" when filtered), and the build version on the right — always visible regardless of scroll position.

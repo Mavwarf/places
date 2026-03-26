@@ -2,6 +2,8 @@
 
 ## Features
 
+- Compact mode — "Compact" toggle in header switches to a dense single-line view showing name, tags, stats, and action buttons; hides path, notes, git status *(Mar 26)*
+- Search-as-you-type — typing anywhere in the dashboard auto-focuses the filter input *(Mar 26)*
 - Favorites pin to top — "Pin ★" toggle in filter bar floats favorites above non-favorites in all sort modes (except desktop sort); default on, persisted *(Mar 26)*
 - Stale place warning — places with missing directories show a red left border and reduced opacity *(Mar 26)*
 - 15 color themes — added Catppuccin, Catppuccin Latte, One Dark, Rose Pine, Rose Pine Dawn, Kanagawa, Everforest, Everforest Light, Monokai; theme picker dropdown with live preview on hover; right-click theme button to restore startup theme *(Mar 26)*
