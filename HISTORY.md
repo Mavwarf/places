@@ -2,9 +2,11 @@
 
 ## Features
 
+- Favorites pin to top — "Pin ★" toggle in filter bar floats favorites above non-favorites in all sort modes (except desktop sort); default on, persisted *(Mar 26)*
+- Stale place warning — places with missing directories show a red left border and reduced opacity *(Mar 26)*
 - 15 color themes — added Catppuccin, Catppuccin Latte, One Dark, Rose Pine, Rose Pine Dawn, Kanagawa, Everforest, Everforest Light, Monokai; theme picker dropdown with live preview on hover; right-click theme button to restore startup theme *(Mar 26)*
-- Sort by desktop — new sort option groups places by virtual desktop assignment, unassigned at bottom *(Mar 26)*
-- Recent action history — toggleable "Recent" bar in the header shows last 8 place+action launches as one-click chips; tracks Claude mode (YOLO/fresh); right-click to remove; persisted in localStorage *(Mar 26)*
+- Sort by desktop — new sort option groups places by virtual desktop assignment with section headers, unassigned at bottom *(Mar 26)*
+- Recent action history — toggleable "Recent" bar in the header shows last 8 place+action launches as one-click chips; tracks Claude mode (YOLO/fresh); right-click to remove with toast confirmation; persisted in localStorage *(Mar 26)*
 - Dashboard UX — filter/sort state persists across restarts; close button always quits (no more hide-to-tray); removed redundant minimize/quit buttons from header; reduced horizontal padding; dynamic virtual desktop count from DLL *(Mar 26)*
 - Claude YOLO mode — Ctrl+click CL button launches Claude with `--dangerously-skip-permissions`; Shift+click (fresh session) now shows a confirmation dialog; tab title simplified to `claude <name>` *(Mar 24)*
 - Dashboard polish — subtitle changed to "workspace navigator", empty state message when filters hide all places, place list top padding *(Mar 5)*

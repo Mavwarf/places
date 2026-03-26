@@ -441,6 +441,14 @@ button:active { opacity: 0.7; }
   transition: background 0.15s;
 }
 .place-row:hover { background: var(--bg3); }
+.place-row.stale { border-left: 3px solid var(--red); opacity: 0.7; }
+.desktop-group-header {
+  font-size: 0.75em;
+  color: var(--fg-dim);
+  padding: 4px 14px 2px;
+  border-bottom: 1px solid var(--border);
+  margin-top: 4px;
+}
 
 .place-name {
   font-weight: 600;
@@ -1046,6 +1054,7 @@ let excludedTags = new Set();
 let favFilter = false;
 let dirtyFilter = false;
 let textFilter = '';
+let pinFavs = true;
 let actionDefs = {};  // global action definitions from server
 let lastPlacesData = [];  // cached place data for dropdown lookups
 let gitCache = {};  // place name → {branch, dirty}
@@ -1098,9 +1107,11 @@ function replayRecent(name, action, isCustom, shift, ctrl) {
 
 function removeRecent(e, key) {
   e.preventDefault();
+  const entry = recentHistory.find(h => h.key === key);
   recentHistory = recentHistory.filter(h => h.key !== key);
   saveHistory();
   renderRecent();
+  if (entry) toast('Removed ' + entry.name + ' from recent');
 }
 
 function toggleRecent() {
@@ -1114,7 +1125,7 @@ function saveFilters() {
     sort: currentSort,
     activeTags: [...activeTags],
     excludedTags: [...excludedTags],
-    favFilter, dirtyFilter, textFilter
+    favFilter, dirtyFilter, textFilter, pinFavs
   }));
 }
 (function loadFilters() {
@@ -1127,6 +1138,7 @@ function saveFilters() {
     if (f.favFilter) favFilter = true;
     if (f.dirtyFilter) dirtyFilter = true;
     if (f.textFilter) textFilter = f.textFilter;
+    if (f.pinFavs !== undefined) pinFavs = f.pinFavs;
   } catch (e) {}
 })();
 
@@ -1150,6 +1162,12 @@ function toggleDirtyFilter() {
   load();
 }
 
+function togglePinFavs() {
+  pinFavs = !pinFavs;
+  saveFilters();
+  load();
+}
+
 function frecencyScore(p) {
   if (!p.use_count || !p.last_used_at) return 0;
   const ageHours = (Date.now() - new Date(p.last_used_at).getTime()) / 3600000;
@@ -1159,6 +1177,11 @@ function frecencyScore(p) {
 
 function sortPlaces(places) {
   return places.slice().sort((a, b) => {
+    // Pin favorites to top when enabled (skip when filtering by favorites or sorting by desktop)
+    if (pinFavs && !favFilter && currentSort !== 'desktop') {
+      if (a.favorite && !b.favorite) return -1;
+      if (!a.favorite && b.favorite) return 1;
+    }
     switch (currentSort) {
       case 'name': return a.name.localeCompare(b.name);
       case 'use_count': return (b.use_count - a.use_count) || a.name.localeCompare(b.name);
@@ -1198,12 +1221,13 @@ async function load() {
     const hasFilters = activeTags.size > 0 || excludedTags.size > 0 || favFilter || dirtyFilter || textFilter;
     const favChip = `<button class="tag-chip chip-gap-right${favFilter ? ' active' : ''}" onclick="toggleFavFilter()" title="Show favorites only">&#9733;</button>`;
     const dirtyChip = `<button class="tag-chip chip-gap-left${dirtyFilter ? ' active' : ''}" onclick="toggleDirtyFilter()" title="Show only git-dirty places">Git dirty</button>`;
+    const pinChip = `<button class="tag-chip${pinFavs ? ' active' : ''}" onclick="togglePinFavs()" title="Pin favorites to top of list">Pin &#9733;</button>`;
     const tagChips = sortedTags.map(t =>
       `<button class="tag-chip${activeTags.has(t) ? ' active' : ''}${excludedTags.has(t) ? ' excluded' : ''}" onclick="filterTag('${esc(t)}')" oncontextmenu="excludeTag(event,'${esc(t)}')" title="Click to include, right-click to exclude">${esc(t)}</button>`
     ).join('');
     const clearBtn = hasFilters ? '<button class="tag-chip chip-gap-left" onclick="clearFilters()">Clear</button>' : '';
     document.getElementById('tag-bar-left').innerHTML = '<span>Filter:</span>' + favChip + tagChips + dirtyChip;
-    document.getElementById('tag-bar-right').innerHTML = clearBtn;
+    document.getElementById('tag-bar-right').innerHTML = pinChip + clearBtn;
     document.getElementById('tag-bar-git').innerHTML = gitBtn;
 
     // Filter by active tags (OR) and excluded tags.
@@ -1239,11 +1263,21 @@ async function load() {
       el.innerHTML = '<div class="empty-state">No places match the current filters.</div>';
       return;
     }
+    let lastDesktopGroup = null;
     el.innerHTML = places.map(p => {
+      let groupHeader = '';
+      if (currentSort === 'desktop') {
+        const group = p.desktop || 0;
+        if (group !== lastDesktopGroup) {
+          lastDesktopGroup = group;
+          const label = group ? 'Desktop ' + group : 'No desktop';
+          groupHeader = `<div class="desktop-group-header">${label}</div>`;
+        }
+      }
       const dName = maskName(p.name);
       const dPath = maskPath(p.name, p.path, p.tags);
-      return `
-      <div class="place-row">
+      return groupHeader + `
+      <div class="place-row${!p.exists ? ' stale' : ''}">
         <button class="btn-fav${p.favorite ? ' active' : ''}" onclick="toggleFav('${esc(p.name)}',${!p.favorite})" title="${p.favorite ? 'Unfavorite' : 'Favorite'}">${p.favorite ? '\u2605' : '\u2606'}</button>
         <select class="desktop-select" onchange="setDesktop('${esc(p.name)}',parseInt(this.value))" title="Virtual desktop">
           <option value="0"${p.desktop ? '' : ' selected'}>\u2014</option>
@@ -1474,6 +1508,7 @@ function clearFilters() {
   favFilter = false;
   dirtyFilter = false;
   textFilter = '';
+  pinFavs = true;
   document.getElementById('filter-search').value = '';
   saveFilters();
   load();
