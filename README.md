@@ -184,11 +184,13 @@ Each place row is organized into aligned columns: **name** (fixed width, ellipsi
 
 Click a place name to rename it inline, or click a path to edit it (Enter to save, Escape to cancel). Notes appear as a subtitle below the path and are truncated with ellipsis when too long; click to edit inline, or hover over a place without a note to add one. Export and Import buttons in the sort bar allow one-click backup/restore. The **git + tags** column shows the current branch badge (green ✓ for clean, yellow ● for dirty, red for errors) followed by a **git** button to fetch/refresh status. Git status is fetched automatically for all places on startup; use the **Update git** button to refresh manually. A **Git dirty** filter chip in the filter bar shows only places with uncommitted changes. Right-click any built-in action button to hide it from that place; use the **⋯** menu to show it again.
 
-Each place also has a virtual desktop selector (D1–D4). When set, the app switches to that desktop before launching any tool. A **→** button next to the selector lets you jump to that desktop without launching anything. Uses `VirtualDesktopAccessor.dll` (place it next to `places-app.exe`).
+Each place also has a virtual desktop selector (D1–D*N*, count detected automatically). When set, the app switches to that desktop before launching any tool. A **→** button next to the selector lets you jump to that desktop without launching anything. Uses `VirtualDesktopAccessor.dll` (place it next to `places-app.exe`).
 
 Press **Win+Alt+P** from anywhere to open the dashboard. If it's on another virtual desktop, you are switched there automatically.
 
-The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, date added, or frecency (frequency × recency). Places with equal sort values use alphabetical name as a stable tiebreaker. Each place has a clickable star to toggle its favorite status.
+The place list is sorted by last used (most recent on top) by default, with relative timestamps (e.g. "2h ago"). Can also sort by name, most used, date added, frecency (frequency × recency), or desktop (grouped by virtual desktop, unassigned at bottom). Places with equal sort values use alphabetical name as a stable tiebreaker. Each place has a clickable star to toggle its favorite status. Filter and sort state persists across restarts.
+
+15 color themes: Dark, Light, Nord, Dracula, Solarized, Gruvbox, Catppuccin, Catppuccin Latte, One Dark, Rosé Pine, Rosé Dawn, Kanagawa, Everforest, Everforest Light, Monokai. Click to cycle, right-click to restore startup theme, or use the **...** dropdown picker with live preview on hover.
 
 A fixed status bar at the bottom of the window shows author/GitHub/Wiki links on the left, a place count in the center (e.g. "5 / 12 places" when filtered), and the build version on the right — always visible regardless of scroll position.
 
