@@ -398,6 +398,64 @@ button:active { opacity: 0.7; }
 .dropdown-item-custom { color: var(--cyan); }
 .dropdown-item-rm { color: var(--red); }
 .dropdown-item-notify { color: var(--yellow); }
+
+/* Action manager dialog */
+.action-manager-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+}
+.action-manager {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+  width: 600px; max-height: 70vh; overflow-y: auto; padding: 16px;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+.action-manager h2 {
+  font-size: 1em; color: var(--accent); margin-bottom: 12px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.action-manager h2 button {
+  background: none; border: none; color: var(--fg-dim); cursor: pointer;
+  font-size: 1.2em; font-family: var(--font);
+}
+.action-manager h2 button:hover { color: var(--fg); }
+.am-row {
+  display: flex; align-items: center; gap: 8px; padding: 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  font-size: 0.82em;
+}
+.am-row:last-child { border-bottom: none; }
+.am-name { color: var(--accent); font-weight: 600; width: 100px; flex-shrink: 0; }
+.am-label { color: var(--cyan); width: 40px; flex-shrink: 0; text-align: center; }
+.am-cmd { color: var(--fg-dim); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.am-used { color: var(--fg-dim); font-size: 0.9em; width: 80px; flex-shrink: 0; text-align: right; }
+.am-del { background: none; border: 1px solid var(--red); color: var(--red); border-radius: 4px; padding: 2px 8px; cursor: pointer; font-family: var(--font); font-size: 0.85em; flex-shrink: 0; }
+.am-del:hover { background: var(--red); color: #fff; }
+.am-form {
+  display: flex; gap: 6px; margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--border); align-items: center;
+}
+.am-form input {
+  background: var(--bg); color: var(--fg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px 8px; font-family: var(--font); font-size: 0.82em;
+}
+.am-form input[name="am-name"] { width: 90px; }
+.am-form input[name="am-label"] { width: 50px; }
+.am-form input[name="am-cmd"] { flex: 1; }
+.am-form button {
+  background: var(--accent); color: var(--bg); border: none; border-radius: 4px;
+  padding: 4px 12px; cursor: pointer; font-family: var(--font); font-size: 0.82em;
+}
+.am-form button:hover { opacity: 0.85; }
+.am-section { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+.am-section h3 { font-size: 0.85em; color: var(--fg-dim); margin-bottom: 8px; }
+.am-defaults { display: flex; gap: 6px; flex-wrap: wrap; }
+.am-default-chip {
+  background: transparent; border: 1px solid var(--border); color: var(--fg-dim);
+  padding: 3px 10px; border-radius: 6px; cursor: pointer; font-family: var(--font); font-size: 0.82em;
+}
+.am-default-chip.visible { color: var(--green); border-color: var(--green); }
+.am-default-chip.hidden { color: var(--red); border-color: var(--red); text-decoration: line-through; }
 .spacer { flex: 1; }
 .hidden { display: none; }
 .place-info-row { display: flex; align-items: center; gap: 6px; }
@@ -1072,7 +1130,8 @@ function togglePrefs() {
   const picker = document.getElementById('prefs-picker');
   const isOpen = picker.classList.toggle('open');
   if (!isOpen) return;
-  picker.innerHTML = `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>`;
+  picker.innerHTML = `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>` +
+    `<button class="theme-picker-item" onclick="openActionManager()">Manage actions</button>`;
 }
 
 async function editNotifyPath() {
@@ -1091,6 +1150,114 @@ async function editNotifyPath() {
   } catch (e) { toast('Failed to save notify path', true); }
 }
 
+// Action manager dialog
+function openActionManager() {
+  document.getElementById('prefs-picker').classList.remove('open');
+  const overlay = document.createElement('div');
+  overlay.className = 'action-manager-overlay';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+  const panel = document.createElement('div');
+  panel.className = 'action-manager';
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  renderActionManager(panel);
+  document.addEventListener('keydown', function escClose(e) {
+    if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escClose); }
+  });
+}
+
+function renderActionManager(panel) {
+  const allDefaults = ['claude', 'explorer', 'code', 'powershell', 'cmd'];
+  const defaultLabels = {claude: 'cl', explorer: 'dir', code: 'VS', powershell: 'PS', cmd: '>_'};
+  const actions = Object.entries(actionDefs).sort((a, b) => a[0].localeCompare(b[0]));
+  let html = '<h2>Custom actions <button onclick="this.closest(\'.action-manager-overlay\').remove()">&times;</button></h2>';
+
+  if (actions.length) {
+    html += actions.map(([name, def]) => {
+      const used = lastPlacesData.filter(p => p.actions && p.actions.includes(name)).length;
+      return `<div class="am-row"><span class="am-name">${esc(name)}</span><span class="am-label">${esc(def.label)}</span><span class="am-cmd" title="${esc(def.cmd)}">${esc(def.cmd)}</span><span class="am-used">${used} place${used !== 1 ? 's' : ''}</span><button class="am-del" onclick="deleteActionDef('${esc(name)}',this)">Delete</button></div>`;
+    }).join('');
+  } else {
+    html += '<div style="color:var(--fg-dim);font-size:0.85em;padding:8px 0">No custom actions defined</div>';
+  }
+
+  html += `<div class="am-form">
+    <input name="am-name" placeholder="name" />
+    <input name="am-label" placeholder="label" maxlength="4" />
+    <input name="am-cmd" placeholder="command template ({path}, {name})" />
+    <button onclick="addActionDef(this)">Add</button>
+  </div>`;
+
+  html += `<div class="am-section"><h3>Default actions for new places</h3><div class="am-defaults">`;
+  html += allDefaults.map(d => {
+    const hidden = defaultHidden.includes(d);
+    return `<button class="am-default-chip ${hidden ? 'hidden' : 'visible'}" onclick="toggleDefaultAction('${d}')">${defaultLabels[d]}</button>`;
+  }).join('');
+  html += '</div><div style="color:var(--fg-dim);font-size:0.75em;margin-top:4px">Green = shown, red = hidden for new places</div></div>';
+
+  panel.innerHTML = html;
+}
+
+async function addActionDef(btn) {
+  const form = btn.closest('.am-form');
+  const name = form.querySelector('[name="am-name"]').value.trim();
+  const label = form.querySelector('[name="am-label"]').value.trim();
+  const cmd = form.querySelector('[name="am-cmd"]').value.trim();
+  if (!name || !label || !cmd) { toast('All fields required', true); return; }
+  if (actionDefs[name] && !confirm('Action "' + name + '" already exists. Overwrite?')) return;
+  try {
+    const res = await fetch('/api/action-define', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, label, cmd})
+    });
+    if (!res.ok) { toast(await res.text() || 'Failed', true); return; }
+    toast('Action "' + name + '" defined');
+    const data = await (await fetch('/api/places')).json();
+    actionDefs = data.actions || {};
+    lastPlacesData = data.places || [];
+    const panel = document.querySelector('.action-manager');
+    if (panel) renderActionManager(panel);
+  } catch (e) { toast('Failed to define action', true); }
+}
+
+async function deleteActionDef(name, btn) {
+  const used = lastPlacesData.filter(p => p.actions && p.actions.includes(name)).length;
+  const msg = used > 0
+    ? 'Delete action "' + name + '"? It is assigned to ' + used + ' place' + (used > 1 ? 's' : '') + ' and will be removed.'
+    : 'Delete action "' + name + '"?';
+  if (!confirm(msg)) return;
+  try {
+    const res = await fetch('/api/action-delete', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name})
+    });
+    if (!res.ok) { toast(await res.text() || 'Failed', true); return; }
+    toast('Action "' + name + '" deleted');
+    const data = await (await fetch('/api/places')).json();
+    actionDefs = data.actions || {};
+    lastPlacesData = data.places || [];
+    const panel = document.querySelector('.action-manager');
+    if (panel) renderActionManager(panel);
+  } catch (e) { toast('Failed to delete action', true); }
+}
+
+async function toggleDefaultAction(action) {
+  const idx = defaultHidden.indexOf(action);
+  if (idx >= 0) defaultHidden.splice(idx, 1);
+  else defaultHidden.push(action);
+  try {
+    await fetch('/api/default-hidden', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({hidden: defaultHidden})
+    });
+    const panel = document.querySelector('.action-manager');
+    if (panel) renderActionManager(panel);
+  } catch (e) { toast('Failed to save defaults', true); }
+}
+
 let currentSort = 'last_used';
 let activeTags = new Set();
 let excludedTags = new Set();
@@ -1102,7 +1269,8 @@ let actionDefs = {};  // global action definitions from server
 let lastPlacesData = [];  // cached place data for dropdown lookups
 let gitCache = {};  // place name → {branch, dirty}
 let desktopCount = 4;  // updated from /api/desktop-count
-let notifyPath = '';   // updated from /api/places
+let notifyPath = '';       // updated from /api/places
+let defaultHidden = [];    // updated from /api/places
 
 // Recent action history
 const MAX_RECENT = 8;
@@ -1125,6 +1293,12 @@ function recordHistory(name, action, shift, ctrl) {
   if (recentHistory.length > MAX_RECENT) recentHistory.length = MAX_RECENT;
   saveHistory();
   renderRecent();
+  // Sync to server for tray menu.
+  fetch('/api/record-recent', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name, action, shift: !!shift, ctrl: !!ctrl})
+  }).catch(() => {});
 }
 
 function renderRecent() {
@@ -1263,7 +1437,7 @@ function sortPlaces(places) {
 
 async function load() {
   // Skip reload while an inline edit input or popup is active to prevent destroying it mid-interaction.
-  if (document.querySelector('.note-input, .name-input, .path-input, .action-dropdown')) return;
+  if (document.querySelector('.note-input, .name-input, .path-input, .action-dropdown, .action-manager-overlay')) return;
   if (document.activeElement && document.activeElement.classList.contains('desktop-select')) return;
   const el = document.getElementById('places');
   const tagBar = document.getElementById('tag-bar');
@@ -1272,6 +1446,7 @@ async function load() {
     const data = await res.json();
     actionDefs = data.actions || {};
     notifyPath = data.notify_path || '';
+    defaultHidden = data.default_hidden || [];
     let places = data.places || [];
     lastPlacesData = places;
     if (!places.length) {
@@ -2163,6 +2338,14 @@ function toast(msg, err) {
 document.getElementById('sort-' + currentSort).classList.add('active');
 if (textFilter) document.getElementById('filter-search').value = textFilter;
 renderRecent();
+// Sync localStorage recent to server for tray menu.
+if (recentHistory.length) {
+  fetch('/api/sync-recent', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(recentHistory.map(h => ({name: h.name, action: h.action, shift: !!h.shift, ctrl: !!h.ctrl})))
+  }).catch(() => {});
+}
 applyCompact();
 fetch('/api/desktop-count').then(r => r.json()).then(d => { desktopCount = d.count; }).catch(() => {});
 load().then(function() { updateAllGit(true); });

@@ -72,10 +72,20 @@ type Place struct {
 }
 
 // Config holds the saved places and custom actions.
+// RecentEntry records a recently launched place+action pair.
+type RecentEntry struct {
+	Name   string `json:"name"`
+	Action string `json:"action"`
+	Shift  bool   `json:"shift,omitempty"`
+	Ctrl   bool   `json:"ctrl,omitempty"`
+}
+
 type Config struct {
-	Actions    map[string]*Action `json:"actions,omitempty"`
-	Places     map[string]*Place  `json:"places"`
-	NotifyPath string             `json:"notify_path,omitempty"`
+	Actions       map[string]*Action `json:"actions,omitempty"`
+	Places        map[string]*Place  `json:"places"`
+	NotifyPath    string             `json:"notify_path,omitempty"`
+	DefaultHidden []string           `json:"default_hidden,omitempty"`
+	Recent        []RecentEntry      `json:"recent,omitempty"`
 }
 
 // configDir returns the directory for places config files.

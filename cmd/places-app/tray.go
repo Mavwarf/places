@@ -71,7 +71,8 @@ func onTrayReady(app *App) {
 	mDashboard.Click(func() { app.ShowWindow() })
 
 	systray.AddSeparator()
-	addPlaceMenus()
+	addRecentMenu()
+	addPlaceMenusGrouped()
 	systray.AddSeparator()
 
 	mRefresh := systray.AddMenuItem("Refresh", "Reload places from config")
@@ -88,7 +89,68 @@ func onTrayReady(app *App) {
 	})
 }
 
-func addPlaceMenus() {
+func addRecentMenu() {
+	cfg, err := config.Load()
+	if err != nil || len(cfg.Recent) == 0 {
+		return
+	}
+
+	actionLabels := map[string]string{
+		"claude": "CL", "explorer": "dir", "code": "VS", "powershell": "PS", "cmd": ">_",
+	}
+
+	parent := systray.AddMenuItem("Recent", "Recently launched actions")
+	for _, entry := range cfg.Recent {
+		e := entry // capture
+		place, ok := cfg.Places[e.Name]
+		if !ok || place == nil {
+			continue
+		}
+		path := place.Path
+		desk := place.Desktop
+
+		label := actionLabels[e.Action]
+		if label == "" {
+			if act, ok := cfg.Actions[e.Action]; ok {
+				label = act.Label
+			} else {
+				label = e.Action
+			}
+		}
+		if e.Ctrl {
+			label += " YOLO"
+		} else if e.Shift {
+			label += " fresh"
+		}
+		menuLabel := e.Name + " · " + label
+
+		item := parent.AddSubMenuItem(menuLabel, path)
+		item.Click(func() {
+			recordTrayUse(e.Name)
+			launcher.SwitchDesktop(desk)
+			switch e.Action {
+			case "claude":
+				launcher.Detach(launcher.Claude(path, e.Name, e.Shift, e.Ctrl))
+			case "explorer":
+				launcher.Detach(launcher.Explorer(path))
+			case "code":
+				launcher.Detach(launcher.Code(path))
+			case "powershell":
+				launcher.Detach(launcher.PowerShell(path))
+			case "cmd":
+				launcher.Detach(launcher.Cmd(path))
+			default:
+				// Custom action
+				if act, ok := cfg.Actions[e.Action]; ok {
+					expanded := launcher.ExpandAction(act.Cmd, path, e.Name)
+					launcher.Detach(launcher.Shell(expanded))
+				}
+			}
+		})
+	}
+}
+
+func addPlaceMenusGrouped() {
 	cfg, err := config.Load()
 	if err != nil {
 		item := systray.AddMenuItem("(failed to load places)", "")
@@ -97,6 +159,7 @@ func addPlaceMenus() {
 	}
 
 	names := config.SortedNames(cfg)
+	top := systray.AddMenuItem("Places", "All saved places")
 
 	for _, name := range names {
 		place := cfg.Places[name]
@@ -106,7 +169,7 @@ func addPlaceMenus() {
 		path := place.Path
 		desk := place.Desktop
 		placeName := name
-		parent := systray.AddMenuItem(name, path)
+		parent := top.AddSubMenuItem(name, path)
 
 		// Custom actions assigned to this place (shown first).
 		for _, actionName := range place.Actions {

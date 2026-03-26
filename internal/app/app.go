@@ -153,6 +153,11 @@ func Serve(port int, cb Callbacks) error {
 	mux.HandleFunc("/api/git-status", handleGitStatus)
 	mux.HandleFunc("/api/setup-notify", handleSetupNotify)
 	mux.HandleFunc("/api/notify-path", handleNotifyPath)
+	mux.HandleFunc("/api/action-define", handleActionDefine)
+	mux.HandleFunc("/api/action-delete", handleActionDelete)
+	mux.HandleFunc("/api/default-hidden", handleDefaultHidden)
+	mux.HandleFunc("/api/record-recent", handleRecordRecent)
+	mux.HandleFunc("/api/sync-recent", handleSyncRecent)
 	mux.HandleFunc("/api/toggle-default", handleToggleDefault)
 	if cb.Show != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
@@ -311,9 +316,10 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"places":      places,
-		"actions":     cfg.Actions,
-		"notify_path": cfg.NotifyPath,
+		"places":         places,
+		"actions":        cfg.Actions,
+		"notify_path":    cfg.NotifyPath,
+		"default_hidden": cfg.DefaultHidden,
 	})
 }
 
@@ -564,6 +570,9 @@ func handleAdd(w http.ResponseWriter, r *http.Request) {
 		Path:    req.Path,
 		AddedAt: time.Now(),
 		Note:    req.Note,
+	}
+	if len(cfg.DefaultHidden) > 0 {
+		place.HiddenDefaults = append([]string{}, cfg.DefaultHidden...)
 	}
 	for _, t := range req.Tags {
 		config.AddTag(place, t)
@@ -1253,6 +1262,214 @@ func handleUntag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+const maxRecent = 8
+
+// handleRecordRecent records a place+action launch in the config's recent list.
+func handleRecordRecent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req config.RecentEntry
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	if req.Name == "" || req.Action == "" {
+		http.Error(w, "name and action required", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	defer config.Unlock()
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+
+	// Remove duplicate if exists.
+	filtered := make([]config.RecentEntry, 0, len(cfg.Recent))
+	for _, e := range cfg.Recent {
+		if e.Name == req.Name && e.Action == req.Action && e.Shift == req.Shift && e.Ctrl == req.Ctrl {
+			continue
+		}
+		filtered = append(filtered, e)
+	}
+	// Prepend new entry.
+	cfg.Recent = append([]config.RecentEntry{req}, filtered...)
+	if len(cfg.Recent) > maxRecent {
+		cfg.Recent = cfg.Recent[:maxRecent]
+	}
+
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleSyncRecent replaces the server's recent list with the full list from the frontend.
+func handleSyncRecent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var entries []config.RecentEntry
+	if err := json.NewDecoder(r.Body).Decode(&entries); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	if len(entries) > maxRecent {
+		entries = entries[:maxRecent]
+	}
+
+	config.Lock()
+	defer config.Unlock()
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+	cfg.Recent = entries
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleActionDefine creates or overwrites a custom action definition.
+func handleActionDefine(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Name  string `json:"name"`
+		Label string `json:"label"`
+		Cmd   string `json:"cmd"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	if req.Name == "" || req.Label == "" || req.Cmd == "" {
+		http.Error(w, "name, label, and cmd are required", http.StatusBadRequest)
+		return
+	}
+	if err := config.ValidateName(req.Name); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	defer config.Unlock()
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+	if cfg.Actions == nil {
+		cfg.Actions = make(map[string]*config.Action)
+	}
+	cfg.Actions[req.Name] = &config.Action{Label: req.Label, Cmd: req.Cmd}
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleActionDelete deletes a custom action and unassigns it from all places.
+func handleActionDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	defer config.Unlock()
+
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+	if _, ok := cfg.Actions[req.Name]; !ok {
+		http.Error(w, "action not found", http.StatusNotFound)
+		return
+	}
+
+	delete(cfg.Actions, req.Name)
+	count := 0
+	for _, place := range cfg.Places {
+		if config.RemoveAction(place, req.Name) {
+			count++
+		}
+	}
+
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]int{"unassigned_count": count})
+}
+
+// handleDefaultHidden gets or sets the default hidden actions for new places.
+func handleDefaultHidden(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		cfg, err := config.Load()
+		if err != nil {
+			http.Error(w, "failed to load config", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string][]string{"hidden": cfg.DefaultHidden})
+
+	case http.MethodPost:
+		var req struct {
+			Hidden []string `json:"hidden"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+		config.Lock()
+		defer config.Unlock()
+		cfg, err := config.Load()
+		if err != nil {
+			http.Error(w, "failed to load config", http.StatusInternalServerError)
+			return
+		}
+		cfg.DefaultHidden = req.Hidden
+		if err := config.Save(cfg); err != nil {
+			http.Error(w, "failed to save config", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 var validProfile = regexp.MustCompile(`^[a-z]+(-[a-z]+)*$`)
