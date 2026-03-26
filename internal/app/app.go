@@ -158,6 +158,7 @@ func Serve(port int, cb Callbacks) error {
 	mux.HandleFunc("/api/default-hidden", handleDefaultHidden)
 	mux.HandleFunc("/api/record-recent", handleRecordRecent)
 	mux.HandleFunc("/api/sync-recent", handleSyncRecent)
+	mux.HandleFunc("/api/claude-shell", handleClaudeShell)
 	mux.HandleFunc("/api/toggle-default", handleToggleDefault)
 	if cb.Show != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
@@ -320,6 +321,7 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 		"actions":        cfg.Actions,
 		"notify_path":    cfg.NotifyPath,
 		"default_hidden": cfg.DefaultHidden,
+		"claude_shell":   cfg.ClaudeShell,
 	})
 }
 
@@ -376,6 +378,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	path := place.Path
 	name := req.Name
 	desk := place.Desktop
+	claudeShell := cfg.ClaudeShell
 	config.Unlock()
 
 	launcher.SwitchDesktop(desk)
@@ -387,7 +390,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	case "cmd":
 		cmd = launcher.Cmd(path)
 	case "claude":
-		cmd = launcher.Claude(path, name, req.Shift, req.Ctrl)
+		cmd = launcher.Claude(path, name, req.Shift, req.Ctrl, claudeShell)
 	case "code":
 		cmd = launcher.Code(path)
 	case "explorer":
@@ -1262,6 +1265,53 @@ func handleUntag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleClaudeShell gets or sets the shell used for Claude launches.
+func handleClaudeShell(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		cfg, err := config.Load()
+		if err != nil {
+			http.Error(w, "failed to load config", http.StatusInternalServerError)
+			return
+		}
+		shell := cfg.ClaudeShell
+		if shell == "" {
+			shell = "cmd"
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"shell": shell})
+
+	case http.MethodPost:
+		var req struct {
+			Shell string `json:"shell"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+		if req.Shell != "cmd" && req.Shell != "powershell" {
+			http.Error(w, "shell must be cmd or powershell", http.StatusBadRequest)
+			return
+		}
+		config.Lock()
+		defer config.Unlock()
+		cfg, err := config.Load()
+		if err != nil {
+			http.Error(w, "failed to load config", http.StatusInternalServerError)
+			return
+		}
+		cfg.ClaudeShell = req.Shell
+		if err := config.Save(cfg); err != nil {
+			http.Error(w, "failed to save config", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 const maxRecent = 8

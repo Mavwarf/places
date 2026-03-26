@@ -61,7 +61,7 @@ func Cmd(path string) *exec.Cmd {
 //
 // Fallback (plain conhost): "cmd /c start <title>" sets the window title, but
 // Claude may override it on startup since conhost doesn't support title pinning.
-func Claude(path, name string, cont, yolo bool) *exec.Cmd {
+func Claude(path, name string, cont, yolo bool, shell string) *exec.Cmd {
 	title := "claude " + name
 	claudeCmd := "claude --continue"
 	if cont {
@@ -71,15 +71,28 @@ func Claude(path, name string, cont, yolo bool) *exec.Cmd {
 		title += " YOLO"
 		claudeCmd += " --dangerously-skip-permissions"
 	}
-	psCmd := fmt.Sprintf("Set-Location '%s'; %s", psEscape(path), claudeCmd)
+
+	if shell == "powershell" {
+		psCmd := fmt.Sprintf("Set-Location '%s'; %s", psEscape(path), claudeCmd)
+		if runtime.GOOS == "windows" {
+			if _, err := exec.LookPath("wt.exe"); err == nil {
+				wtCmd := strings.ReplaceAll(psCmd, ";", "\\;")
+				return exec.Command("wt", "new-tab", "--title", title,
+					"--suppressApplicationTitle", "powershell", "-NoExit", "-Command", wtCmd)
+			}
+		}
+		return exec.Command("cmd", "/c", "start", title, "powershell", "-NoExit", "-Command", psCmd)
+	}
+
+	// Default: cmd
+	cmdStr := fmt.Sprintf("cd /d %s && %s", cmdEscape(path), claudeCmd)
 	if runtime.GOOS == "windows" {
 		if _, err := exec.LookPath("wt.exe"); err == nil {
-			wtCmd := strings.ReplaceAll(psCmd, ";", "\\;")
 			return exec.Command("wt", "new-tab", "--title", title,
-				"--suppressApplicationTitle", "powershell", "-NoExit", "-Command", wtCmd)
+				"--suppressApplicationTitle", "cmd", "/k", cmdStr)
 		}
 	}
-	return exec.Command("cmd", "/c", "start", title, "powershell", "-NoExit", "-Command", psCmd)
+	return exec.Command("cmd", "/c", "start", title, "cmd", "/k", cmdStr)
 }
 
 // Explorer opens the file explorer at the given directory.

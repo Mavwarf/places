@@ -1131,6 +1131,7 @@ function togglePrefs() {
   const isOpen = picker.classList.toggle('open');
   if (!isOpen) return;
   picker.innerHTML = `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>` +
+    `<button class="theme-picker-item" onclick="toggleClaudeShell()">Claude shell: ${claudeShell}</button>` +
     `<button class="theme-picker-item" onclick="openActionManager()">Manage actions</button>`;
 }
 
@@ -1148,6 +1149,21 @@ async function editNotifyPath() {
     notifyPath = p;
     toast('Notify path saved');
   } catch (e) { toast('Failed to save notify path', true); }
+}
+
+async function toggleClaudeShell() {
+  document.getElementById('prefs-picker').classList.remove('open');
+  const newShell = claudeShell === 'cmd' ? 'powershell' : 'cmd';
+  try {
+    const res = await fetch('/api/claude-shell', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({shell: newShell})
+    });
+    if (!res.ok) { toast(await res.text() || 'Failed', true); return; }
+    claudeShell = newShell;
+    toast('Claude shell: ' + newShell);
+  } catch (e) { toast('Failed to save Claude shell', true); }
 }
 
 // Action manager dialog
@@ -1271,6 +1287,7 @@ let gitCache = {};  // place name → {branch, dirty}
 let desktopCount = 4;  // updated from /api/desktop-count
 let notifyPath = '';       // updated from /api/places
 let defaultHidden = [];    // updated from /api/places
+let claudeShell = 'cmd';   // updated from /api/places
 
 // Recent action history
 const MAX_RECENT = 8;
@@ -1447,6 +1464,7 @@ async function load() {
     actionDefs = data.actions || {};
     notifyPath = data.notify_path || '';
     defaultHidden = data.default_hidden || [];
+    claudeShell = data.claude_shell || 'cmd';
     let places = data.places || [];
     lastPlacesData = places;
     if (!places.length) {

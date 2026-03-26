@@ -86,6 +86,7 @@ type Config struct {
 	NotifyPath    string             `json:"notify_path,omitempty"`
 	DefaultHidden []string           `json:"default_hidden,omitempty"`
 	Recent        []RecentEntry      `json:"recent,omitempty"`
+	ClaudeShell   string             `json:"claude_shell,omitempty"` // "cmd" (default) or "powershell"
 }
 
 // configDir returns the directory for places config files.
