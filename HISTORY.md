@@ -2,6 +2,10 @@
 
 ## Features
 
+- Configurable Claude shell — preference to launch Claude in cmd (default) or PowerShell, via gear menu *(Mar 26)*
+- Action manager — define, delete, and overwrite custom actions from the dashboard via gear menu; default action visibility for new places *(Mar 26)*
+- Notify hook setup — per-place "Setup notify hooks" in place menu auto-creates .claude/settings.json with Stop/Notification hooks; notify.exe path configurable in preferences *(Mar 26)*
+- Tray recent menu — recent actions synced to server and shown in system tray under "Recent" submenu; all places grouped under "Places" submenu *(Mar 26)*
 - Compact mode — "Compact" toggle in header switches to a dense single-line view showing name, tags, stats, and action buttons; hides path, notes, git status *(Mar 26)*
 - Search-as-you-type — typing anywhere in the dashboard auto-focuses the filter input *(Mar 26)*
 - Favorites pin to top — "Pin ★" toggle in filter bar floats favorites above non-favorites in all sort modes (except desktop sort); default on, persisted *(Mar 26)*
