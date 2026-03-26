@@ -84,7 +84,8 @@ type Config struct {
 	Actions       map[string]*Action `json:"actions,omitempty"`
 	Places        map[string]*Place  `json:"places"`
 	NotifyPath    string             `json:"notify_path,omitempty"`
-	DefaultHidden []string           `json:"default_hidden,omitempty"`
+	DefaultHidden  []string           `json:"default_hidden,omitempty"`
+	DefaultActions []string           `json:"default_actions,omitempty"`
 	Recent        []RecentEntry      `json:"recent,omitempty"`
 	ClaudeShell   string             `json:"claude_shell,omitempty"` // "cmd" (default) or "powershell"
 }

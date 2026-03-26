@@ -156,6 +156,7 @@ func Serve(port int, cb Callbacks) error {
 	mux.HandleFunc("/api/action-define", handleActionDefine)
 	mux.HandleFunc("/api/action-delete", handleActionDelete)
 	mux.HandleFunc("/api/default-hidden", handleDefaultHidden)
+	mux.HandleFunc("/api/default-actions", handleDefaultActions)
 	mux.HandleFunc("/api/record-recent", handleRecordRecent)
 	mux.HandleFunc("/api/sync-recent", handleSyncRecent)
 	mux.HandleFunc("/api/claude-shell", handleClaudeShell)
@@ -320,7 +321,8 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 		"places":         places,
 		"actions":        cfg.Actions,
 		"notify_path":    cfg.NotifyPath,
-		"default_hidden": cfg.DefaultHidden,
+		"default_hidden":  cfg.DefaultHidden,
+		"default_actions": cfg.DefaultActions,
 		"claude_shell":   cfg.ClaudeShell,
 	})
 }
@@ -576,6 +578,11 @@ func handleAdd(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(cfg.DefaultHidden) > 0 {
 		place.HiddenDefaults = append([]string{}, cfg.DefaultHidden...)
+	}
+	for _, a := range cfg.DefaultActions {
+		if _, ok := cfg.Actions[a]; ok {
+			config.AddAction(place, a)
+		}
 	}
 	for _, t := range req.Tags {
 		config.AddTag(place, t)
@@ -1511,6 +1518,45 @@ func handleDefaultHidden(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		cfg.DefaultHidden = req.Hidden
+		if err := config.Save(cfg); err != nil {
+			http.Error(w, "failed to save config", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// handleDefaultActions gets or sets the custom actions auto-assigned to new places.
+func handleDefaultActions(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		cfg, err := config.Load()
+		if err != nil {
+			http.Error(w, "failed to load config", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string][]string{"actions": cfg.DefaultActions})
+
+	case http.MethodPost:
+		var req struct {
+			Actions []string `json:"actions"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+		config.Lock()
+		defer config.Unlock()
+		cfg, err := config.Load()
+		if err != nil {
+			http.Error(w, "failed to load config", http.StatusInternalServerError)
+			return
+		}
+		cfg.DefaultActions = req.Actions
 		if err := config.Save(cfg); err != nil {
 			http.Error(w, "failed to save config", http.StatusInternalServerError)
 			return
