@@ -442,6 +442,20 @@ button:active { opacity: 0.7; }
 }
 .place-row:hover { background: var(--bg3); }
 .place-row.stale { border-left: 3px solid var(--red); opacity: 0.7; }
+/* Compact mode — hides git, notes, path; shows tags inline + stats single-line */
+.compact .place-meta,
+.compact .place-note-row,
+.compact .place-info-row { display: none !important; }
+.compact .place-row { padding: 3px 14px 4px; gap: 8px; }
+.compact .place-info { min-width: 0; flex: 1; }
+.compact .place-actions { width: 200px; flex-shrink: 0; }
+.compact .place-stats { width: 110px; text-align: right; flex-shrink: 0; white-space: nowrap; }
+.compact .place-stats .stats-sep { display: inline; }
+.place-stats .stats-sep { display: none; }
+.compact .place-stats .stats-br { display: none; }
+.compact .compact-tags { display: inline-flex !important; gap: 4px; align-items: center; }
+.compact-tags { display: none; }
+
 .desktop-group-header {
   font-size: 0.75em;
   color: var(--fg-dim);
@@ -924,6 +938,7 @@ button:active { opacity: 0.7; }
   <span class="screenshot-badge" id="screenshot-badge">screenshot</span>
   <button class="btn-add-toggle" id="add-toggle" onclick="toggleAddForm()" title="Add new place">+</button>
   <button class="btn-recent-toggle" id="recent-toggle" onclick="toggleRecent()" title="Toggle recent actions">Recent</button>
+  <button class="btn-recent-toggle" id="compact-toggle" onclick="toggleCompact()" title="Toggle compact view">Compact</button>
   <button class="theme-toggle" id="theme-toggle" title="Toggle theme"></button>
   <button class="theme-more" id="theme-more" onclick="toggleThemePicker()" title="All themes"><div class="theme-picker" id="theme-picker"></div>&#8943;</button>
   <div class="window-controls">
@@ -1120,6 +1135,29 @@ function toggleRecent() {
   renderRecent();
 }
 
+// Compact mode
+let compactMode = localStorage.getItem('places-compact') === 'on';
+function applyCompact() {
+  document.getElementById('places').classList.toggle('compact', compactMode);
+  document.getElementById('compact-toggle').classList.toggle('active', compactMode);
+}
+function toggleCompact() {
+  compactMode = !compactMode;
+  localStorage.setItem('places-compact', compactMode ? 'on' : '');
+  applyCompact();
+}
+
+// Search-as-you-type: typing anywhere focuses the filter input
+document.addEventListener('keydown', function(e) {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
+  if (e.key.length === 1) {
+    const input = document.getElementById('filter-search');
+    input.focus();
+  }
+});
+
 function saveFilters() {
   localStorage.setItem('places-filters', JSON.stringify({
     sort: currentSort,
@@ -1293,8 +1331,9 @@ async function load() {
           <div class="place-note-row">
             ${renderNote(p)}
           </div>
+          <span class="compact-tags">${(p.tags || []).map(t => `<span class="badge-tag">${esc(t)}</span>`).join('')}</span>
         </div>
-        <span class="place-stats">${p.use_count}x${p.last_used_at ? '<br>' + timeAgo(p.last_used_at) : ''}</span>
+        <span class="place-stats">${p.use_count}x${p.last_used_at ? '<span class="stats-br"><br></span><span class="stats-sep"> &middot; </span>' + timeAgo(p.last_used_at) : ''}</span>
         <div class="place-meta">
           <div>
             ${p.exists ? (gitCache[p.name] ? renderGitBadge(gitCache[p.name]) : '<span class="badge-git-none">no status</span>') : ''}
@@ -2041,6 +2080,7 @@ function toast(msg, err) {
 document.getElementById('sort-' + currentSort).classList.add('active');
 if (textFilter) document.getElementById('filter-search').value = textFilter;
 renderRecent();
+applyCompact();
 fetch('/api/desktop-count').then(r => r.json()).then(d => { desktopCount = d.count; }).catch(() => {});
 load().then(function() { updateAllGit(true); });
 setInterval(load, 3000);
