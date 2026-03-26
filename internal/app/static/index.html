@@ -741,6 +741,7 @@ button:active { opacity: 0.7; }
   <button class="sort-btn" onclick="setSort('last_used')" id="sort-last_used">Last used</button>
   <button class="sort-btn" onclick="setSort('added')" id="sort-added">Added</button>
   <button class="sort-btn" onclick="setSort('frecency')" id="sort-frecency" title="Frequency + recency combined">Frecency</button>
+  <button class="sort-btn" onclick="setSort('desktop')" id="sort-desktop" title="Group by virtual desktop, unassigned at bottom">Desktop</button>
   <span class="spacer"></span>
   <button class="btn-io" onclick="exportPlaces()" title="Export places as JSON">Export</button>
   <button class="btn-io" onclick="importPlaces()" title="Import places from JSON">Import</button>
@@ -905,6 +906,7 @@ function sortPlaces(places) {
       case 'last_used': return (b.last_used_at || '').localeCompare(a.last_used_at || '') || a.name.localeCompare(b.name);
       case 'added': return (b.added_at || '').localeCompare(a.added_at || '') || a.name.localeCompare(b.name);
       case 'frecency': return (frecencyScore(b) - frecencyScore(a)) || a.name.localeCompare(b.name);
+      case 'desktop': return ((a.desktop || 99) - (b.desktop || 99)) || a.name.localeCompare(b.name);
       default: return 0;
     }
   });
