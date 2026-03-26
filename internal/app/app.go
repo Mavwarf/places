@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -150,6 +151,8 @@ func Serve(port int, cb Callbacks) error {
 	mux.HandleFunc("/api/export", handleExport)
 	mux.HandleFunc("/api/import", handleImport)
 	mux.HandleFunc("/api/git-status", handleGitStatus)
+	mux.HandleFunc("/api/setup-notify", handleSetupNotify)
+	mux.HandleFunc("/api/notify-path", handleNotifyPath)
 	mux.HandleFunc("/api/toggle-default", handleToggleDefault)
 	if cb.Show != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
@@ -308,8 +311,9 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"places":  places,
-		"actions": cfg.Actions,
+		"places":      places,
+		"actions":     cfg.Actions,
+		"notify_path": cfg.NotifyPath,
 	})
 }
 
@@ -1249,4 +1253,180 @@ func handleUntag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+var validProfile = regexp.MustCompile(`^[a-z]+(-[a-z]+)*$`)
+
+// handleSetupNotify creates or merges notify hooks into a place's .claude/settings.json.
+func handleSetupNotify(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Name    string `json:"name"`
+		Profile string `json:"profile"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	if !validProfile.MatchString(req.Profile) {
+		http.Error(w, "invalid profile: use lowercase letters and hyphens only", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	cfg, err := config.Load()
+	if err != nil {
+		config.Unlock()
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		config.Unlock()
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+	placePath := place.Path
+	notifyPath := cfg.NotifyPath
+	config.Unlock()
+
+	if notifyPath == "" {
+		http.Error(w, "notify path not configured", http.StatusBadRequest)
+		return
+	}
+	if _, err := os.Stat(notifyPath); err != nil {
+		http.Error(w, "notify.exe not found at "+notifyPath, http.StatusBadRequest)
+		return
+	}
+	if _, err := os.Stat(placePath); err != nil {
+		http.Error(w, "place directory does not exist", http.StatusBadRequest)
+		return
+	}
+
+	claudeDir := filepath.Join(placePath, ".claude")
+	settingsFile := filepath.Join(claudeDir, "settings.json")
+
+	var settings map[string]interface{}
+	data, err := os.ReadFile(settingsFile)
+	if err == nil {
+		if err := json.Unmarshal(data, &settings); err != nil {
+			http.Error(w, "failed to parse existing settings.json", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		settings = make(map[string]interface{})
+	}
+
+	// Check if notify hooks already exist.
+	if hooks, ok := settings["hooks"].(map[string]interface{}); ok {
+		for _, key := range []string{"Stop", "Notification"} {
+			if arr, ok := hooks[key].([]interface{}); ok {
+				for _, entry := range arr {
+					if m, ok := entry.(map[string]interface{}); ok {
+						if inner, ok := m["hooks"].([]interface{}); ok {
+							for _, h := range inner {
+								if hm, ok := h.(map[string]interface{}); ok {
+									if cmd, ok := hm["command"].(string); ok && strings.Contains(cmd, "notify") {
+										http.Error(w, "notify hooks already configured", http.StatusConflict)
+										return
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	notifyCmd := filepath.ToSlash(notifyPath)
+	makeHook := func(action string) []interface{} {
+		return []interface{}{
+			map[string]interface{}{
+				"matcher": "",
+				"hooks": []interface{}{
+					map[string]interface{}{
+						"type":    "command",
+						"command": fmt.Sprintf(`"%s" %s %s`, notifyCmd, req.Profile, action),
+						"timeout": 10,
+					},
+				},
+			},
+		}
+	}
+
+	hooks, ok2 := settings["hooks"].(map[string]interface{})
+	if !ok2 {
+		hooks = make(map[string]interface{})
+	}
+	hooks["Stop"] = makeHook("done")
+	hooks["Notification"] = makeHook("attention")
+	settings["hooks"] = hooks
+
+	if err := os.MkdirAll(claudeDir, 0755); err != nil {
+		http.Error(w, "failed to create .claude directory", http.StatusInternalServerError)
+		return
+	}
+	out, err := json.MarshalIndent(settings, "", "  ")
+	if err != nil {
+		http.Error(w, "failed to marshal settings", http.StatusInternalServerError)
+		return
+	}
+	out = append(out, '\n')
+	if err := os.WriteFile(settingsFile, out, 0644); err != nil {
+		http.Error(w, "failed to write settings.json", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleNotifyPath gets or sets the notify.exe path in config.
+func handleNotifyPath(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		cfg, err := config.Load()
+		if err != nil {
+			http.Error(w, "failed to load config", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"path": cfg.NotifyPath})
+
+	case http.MethodPost:
+		var req struct {
+			Path string `json:"path"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+		if req.Path != "" {
+			if _, err := os.Stat(req.Path); err != nil {
+				http.Error(w, "file not found: "+req.Path, http.StatusBadRequest)
+				return
+			}
+		}
+		config.Lock()
+		defer config.Unlock()
+		cfg, err := config.Load()
+		if err != nil {
+			http.Error(w, "failed to load config", http.StatusInternalServerError)
+			return
+		}
+		cfg.NotifyPath = req.Path
+		if err := config.Save(cfg); err != nil {
+			http.Error(w, "failed to save config", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
 }

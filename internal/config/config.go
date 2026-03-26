@@ -73,8 +73,9 @@ type Place struct {
 
 // Config holds the saved places and custom actions.
 type Config struct {
-	Actions map[string]*Action `json:"actions,omitempty"`
-	Places  map[string]*Place  `json:"places"`
+	Actions    map[string]*Action `json:"actions,omitempty"`
+	Places     map[string]*Place  `json:"places"`
+	NotifyPath string             `json:"notify_path,omitempty"`
 }
 
 // configDir returns the directory for places config files.

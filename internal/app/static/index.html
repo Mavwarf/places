@@ -397,6 +397,7 @@ button:active { opacity: 0.7; }
 .dropdown-sep { border-top: 1px solid var(--border); margin: 4px 0; }
 .dropdown-item-custom { color: var(--cyan); }
 .dropdown-item-rm { color: var(--red); }
+.dropdown-item-notify { color: var(--yellow); }
 .spacer { flex: 1; }
 .hidden { display: none; }
 .place-info-row { display: flex; align-items: center; gap: 6px; }
@@ -941,6 +942,7 @@ button:active { opacity: 0.7; }
   <button class="btn-recent-toggle" id="compact-toggle" onclick="toggleCompact()" title="Toggle compact view">Compact</button>
   <button class="theme-toggle" id="theme-toggle" title="Toggle theme"></button>
   <button class="theme-more" id="theme-more" onclick="toggleThemePicker()" title="All themes"><div class="theme-picker" id="theme-picker"></div>&#8943;</button>
+  <button class="theme-more" id="prefs-btn" onclick="togglePrefs()" title="Preferences"><div class="theme-picker" id="prefs-picker"></div>&#9881;</button>
   <div class="window-controls">
     <button class="win-btn win-btn-pin" id="pin-btn" onclick="togglePin()" title="Pin on top">&#128204;</button>
   </div>
@@ -1061,7 +1063,33 @@ document.addEventListener('click', function(e) {
   const picker = document.getElementById('theme-picker');
   const btn = document.getElementById('theme-more');
   if (!btn.contains(e.target)) picker.classList.remove('open');
+  const prefsPicker = document.getElementById('prefs-picker');
+  const prefsBtn = document.getElementById('prefs-btn');
+  if (!prefsBtn.contains(e.target)) prefsPicker.classList.remove('open');
 });
+
+function togglePrefs() {
+  const picker = document.getElementById('prefs-picker');
+  const isOpen = picker.classList.toggle('open');
+  if (!isOpen) return;
+  picker.innerHTML = `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>`;
+}
+
+async function editNotifyPath() {
+  document.getElementById('prefs-picker').classList.remove('open');
+  const p = prompt('Path to notify.exe:', notifyPath || 'C:/dev/tools/cli/notify.exe');
+  if (p === null) return;
+  try {
+    const res = await fetch('/api/notify-path', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({path: p})
+    });
+    if (!res.ok) { toast(await res.text() || 'Failed to save notify path', true); return; }
+    notifyPath = p;
+    toast('Notify path saved');
+  } catch (e) { toast('Failed to save notify path', true); }
+}
 
 let currentSort = 'last_used';
 let activeTags = new Set();
@@ -1074,6 +1102,7 @@ let actionDefs = {};  // global action definitions from server
 let lastPlacesData = [];  // cached place data for dropdown lookups
 let gitCache = {};  // place name → {branch, dirty}
 let desktopCount = 4;  // updated from /api/desktop-count
+let notifyPath = '';   // updated from /api/places
 
 // Recent action history
 const MAX_RECENT = 8;
@@ -1242,6 +1271,7 @@ async function load() {
     const res = await fetch('/api/places');
     const data = await res.json();
     actionDefs = data.actions || {};
+    notifyPath = data.notify_path || '';
     let places = data.places || [];
     lastPlacesData = places;
     if (!places.length) {
@@ -1856,6 +1886,22 @@ function showPlaceMenu(e, placeName) {
     });
   }
 
+  // Notify hooks setup
+  if (placeData && placeData.exists) {
+    const notifySep = document.createElement('div');
+    notifySep.className = 'dropdown-sep';
+    dd.appendChild(notifySep);
+    const notifyItem = document.createElement('div');
+    notifyItem.className = 'action-dropdown-item dropdown-item-notify';
+    notifyItem.textContent = 'Setup notify hooks';
+    notifyItem.onclick = function(ev) {
+      ev.stopPropagation();
+      dd.remove();
+      setupNotify(placeName);
+    };
+    dd.appendChild(notifyItem);
+  }
+
   const sep = document.createElement('div');
   sep.className = 'dropdown-sep';
   dd.appendChild(sep);
@@ -1878,6 +1924,41 @@ function showPlaceMenu(e, placeName) {
       document.removeEventListener('click', closeDD);
     }, {once: true});
   }, 0);
+}
+
+async function setupNotify(placeName) {
+  // Ensure notify path is configured.
+  if (!notifyPath) {
+    const p = prompt('Path to notify.exe:', 'C:/dev/tools/cli/notify.exe');
+    if (!p) return;
+    try {
+      const res = await fetch('/api/notify-path', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({path: p})
+      });
+      if (!res.ok) { toast(await res.text() || 'Failed to save notify path', true); return; }
+      notifyPath = p;
+    } catch (e) { toast('Failed to save notify path', true); return; }
+  }
+  // Prompt for profile name.
+  const defaultProfile = placeName.toLowerCase().replace(/[^a-z-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const profile = prompt('Notify profile name (lowercase letters and hyphens):', defaultProfile);
+  if (!profile) return;
+  if (!/^[a-z]+(-[a-z]+)*$/.test(profile)) {
+    toast('Invalid profile: use lowercase letters and hyphens only', true);
+    return;
+  }
+  try {
+    const res = await fetch('/api/setup-notify', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: placeName, profile: profile})
+    });
+    if (res.status === 409) { toast('Notify hooks already configured for ' + placeName); return; }
+    if (!res.ok) { toast(await res.text() || 'Failed to setup notify', true); return; }
+    toast('Notify hooks configured for "' + profile + '"');
+  } catch (e) { toast('Failed to setup notify', true); }
 }
 
 async function toggleDefault(placeName, action) {
