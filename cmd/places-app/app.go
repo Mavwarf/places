@@ -51,17 +51,13 @@ func (a *App) saveWindowGeometry() {
 }
 
 // beforeClose is called when the user clicks the window close button.
-// Shift+close fully exits; normal close hides to tray.
+// Always fully exits the application.
 func (a *App) beforeClose(ctx context.Context) bool {
 	<-a.ready
 	a.saveWindowGeometry()
-	if isShiftHeld() {
-		systray.Quit()
-		os.Exit(0)
-		return false
-	}
-	wailsRuntime.WindowHide(a.ctx)
-	return true // prevent close → hide to tray
+	systray.Quit()
+	os.Exit(0)
+	return false
 }
 
 // ShowWindow makes the Wails window visible (used by the tray icon and /api/show).

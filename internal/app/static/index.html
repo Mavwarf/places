@@ -113,7 +113,7 @@ body {
   font-family: var(--font);
   background: var(--bg);
   color: var(--fg);
-  padding: 4px 24px 0;
+  padding: 4px 12px 0;
   line-height: 1.5;
   display: flex;
   flex-direction: column;
@@ -123,10 +123,10 @@ body {
 .header-section {
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 8px;
-  margin: 0 -24px;
-  padding-left: 24px;
-  padding-right: 24px;
+  padding-bottom: 6px;
+  margin: 0 -12px;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 h1 {
   font-size: 1.3em;
@@ -502,6 +502,47 @@ button:active { opacity: 0.7; }
 .tag-chip.active { color: var(--accent); border-color: var(--accent); }
 .tag-chip.excluded { color: var(--red); border-color: var(--red); text-decoration: line-through; }
 
+.recent-bar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  font-size: 0.8em;
+  color: var(--fg-dim);
+  padding: 8px 0 0;
+}
+.recent-bar.hidden { display: none; }
+.recent-label { white-space: nowrap; }
+.recent-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.recent-chip {
+  background: var(--bg3);
+  color: var(--fg-dim);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  font-size: 0.85em;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font);
+  white-space: nowrap;
+}
+.recent-chip:hover { color: var(--fg); border-color: var(--fg-dim); }
+.recent-chip .recent-action { color: var(--accent); font-size: 0.85em; }
+.btn-recent-toggle {
+  background: transparent;
+  color: var(--fg-dim);
+  border: 1px solid var(--border);
+  height: 28px;
+  padding: 0 10px;
+  font-size: 0.85em;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+.btn-recent-toggle:hover { color: var(--fg); border-color: var(--fg-dim); }
+.btn-recent-toggle.active { color: var(--accent); border-color: var(--accent); }
+
 .filter-search {
   background: transparent;
   color: var(--fg);
@@ -623,7 +664,6 @@ button:active { opacity: 0.7; }
 }
 .win-btn:hover { color: var(--fg); border-color: var(--fg-dim); }
 .win-btn-pin.active { color: var(--accent); border-color: var(--accent); }
-.win-btn-quit:hover { color: var(--red); border-color: var(--red); }
 
 /* Git status */
 .btn-git {
@@ -673,11 +713,10 @@ button:active { opacity: 0.7; }
   <h1>places dashboard <span>workspace navigator</span></h1>
   <span class="screenshot-badge" id="screenshot-badge">screenshot</span>
   <button class="btn-add-toggle" id="add-toggle" onclick="toggleAddForm()" title="Add new place">+</button>
+  <button class="btn-recent-toggle" id="recent-toggle" onclick="toggleRecent()" title="Toggle recent actions">Recent</button>
   <button class="theme-toggle" id="theme-toggle" title="Toggle theme"></button>
   <div class="window-controls">
     <button class="win-btn win-btn-pin" id="pin-btn" onclick="togglePin()" title="Pin on top">&#128204;</button>
-    <button class="win-btn" onclick="minimizeWindow()" title="Minimize">&minus;</button>
-    <button class="win-btn win-btn-quit" onclick="quitApp()" title="Quit">&times;</button>
   </div>
 </div>
 <div class="status-bar">
@@ -709,6 +748,7 @@ button:active { opacity: 0.7; }
 </div>
 
 <div class="tag-bar" id="tag-bar"><span id="tag-bar-left"></span><input class="filter-search" id="filter-search" type="text" placeholder="Filter..." oninput="textFilter=this.value;saveFilters();load()" /><span id="tag-bar-right"></span><span class="spacer"></span><span id="tag-bar-git"></span></div>
+<div class="recent-bar hidden" id="recent-bar"><span class="recent-label">Recent:</span><span class="recent-chips" id="recent-chips"></span></div>
 </div>
 <div id="places" class="place-list"></div>
 
@@ -760,6 +800,54 @@ let actionDefs = {};  // global action definitions from server
 let lastPlacesData = [];  // cached place data for dropdown lookups
 let gitCache = {};  // place name → {branch, dirty}
 let desktopCount = 4;  // updated from /api/desktop-count
+
+// Recent action history
+const MAX_RECENT = 8;
+let recentHistory = [];
+let recentVisible = localStorage.getItem('places-recent-visible') === 'on';
+
+(function loadHistory() {
+  try { recentHistory = JSON.parse(localStorage.getItem('places-recent')) || []; } catch (e) { recentHistory = []; }
+})();
+
+function saveHistory() {
+  localStorage.setItem('places-recent', JSON.stringify(recentHistory));
+}
+
+function recordHistory(name, action) {
+  const key = name + '·' + action;
+  recentHistory = recentHistory.filter(h => h.key !== key);
+  recentHistory.unshift({ key, name, action, ts: Date.now() });
+  if (recentHistory.length > MAX_RECENT) recentHistory.length = MAX_RECENT;
+  saveHistory();
+  renderRecent();
+}
+
+function renderRecent() {
+  const el = document.getElementById('recent-chips');
+  const toggle = document.getElementById('recent-toggle');
+  const bar = document.getElementById('recent-bar');
+  toggle.classList.toggle('active', recentVisible);
+  if (!recentVisible || !recentHistory.length) { bar.classList.add('hidden'); return; }
+  bar.classList.remove('hidden');
+  const labels = { claude: 'CL', explorer: 'dir', code: 'VS', powershell: 'PS', cmd: '>_' };
+  el.innerHTML = recentHistory.map(h => {
+    const actionLabel = labels[h.action] || (actionDefs[h.action] ? actionDefs[h.action].label : h.action);
+    const isCustom = !labels[h.action];
+    return `<button class="recent-chip" onclick="replayRecent('${esc(h.name)}','${esc(h.action)}',${isCustom})" title="${esc(h.name)} → ${esc(actionLabel)}">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></button>`;
+  }).join('');
+}
+
+function replayRecent(name, action, isCustom) {
+  if (isCustom) runCustomAction(name, action);
+  else openAt(name, action);
+}
+
+function toggleRecent() {
+  recentVisible = !recentVisible;
+  localStorage.setItem('places-recent-visible', recentVisible ? 'on' : '');
+  renderRecent();
+}
 
 function saveFilters() {
   localStorage.setItem('places-filters', JSON.stringify({
@@ -976,7 +1064,7 @@ async function openAt(name, action, shift, ctrl) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({name, action, shift: !!shift, ctrl: !!ctrl})
     });
-    if (res.ok) { load(); }
+    if (res.ok) { recordHistory(name, action); load(); }
     else {
       const t = await res.text();
       toast(t || 'Failed to open', true);
@@ -1373,7 +1461,7 @@ async function runCustomAction(placeName, actionName) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({name: placeName, action: actionName})
     });
-    if (res.ok) { load(); }
+    if (res.ok) { recordHistory(placeName, actionName); load(); }
     else { toast(await res.text() || 'Failed', true); }
   } catch (e) { toast('Failed to run action', true); }
 }
@@ -1656,6 +1744,7 @@ function toast(msg, err) {
 // Restore persisted filter state to UI
 document.getElementById('sort-' + currentSort).classList.add('active');
 if (textFilter) document.getElementById('filter-search').value = textFilter;
+renderRecent();
 fetch('/api/desktop-count').then(r => r.json()).then(d => { desktopCount = d.count; }).catch(() => {});
 load().then(function() { updateAllGit(true); });
 setInterval(load, 3000);

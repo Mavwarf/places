@@ -178,6 +178,7 @@ Favorites show a ★ marker in `p list`. The desktop app has a clickable star to
 - **PS** — open PowerShell at that directory
 - **>_** — open cmd.exe at that directory
 - **⋯** — place menu: toggle built-in action visibility, assign/unassign custom actions, remove place
+- **Recent** — toggleable bar showing last 8 launched place+action pairs as quick-replay chips
 
 Each place row is organized into aligned columns: **name** (fixed width, ellipsis for long names), **path / note** (flexible, fills available space), **stats** (usage count + last-used time), **git + tags** (status badge, tag badges, add-tag button), and **action buttons** (right-aligned). All columns have fixed widths so they align consistently across rows.
 

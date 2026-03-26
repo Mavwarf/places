@@ -2,6 +2,8 @@
 
 ## Features
 
+- Recent action history — toggleable "Recent" bar in the header shows last 8 place+action launches as one-click chips; persisted in localStorage *(Mar 26)*
+- Dashboard UX — filter/sort state persists across restarts; close button always quits (no more hide-to-tray); removed redundant minimize/quit buttons from header; reduced horizontal padding; dynamic virtual desktop count from DLL *(Mar 26)*
 - Claude YOLO mode — Ctrl+click CL button launches Claude with `--dangerously-skip-permissions`; Shift+click (fresh session) now shows a confirmation dialog; tab title simplified to `claude <name>` *(Mar 24)*
 - Dashboard polish — subtitle changed to "workspace navigator", empty state message when filters hide all places, place list top padding *(Mar 5)*
 - Tech debt cleanup (22 items) — UTC build time, inline edit Escape fix, toast stacking, JS var→const/let, renderNote helper, dropdown CSS classes, gitStatus/mergeConfig extraction, geometry error logging, tray nil guard and save error check, cmdListJSON error check, README buildTime ldflags, ExpandAction doc comment *(Mar 5)*
