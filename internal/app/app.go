@@ -160,6 +160,7 @@ func Serve(port int, cb Callbacks) error {
 	mux.HandleFunc("/api/record-recent", handleRecordRecent)
 	mux.HandleFunc("/api/sync-recent", handleSyncRecent)
 	mux.HandleFunc("/api/claude-shell", handleClaudeShell)
+	mux.HandleFunc("/api/suppress-title", handleSuppressTitle)
 	mux.HandleFunc("/api/toggle-default", handleToggleDefault)
 	if cb.Show != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
@@ -324,6 +325,7 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 		"default_hidden":  cfg.DefaultHidden,
 		"default_actions": cfg.DefaultActions,
 		"claude_shell":   cfg.ClaudeShell,
+		"suppress_title": cfg.SuppressTitle,
 	})
 }
 
@@ -381,6 +383,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	name := req.Name
 	desk := place.Desktop
 	claudeShell := cfg.ClaudeShell
+	suppressTitle := cfg.SuppressTitle
 	config.Unlock()
 
 	launcher.SwitchDesktop(desk)
@@ -392,7 +395,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	case "cmd":
 		cmd = launcher.Cmd(path)
 	case "claude":
-		cmd = launcher.Claude(path, name, req.Shift, req.Ctrl, claudeShell)
+		cmd = launcher.Claude(path, name, req.Shift, req.Ctrl, claudeShell, suppressTitle)
 	case "code":
 		cmd = launcher.Code(path)
 	case "explorer":
@@ -1319,6 +1322,34 @@ func handleClaudeShell(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+// handleSuppressTitle toggles the --suppressApplicationTitle flag for Claude launches.
+func handleSuppressTitle(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Suppress bool `json:"suppress"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	config.Lock()
+	defer config.Unlock()
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+	cfg.SuppressTitle = req.Suppress
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 const maxRecent = 8

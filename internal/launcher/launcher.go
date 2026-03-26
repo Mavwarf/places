@@ -61,7 +61,7 @@ func Cmd(path string) *exec.Cmd {
 //
 // Fallback (plain conhost): "cmd /c start <title>" sets the window title, but
 // Claude may override it on startup since conhost doesn't support title pinning.
-func Claude(path, name string, cont, yolo bool, shell string) *exec.Cmd {
+func Claude(path, name string, cont, yolo bool, shell string, suppressTitle bool) *exec.Cmd {
 	title := "claude " + name
 	claudeCmd := "claude --continue"
 	if cont {
@@ -77,8 +77,12 @@ func Claude(path, name string, cont, yolo bool, shell string) *exec.Cmd {
 		if runtime.GOOS == "windows" {
 			if _, err := exec.LookPath("wt.exe"); err == nil {
 				wtCmd := strings.ReplaceAll(psCmd, ";", "\\;")
-				return exec.Command("wt", "new-tab", "--title", title,
-					"--suppressApplicationTitle", "powershell", "-NoExit", "-Command", wtCmd)
+				args := []string{"new-tab", "--title", title}
+				if suppressTitle {
+					args = append(args, "--suppressApplicationTitle")
+				}
+				args = append(args, "powershell", "-NoExit", "-Command", wtCmd)
+				return exec.Command("wt", args...)
 			}
 		}
 		return exec.Command("cmd", "/c", "start", title, "powershell", "-NoExit", "-Command", psCmd)
@@ -88,8 +92,12 @@ func Claude(path, name string, cont, yolo bool, shell string) *exec.Cmd {
 	cmdStr := fmt.Sprintf("cd /d %s && %s", cmdEscape(path), claudeCmd)
 	if runtime.GOOS == "windows" {
 		if _, err := exec.LookPath("wt.exe"); err == nil {
-			return exec.Command("wt", "new-tab", "--title", title,
-				"--suppressApplicationTitle", "cmd", "/k", cmdStr)
+			args := []string{"new-tab", "--title", title}
+			if suppressTitle {
+				args = append(args, "--suppressApplicationTitle")
+			}
+			args = append(args, "cmd", "/k", cmdStr)
+			return exec.Command("wt", args...)
 		}
 	}
 	return exec.Command("cmd", "/c", "start", title, "cmd", "/k", cmdStr)

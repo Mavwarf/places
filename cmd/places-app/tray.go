@@ -100,6 +100,7 @@ func addRecentMenu() {
 	}
 
 	claudeShell := cfg.ClaudeShell
+	suppressTitle := cfg.SuppressTitle
 	parent := systray.AddMenuItem("Recent", "Recently launched actions")
 	for _, entry := range cfg.Recent {
 		e := entry // capture
@@ -131,7 +132,7 @@ func addRecentMenu() {
 			launcher.SwitchDesktop(desk)
 			switch e.Action {
 			case "claude":
-				launcher.Detach(launcher.Claude(path, e.Name, e.Shift, e.Ctrl, claudeShell))
+				launcher.Detach(launcher.Claude(path, e.Name, e.Shift, e.Ctrl, claudeShell, suppressTitle))
 			case "explorer":
 				launcher.Detach(launcher.Explorer(path))
 			case "code":
@@ -161,6 +162,7 @@ func addPlaceMenusGrouped() {
 
 	names := config.SortedNames(cfg)
 	cShell := cfg.ClaudeShell
+	cSuppress := cfg.SuppressTitle
 	top := systray.AddMenuItem("Places", "All saved places")
 
 	for _, name := range names {
@@ -192,7 +194,7 @@ func addPlaceMenusGrouped() {
 		}
 
 		mClaude := parent.AddSubMenuItem("Claude", "Open Claude here")
-		mClaude.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path, placeName, false, false, cShell)) })
+		mClaude.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path, placeName, false, false, cShell, cSuppress)) })
 
 		mExplorer := parent.AddSubMenuItem("Explorer", "Open Explorer here")
 		mExplorer.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Explorer(path)) })

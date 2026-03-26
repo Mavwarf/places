@@ -1133,6 +1133,7 @@ function togglePrefs() {
   if (!isOpen) return;
   picker.innerHTML = `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>` +
     `<button class="theme-picker-item" onclick="toggleClaudeShell()">Claude shell: ${claudeShell}</button>` +
+    `<button class="theme-picker-item" onclick="toggleSuppressTitle()">Set tab title: ${suppressTitle ? 'on' : 'off'}</button>` +
     `<button class="theme-picker-item" onclick="openActionManager()">Manage actions</button>`;
 }
 
@@ -1165,6 +1166,20 @@ async function toggleClaudeShell() {
     claudeShell = newShell;
     toast('Claude shell: ' + newShell);
   } catch (e) { toast('Failed to save Claude shell', true); }
+}
+
+async function toggleSuppressTitle() {
+  document.getElementById('prefs-picker').classList.remove('open');
+  suppressTitle = !suppressTitle;
+  try {
+    const res = await fetch('/api/suppress-title', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({suppress: suppressTitle})
+    });
+    if (!res.ok) { toast(await res.text() || 'Failed', true); return; }
+    toast('Set tab title: ' + (suppressTitle ? 'on (keeps custom title)' : 'off (Claude shows status)'));
+  } catch (e) { toast('Failed to save setting', true); }
 }
 
 // Action manager dialog
@@ -1323,6 +1338,7 @@ let notifyPath = '';       // updated from /api/places
 let defaultHidden = [];    // updated from /api/places
 let claudeShell = 'cmd';    // updated from /api/places
 let defaultActions = [];    // updated from /api/places
+let suppressTitle = false;  // updated from /api/places
 
 // Recent action history
 const MAX_RECENT = 8;
@@ -1501,6 +1517,7 @@ async function load() {
     defaultHidden = data.default_hidden || [];
     claudeShell = data.claude_shell || 'cmd';
     defaultActions = data.default_actions || [];
+    suppressTitle = !!data.suppress_title;
     let places = data.places || [];
     lastPlacesData = places;
     if (!places.length) {

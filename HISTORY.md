@@ -3,7 +3,7 @@
 ## Features
 
 - Action manager editing — edit button per custom action populates the form for modification; custom actions can be auto-assigned to new places via defaults section *(Mar 26)*
-- Configurable Claude shell — preference to launch Claude in cmd (default) or PowerShell, via gear menu *(Mar 26)*
+- Configurable Claude shell — preference to launch Claude in cmd (default) or PowerShell, via gear menu; "Set tab title" toggle controls whether Claude can update the terminal tab title with status indicators *(Mar 26)*
 - Action manager — define, delete, and overwrite custom actions from the dashboard via gear menu; default action visibility for new places *(Mar 26)*
 - Notify hook setup — per-place "Setup notify hooks" in place menu auto-creates .claude/settings.json with Stop/Notification hooks; notify.exe path configurable in preferences *(Mar 26)*
 - Tray recent menu — recent actions synced to server and shown in system tray under "Recent" submenu; all places grouped under "Places" submenu *(Mar 26)*
