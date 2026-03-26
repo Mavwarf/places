@@ -815,10 +815,11 @@ function saveHistory() {
   localStorage.setItem('places-recent', JSON.stringify(recentHistory));
 }
 
-function recordHistory(name, action) {
-  const key = name + '·' + action;
+function recordHistory(name, action, shift, ctrl) {
+  const suffix = ctrl ? ':yolo' : shift ? ':fresh' : '';
+  const key = name + '·' + action + suffix;
   recentHistory = recentHistory.filter(h => h.key !== key);
-  recentHistory.unshift({ key, name, action, ts: Date.now() });
+  recentHistory.unshift({ key, name, action, shift: !!shift, ctrl: !!ctrl, ts: Date.now() });
   if (recentHistory.length > MAX_RECENT) recentHistory.length = MAX_RECENT;
   saveHistory();
   renderRecent();
@@ -833,15 +834,24 @@ function renderRecent() {
   bar.classList.remove('hidden');
   const labels = { claude: 'CL', explorer: 'dir', code: 'VS', powershell: 'PS', cmd: '>_' };
   el.innerHTML = recentHistory.map(h => {
-    const actionLabel = labels[h.action] || (actionDefs[h.action] ? actionDefs[h.action].label : h.action);
+    let actionLabel = labels[h.action] || (actionDefs[h.action] ? actionDefs[h.action].label : h.action);
+    if (h.ctrl) actionLabel += ' YOLO';
+    else if (h.shift) actionLabel += ' fresh';
     const isCustom = !labels[h.action];
-    return `<button class="recent-chip" onclick="replayRecent('${esc(h.name)}','${esc(h.action)}',${isCustom})" title="${esc(h.name)} → ${esc(actionLabel)}">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></button>`;
+    return `<button class="recent-chip" onclick="replayRecent('${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl})" oncontextmenu="removeRecent(event,'${esc(h.key)}')" title="${esc(h.name)} → ${esc(actionLabel)} (right-click to remove)">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></button>`;
   }).join('');
 }
 
-function replayRecent(name, action, isCustom) {
+function replayRecent(name, action, isCustom, shift, ctrl) {
   if (isCustom) runCustomAction(name, action);
-  else openAt(name, action);
+  else openAt(name, action, shift, ctrl);
+}
+
+function removeRecent(e, key) {
+  e.preventDefault();
+  recentHistory = recentHistory.filter(h => h.key !== key);
+  saveHistory();
+  renderRecent();
 }
 
 function toggleRecent() {
@@ -1066,7 +1076,7 @@ async function openAt(name, action, shift, ctrl) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({name, action, shift: !!shift, ctrl: !!ctrl})
     });
-    if (res.ok) { recordHistory(name, action); load(); }
+    if (res.ok) { recordHistory(name, action, shift, ctrl); load(); }
     else {
       const t = await res.text();
       toast(t || 'Failed to open', true);
