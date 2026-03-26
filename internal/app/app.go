@@ -325,7 +325,8 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 		"default_hidden":  cfg.DefaultHidden,
 		"default_actions": cfg.DefaultActions,
 		"claude_shell":   cfg.ClaudeShell,
-		"suppress_title": cfg.SuppressTitle,
+		"suppress_title":    cfg.SuppressTitle,
+		"desktop_available": desktop.Available(),
 	})
 }
 

@@ -1339,6 +1339,7 @@ let defaultHidden = [];    // updated from /api/places
 let claudeShell = 'cmd';    // updated from /api/places
 let defaultActions = [];    // updated from /api/places
 let suppressTitle = false;  // updated from /api/places
+let desktopAvailable = true; // updated from /api/places
 
 // Recent action history
 const MAX_RECENT = 8;
@@ -1518,6 +1519,7 @@ async function load() {
     claudeShell = data.claude_shell || 'cmd';
     defaultActions = data.default_actions || [];
     suppressTitle = !!data.suppress_title;
+    desktopAvailable = !!data.desktop_available;
     let places = data.places || [];
     lastPlacesData = places;
     if (!places.length) {
@@ -1777,6 +1779,7 @@ async function toggleFav(name, favorite) {
 }
 
 async function setDesktop(name, desktop) {
+  if (desktop > 0 && !desktopAvailable) { toast('VirtualDesktopAccessor.dll not found — place it next to places-app.exe', true); }
   try {
     const res = await fetch('/api/desktop', {
       method: 'POST',
@@ -1790,6 +1793,7 @@ async function setDesktop(name, desktop) {
 
 async function switchDesktop(n) {
   if (!n) return;
+  if (!desktopAvailable) { toast('VirtualDesktopAccessor.dll not found — place it next to places-app.exe', true); return; }
   try {
     const res = await fetch('/api/switch-desktop', {
       method: 'POST',
