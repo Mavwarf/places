@@ -108,6 +108,159 @@
   --shadow: rgba(0,0,0,0.3);
 }
 
+[data-theme="catppuccin"] {
+  --bg: #1e1e2e;
+  --bg2: #313244;
+  --bg3: #45475a;
+  --fg: #cdd6f4;
+  --fg-dim: #6c7086;
+  --accent: #89b4fa;
+  --green: #a6e3a1;
+  --yellow: #f9e2af;
+  --red: #f38ba8;
+  --cyan: #94e2d5;
+  --border: #585b70;
+  --claude: #f2cdcd;
+  --code: #74c7ec;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+[data-theme="onedark"] {
+  --bg: #282c34;
+  --bg2: #2c313c;
+  --bg3: #353b45;
+  --fg: #abb2bf;
+  --fg-dim: #636d83;
+  --accent: #61afef;
+  --green: #98c379;
+  --yellow: #e5c07b;
+  --red: #e06c75;
+  --cyan: #56b6c2;
+  --border: #3e4452;
+  --claude: #d19a66;
+  --code: #61afef;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+[data-theme="rosepine"] {
+  --bg: #191724;
+  --bg2: #1f1d2e;
+  --bg3: #26233a;
+  --fg: #e0def4;
+  --fg-dim: #6e6a86;
+  --accent: #c4a7e7;
+  --green: #9ccfd8;
+  --yellow: #f6c177;
+  --red: #eb6f92;
+  --cyan: #9ccfd8;
+  --border: #393552;
+  --claude: #f6c177;
+  --code: #31748f;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+[data-theme="kanagawa"] {
+  --bg: #1f1f28;
+  --bg2: #2a2a37;
+  --bg3: #363646;
+  --fg: #dcd7ba;
+  --fg-dim: #727169;
+  --accent: #7e9cd8;
+  --green: #98bb6c;
+  --yellow: #e6c384;
+  --red: #c34043;
+  --cyan: #7fb4ca;
+  --border: #54546d;
+  --claude: #d27e99;
+  --code: #7e9cd8;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+[data-theme="everforest"] {
+  --bg: #2d353b;
+  --bg2: #343f44;
+  --bg3: #3d484d;
+  --fg: #d3c6aa;
+  --fg-dim: #859289;
+  --accent: #a7c080;
+  --green: #a7c080;
+  --yellow: #dbbc7f;
+  --red: #e67e80;
+  --cyan: #83c092;
+  --border: #4f585e;
+  --claude: #d699b6;
+  --code: #7fbbb3;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+[data-theme="monokai"] {
+  --bg: #272822;
+  --bg2: #2e2f2a;
+  --bg3: #3e3d32;
+  --fg: #f8f8f2;
+  --fg-dim: #75715e;
+  --accent: #66d9ef;
+  --green: #a6e22e;
+  --yellow: #e6db74;
+  --red: #f92672;
+  --cyan: #66d9ef;
+  --border: #49483e;
+  --claude: #fd971f;
+  --code: #ae81ff;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+[data-theme="catppuccin-latte"] {
+  --bg: #eff1f5;
+  --bg2: #e6e9ef;
+  --bg3: #dce0e8;
+  --fg: #4c4f69;
+  --fg-dim: #8c8fa1;
+  --accent: #1e66f5;
+  --green: #40a02b;
+  --yellow: #df8e1d;
+  --red: #d20f39;
+  --cyan: #179299;
+  --border: #ccd0da;
+  --claude: #ea76cb;
+  --code: #7287fd;
+  --shadow: rgba(0,0,0,0.1);
+}
+
+[data-theme="rosepine-dawn"] {
+  --bg: #faf4ed;
+  --bg2: #fffaf3;
+  --bg3: #f2e9e1;
+  --fg: #575279;
+  --fg-dim: #9893a5;
+  --accent: #907aa9;
+  --green: #56949f;
+  --yellow: #ea9d34;
+  --red: #b4637a;
+  --cyan: #56949f;
+  --border: #dfdad9;
+  --claude: #d7827e;
+  --code: #286983;
+  --shadow: rgba(0,0,0,0.08);
+}
+
+[data-theme="everforest-light"] {
+  --bg: #fdf6e3;
+  --bg2: #f4f0d9;
+  --bg3: #edebd0;
+  --fg: #5c6a72;
+  --fg-dim: #939f91;
+  --accent: #8da101;
+  --green: #8da101;
+  --yellow: #dfa000;
+  --red: #f85552;
+  --cyan: #35a77c;
+  --border: #d5d6c8;
+  --claude: #df69ba;
+  --code: #3a94c5;
+  --shadow: rgba(0,0,0,0.08);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: var(--font);
@@ -626,6 +779,55 @@ button:active { opacity: 0.7; }
   transition: color 0.15s, border-color 0.15s;
 }
 .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+.theme-more {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--fg-dim);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font);
+  height: 32px;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s;
+  position: relative;
+}
+.theme-more:hover { color: var(--accent); border-color: var(--accent); }
+.theme-picker {
+  display: none;
+  position: absolute;
+  top: 36px;
+  right: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 0;
+  z-index: 100;
+  box-shadow: 0 4px 12px var(--shadow);
+  min-width: 160px;
+}
+.theme-picker.open { display: block; }
+.theme-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 0.82em;
+  color: var(--fg);
+  white-space: nowrap;
+  background: none;
+  border: none;
+  width: 100%;
+  font-family: var(--font);
+  text-align: left;
+}
+.theme-picker-item:hover { background: var(--bg3); }
+.theme-picker-item.active { color: var(--accent); }
+.theme-picker-check { width: 16px; text-align: center; }
 
 /* Screenshot badge */
 .screenshot-badge {
@@ -715,6 +917,7 @@ button:active { opacity: 0.7; }
   <button class="btn-add-toggle" id="add-toggle" onclick="toggleAddForm()" title="Add new place">+</button>
   <button class="btn-recent-toggle" id="recent-toggle" onclick="toggleRecent()" title="Toggle recent actions">Recent</button>
   <button class="theme-toggle" id="theme-toggle" title="Toggle theme"></button>
+  <button class="theme-more" id="theme-more" onclick="toggleThemePicker()" title="All themes"><div class="theme-picker" id="theme-picker"></div>&#8943;</button>
   <div class="window-controls">
     <button class="win-btn win-btn-pin" id="pin-btn" onclick="togglePin()" title="Pin on top">&#128204;</button>
   </div>
@@ -765,30 +968,76 @@ function toggleAddForm() {
 
 // Theme cycle
 const THEMES = [
-  { name: 'dark',      icon: '\u263D', label: 'Dark' },
-  { name: 'light',     icon: '\u2600', label: 'Light' },
-  { name: 'nord',      icon: '\u2744', label: 'Nord' },
-  { name: 'dracula',   icon: '\u2605', label: 'Dracula' },
-  { name: 'solarized', icon: '\u25D0', label: 'Solarized' },
-  { name: 'gruvbox',   icon: '\u25A3', label: 'Gruvbox' },
+  { name: 'dark',       icon: '\u263D', label: 'Dark' },
+  { name: 'light',      icon: '\u2600', label: 'Light' },
+  { name: 'nord',       icon: '\u2744', label: 'Nord' },
+  { name: 'dracula',    icon: '\u2605', label: 'Dracula' },
+  { name: 'solarized',  icon: '\u25D0', label: 'Solarized' },
+  { name: 'gruvbox',    icon: '\u25A3', label: 'Gruvbox' },
+  { name: 'catppuccin', icon: '\u2615', label: 'Catppuccin' },
+  { name: 'catppuccin-latte', icon: '\u2615', label: 'Catppuccin Latte' },
+  { name: 'onedark',    icon: '\u25C6', label: 'One Dark' },
+  { name: 'rosepine',   icon: '\u2740', label: 'Ros\u00E9 Pine' },
+  { name: 'rosepine-dawn', icon: '\u2740', label: 'Ros\u00E9 Dawn' },
+  { name: 'kanagawa',   icon: '\u2387', label: 'Kanagawa' },
+  { name: 'everforest', icon: '\u2618', label: 'Everforest' },
+  { name: 'everforest-light', icon: '\u2618', label: 'Everforest Light' },
+  { name: 'monokai',    icon: '\u25B6', label: 'Monokai' },
 ];
 const themeToggle = document.getElementById('theme-toggle');
 const savedTheme = localStorage.getItem('places-theme');
 let themeIdx = Math.max(0, THEMES.findIndex(function(t) { return t.name === savedTheme; }));
+const startThemeIdx = themeIdx;
 document.documentElement.dataset.theme = THEMES[themeIdx].name;
 
 function updateToggleIcon() {
   const t = THEMES[themeIdx];
   themeToggle.textContent = t.icon + ' ' + t.label;
-  themeToggle.title = 'Theme: ' + t.label + ' (click to cycle)';
+  themeToggle.title = 'Theme: ' + t.label + ' (click to cycle, right-click to restore startup theme)';
 }
 updateToggleIcon();
 
-themeToggle.addEventListener('click', function() {
-  themeIdx = (themeIdx + 1) % THEMES.length;
+function applyTheme(idx) {
+  themeIdx = idx;
   document.documentElement.dataset.theme = THEMES[themeIdx].name;
   localStorage.setItem('places-theme', THEMES[themeIdx].name);
   updateToggleIcon();
+  toast(THEMES[themeIdx].label);
+}
+
+themeToggle.addEventListener('click', function() {
+  applyTheme((themeIdx + 1) % THEMES.length);
+});
+
+themeToggle.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+  applyTheme(startThemeIdx);
+});
+
+function toggleThemePicker() {
+  const picker = document.getElementById('theme-picker');
+  const isOpen = picker.classList.toggle('open');
+  if (!isOpen) return;
+  picker.innerHTML = THEMES.map((t, i) =>
+    `<button class="theme-picker-item${i === themeIdx ? ' active' : ''}" onclick="pickTheme(${i})" onmouseenter="previewTheme(${i})" onmouseleave="previewTheme(${themeIdx})">`
+    + `<span class="theme-picker-check">${i === themeIdx ? '\u2713' : ''}</span>`
+    + `${t.icon} ${t.label}</button>`
+  ).join('');
+}
+
+function previewTheme(idx) {
+  document.documentElement.dataset.theme = THEMES[idx].name;
+}
+
+function pickTheme(idx) {
+  document.getElementById('theme-picker').classList.remove('open');
+  applyTheme(idx);
+}
+
+document.addEventListener('click', function(e) {
+  const picker = document.getElementById('theme-picker');
+  const btn = document.getElementById('theme-more');
+  if (!btn.contains(e.target)) picker.classList.remove('open');
 });
 
 let currentSort = 'last_used';
