@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/Mavwarf/places/internal/config"
+	"github.com/Mavwarf/places/internal/desktop"
 	"github.com/Mavwarf/places/internal/launcher"
 )
 
@@ -136,6 +137,7 @@ func Serve(port int, cb Callbacks) error {
 	mux.HandleFunc("/api/untag", handleUntag)
 	mux.HandleFunc("/api/fav", handleFav)
 	mux.HandleFunc("/api/desktop", handleDesktop)
+	mux.HandleFunc("/api/desktop-count", handleDesktopCount)
 	mux.HandleFunc("/api/switch-desktop", handleSwitchDesktop)
 	mux.HandleFunc("/api/open-url", handleOpenURL)
 	mux.HandleFunc("/api/actions", handleActions)
@@ -417,8 +419,12 @@ func handleDesktop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Desktop < 0 || req.Desktop > 4 {
-		http.Error(w, "desktop must be 0-4", http.StatusBadRequest)
+	maxDesktop := 4
+	if n, err := desktop.Count(); err == nil && n > 0 {
+		maxDesktop = n
+	}
+	if req.Desktop < 0 || req.Desktop > maxDesktop {
+		http.Error(w, fmt.Sprintf("desktop must be 0-%d", maxDesktop), http.StatusBadRequest)
 		return
 	}
 
@@ -430,6 +436,15 @@ func handleDesktop(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func handleDesktopCount(w http.ResponseWriter, r *http.Request) {
+	count := 4
+	if n, err := desktop.Count(); err == nil && n > 0 {
+		count = n
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]int{"count": count})
 }
 
 func handleSwitchDesktop(w http.ResponseWriter, r *http.Request) {
