@@ -157,7 +157,9 @@ func Load() (Config, error) {
 		var raw struct {
 			Places map[string]json.RawMessage `json:"places"`
 		}
-		json.Unmarshal(data, &raw)
+		if err := json.Unmarshal(data, &raw); err != nil {
+			return Config{}, fmt.Errorf("failed to parse config for migration: %w", err)
+		}
 		migrated := make(map[string]*Place, len(raw.Places))
 		for name, v := range raw.Places {
 			// Try to unmarshal as a bare string (old format).

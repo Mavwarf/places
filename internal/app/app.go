@@ -25,6 +25,15 @@ import (
 	"github.com/Mavwarf/places/internal/launcher"
 )
 
+// writeJSON encodes v as JSON to w. Errors are logged to stderr since the
+// response is already partially written by the time encoding fails.
+func writeJSON(w http.ResponseWriter, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		fmt.Fprintf(os.Stderr, "places-app: json encode error: %v\n", err)
+	}
+}
+
 // Version is the build version string, injected at compile time via ldflags.
 var Version = "dev"
 
@@ -188,8 +197,7 @@ func Serve(port int, cb Callbacks) error {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"path": path})
+			writeJSON(w, map[string]string{"path": path})
 		})
 	}
 	if cb.Minimize != nil {
@@ -237,8 +245,7 @@ func Serve(port int, cb Callbacks) error {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"path": path})
+			writeJSON(w, map[string]string{"path": path})
 		})
 	}
 
@@ -318,8 +325,7 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 		places = append(places, jp)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	writeJSON(w,map[string]interface{}{
 		"places":         places,
 		"actions":        cfg.Actions,
 		"notify_path":    cfg.NotifyPath,
@@ -403,6 +409,9 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 		cmd = launcher.Code(path)
 	case "explorer":
 		cmd = launcher.Explorer(path)
+	default:
+		http.Error(w, "unknown action", http.StatusBadRequest)
+		return
 	}
 
 	if err := launcher.Detach(cmd); err != nil {
@@ -464,8 +473,7 @@ func handleDesktopCount(w http.ResponseWriter, r *http.Request) {
 	if n, err := desktop.Count(); err == nil && n > 0 {
 		count = n
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]int{"count": count})
+	writeJSON(w,map[string]int{"count": count})
 }
 
 func handleSwitchDesktop(w http.ResponseWriter, r *http.Request) {
@@ -718,8 +726,7 @@ func handleActions(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to load config", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(cfg.Actions)
+	writeJSON(w,cfg.Actions)
 }
 
 // handleRunAction executes a custom action for a place.
@@ -1027,7 +1034,9 @@ func handleExport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", `attachment; filename="places-export.json"`)
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	enc.Encode(cfg)
+	if err := enc.Encode(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "places-app: json encode error: %v\n", err)
+	}
 }
 
 // handleImport merges places and actions from uploaded JSON (skip existing).
@@ -1060,8 +1069,7 @@ func handleImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	writeJSON(w,result)
 }
 
 // mergeConfig merges incoming places and actions into cfg, skipping existing entries.
@@ -1152,8 +1160,7 @@ func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	writeJSON(w,map[string]interface{}{
 		"branch": branch,
 		"dirty":  dirty,
 	})
@@ -1293,8 +1300,7 @@ func handleClaudeShell(w http.ResponseWriter, r *http.Request) {
 		if shell == "" {
 			shell = "cmd"
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"shell": shell})
+		writeJSON(w, map[string]string{"shell": shell})
 
 	case http.MethodPost:
 		var req struct {
@@ -1549,8 +1555,7 @@ func handleActionDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to save config", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]int{"unassigned_count": count})
+	writeJSON(w,map[string]int{"unassigned_count": count})
 }
 
 // handleDefaultHidden gets or sets the default hidden actions for new places.
@@ -1562,8 +1567,7 @@ func handleDefaultHidden(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "failed to load config", http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string][]string{"hidden": cfg.DefaultHidden})
+		writeJSON(w, map[string][]string{"hidden": cfg.DefaultHidden})
 
 	case http.MethodPost:
 		var req struct {
@@ -1601,8 +1605,7 @@ func handleDefaultActions(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "failed to load config", http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string][]string{"actions": cfg.DefaultActions})
+		writeJSON(w, map[string][]string{"actions": cfg.DefaultActions})
 
 	case http.MethodPost:
 		var req struct {
@@ -1771,8 +1774,7 @@ func handleNotifyPath(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "failed to load config", http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"path": cfg.NotifyPath})
+		writeJSON(w, map[string]string{"path": cfg.NotifyPath})
 
 	case http.MethodPost:
 		var req struct {

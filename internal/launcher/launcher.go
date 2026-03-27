@@ -41,9 +41,9 @@ func PowerShell(path string) *exec.Cmd {
 
 // cmdEscape quotes a string for safe use as a cmd.exe argument.
 // Double quotes neutralize all cmd.exe metacharacters (&, |, <, >, ^, etc.)
-// which is sufficient for cd /d paths.
+// which is sufficient for cd /d paths. Embedded quotes are escaped.
 func cmdEscape(s string) string {
-	return `"` + s + `"`
+	return `"` + strings.ReplaceAll(s, `"`, `\"`) + `"`
 }
 
 // Cmd opens a new cmd.exe window at the given directory (Windows only).
