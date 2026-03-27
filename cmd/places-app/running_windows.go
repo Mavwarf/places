@@ -95,35 +95,113 @@ func detectRunningSessions(placeNames []string) []RunningSession {
 			}
 		}
 
+		// Match Explorer windows (title like "places - File Explorer" or path-based).
+		if strings.Contains(titleLower, "file explorer") || strings.Contains(titleLower, "explorer") {
+			for path, name := range pathToName {
+				if strings.Contains(titleLower, path) || strings.Contains(titleLower, name) {
+					sessions = append(sessions, RunningSession{Name: name, Action: "explorer", Desktop: getDesktop(hwnd)})
+					return 1
+				}
+			}
+		}
+
 		return 1
 	})
 	enumWindows.Call(cb, 0)
 
-	// --- Process scanning for Claude ---
-	// Use wmic to find cmd.exe/powershell.exe processes whose command line
-	// contains "claude" and a place path. This catches Claude sessions where
-	// Claude overrides the window title.
-	wmicCmd := exec.Command("wmic", "process", "where",
-		"(Name='cmd.exe' OR Name='powershell.exe')",
-		"get", "CommandLine", "/format:list")
-	wmicCmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x08000000} // CREATE_NO_WINDOW
-	out, err := wmicCmd.Output()
+	// --- Process scanning for Claude and custom actions ---
+	// Use wmic to find processes whose command line contains place paths.
+	// Matches Claude (via cmd.exe/powershell.exe parents) and custom action
+	// executables (via their exe name in the command line).
+
+	// Build exe→action name map from custom actions.
+	exeToAction := make(map[string]string)
 	if err == nil {
-		for _, line := range bytes.Split(out, []byte("\r\n")) {
-			s := strings.TrimSpace(string(line))
-			if !strings.HasPrefix(s, "CommandLine=") {
-				continue
-			}
-			cmdLine := strings.ToLower(s[12:])
-			if !strings.Contains(cmdLine, "claude") {
-				continue
-			}
-			// Match against known place paths.
-			for path, name := range pathToName {
-				if strings.Contains(cmdLine, path) {
-					sessions = append(sessions, RunningSession{Name: name, Action: "claude"})
+		for actionName, act := range cfg.Actions {
+			// Extract exe name from command template (e.g. "start "" "C:\...\webstorm64.exe" "{path}"")
+			cmdLower := strings.ToLower(act.Cmd)
+			for _, part := range strings.Split(cmdLower, "\"") {
+				part = strings.TrimSpace(part)
+				if strings.HasSuffix(part, ".exe") {
+					// Get just the filename.
+					idx := strings.LastIndex(part, "\\")
+					if idx >= 0 {
+						part = part[idx+1:]
+					}
+					exeToAction[part] = actionName
 					break
 				}
+			}
+		}
+	}
+
+	// Build map of place path→assigned actions for matching.
+	placeActions := make(map[string][]string)
+	if err == nil {
+		for name, place := range cfg.Places {
+			if place != nil {
+				p := strings.ToLower(strings.ReplaceAll(place.Path, "/", "\\"))
+				placeActions[p] = place.Actions
+				_ = name
+			}
+		}
+	}
+
+	wmicCmd := exec.Command("wmic", "process",
+		"get", "Name,CommandLine", "/format:list")
+	wmicCmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x08000000} // CREATE_NO_WINDOW
+	out, wmicErr := wmicCmd.Output()
+	if wmicErr == nil {
+		// Parse wmic output into records (Name= and CommandLine= pairs).
+		var currentName, currentCmd string
+		for _, line := range bytes.Split(out, []byte("\r\n")) {
+			s := strings.TrimSpace(string(line))
+			if strings.HasPrefix(s, "CommandLine=") {
+				currentCmd = strings.ToLower(s[12:])
+			} else if strings.HasPrefix(s, "Name=") {
+				currentName = strings.ToLower(s[5:])
+			} else if s == "" && currentName != "" && currentCmd != "" {
+				// Process the record.
+
+				// Shell processes with a place path in the command line.
+				if currentName == "cmd.exe" || currentName == "powershell.exe" {
+					for path, name := range pathToName {
+						if strings.Contains(currentCmd, path) {
+							if strings.Contains(currentCmd, "claude") {
+								// Claude parent shell.
+								sessions = append(sessions, RunningSession{Name: name, Action: "claude"})
+							} else if currentName == "powershell.exe" {
+								sessions = append(sessions, RunningSession{Name: name, Action: "powershell"})
+							} else {
+								sessions = append(sessions, RunningSession{Name: name, Action: "cmd"})
+							}
+							break
+						}
+					}
+				}
+
+				// VS Code detection via process.
+				if currentName == "code.exe" {
+					for path, name := range pathToName {
+						if strings.Contains(currentCmd, path) {
+							sessions = append(sessions, RunningSession{Name: name, Action: "code"})
+							break
+						}
+					}
+				}
+
+				// Custom action detection: exe matches a known action and command line contains a place path.
+				if actionName, ok := exeToAction[currentName]; ok {
+					for path, placeName := range pathToName {
+						if strings.Contains(currentCmd, path) {
+							sessions = append(sessions, RunningSession{Name: placeName, Action: actionName})
+							break
+						}
+					}
+				}
+
+				currentName = ""
+				currentCmd = ""
 			}
 		}
 	}

@@ -2327,7 +2327,7 @@ function renderCustomActions(p) {
     const def = actionDefs[a];
     if (!def) return '';
     const expanded = def.cmd.replace(/\{path\}/g, p.path).replace(/\{name\}/g, p.name);
-    return `<button class="btn-custom" onclick="runCustomAction('${esc(p.name)}','${esc(a)}')" oncontextmenu="confirmUnassign(event,'${esc(p.name)}','${esc(a)}')" title="${esc(expanded)}&#10;Right-click to remove">${esc(def.label)}</button>`;
+    return `<button class="btn-custom" data-place="${esc(p.name)}" data-action="${esc(a)}" onclick="runCustomAction('${esc(p.name)}','${esc(a)}')" oncontextmenu="confirmUnassign(event,'${esc(p.name)}','${esc(a)}')" title="${esc(expanded)}&#10;Right-click to remove">${esc(def.label)}</button>`;
   }).join('');
 }
 
