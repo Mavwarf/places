@@ -133,8 +133,9 @@ type Callbacks struct {
 	Minimize func()                 // minimize the window
 	Quit     func()                 // fully exit the application (called via goroutine to allow response)
 	Topmost        func(bool)       // toggle always-on-top via SetWindowPos
-	PinAllDesktops func(bool) bool // pin/unpin to all virtual desktops, returns new state
-	LastDrop       func() string   // retrieve last drag-and-dropped folder path
+	PinAllDesktops  func(bool) bool       // pin/unpin to all virtual desktops, returns new state
+	RunningSessions func([]string) []byte // detect running sessions, returns JSON
+	LastDrop        func() string         // retrieve last drag-and-dropped folder path
 }
 
 // Serve starts the HTTP server on the given port.
@@ -277,6 +278,21 @@ func Serve(port int, cb Callbacks) error {
 			writeJSON(w, map[string]bool{"pinned": pinned})
 		})
 	}
+
+	if cb.RunningSessions != nil {
+		mux.HandleFunc("/api/running-sessions", func(w http.ResponseWriter, r *http.Request) {
+			cfg, err := config.Load()
+			if err != nil {
+				http.Error(w, "failed to load config", http.StatusInternalServerError)
+				return
+			}
+			names := config.SortedNames(cfg)
+			data := cb.RunningSessions(names)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(data)
+		})
+	}
+
 
 	if cb.LastDrop != nil {
 		mux.HandleFunc("/api/last-drop", func(w http.ResponseWriter, r *http.Request) {

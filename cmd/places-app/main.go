@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -68,8 +69,13 @@ func main() {
 			Minimize: a.MinimizeWindow,
 			Quit:     a.QuitApp,
 			Topmost:        setAlwaysOnTop,
-			PinAllDesktops: pinAllDesktops,
-			LastDrop:       a.LastDrop,
+			PinAllDesktops:  pinAllDesktops,
+			RunningSessions: func(names []string) []byte {
+				sessions := detectRunningSessions(names)
+				data, _ := json.Marshal(sessions)
+				return data
+			},
+			LastDrop: a.LastDrop,
 		}); err != nil {
 			fmt.Fprintf(os.Stderr, "places-app: %v\n", err)
 			os.Exit(1)

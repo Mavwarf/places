@@ -350,6 +350,10 @@ button:active { opacity: 0.7; }
 .btn-explorer { background: var(--yellow); color: var(--bg); }
 .btn-claude { background: var(--claude); color: var(--bg); }
 .btn-code { background: var(--code); color: var(--bg); }
+
+/* Running session glow */
+.running-glow { box-shadow: 0 0 6px 2px var(--green); }
+.recent-chip.running-glow, .fav-action-chip.running-glow { box-shadow: 0 0 4px 1px var(--green); border-color: var(--green); }
 .btn-browse {
   background: transparent;
   color: var(--fg-dim);
@@ -1497,7 +1501,7 @@ function renderRecent() {
     if (h.ctrl) actionLabel += ' YOLO';
     else if (h.shift) actionLabel += ' fresh';
     const isCustom = !labels[h.action];
-    return `<button class="recent-chip" onclick="handleRecentClick(event,'${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl},'${esc(h.key)}')" oncontextmenu="removeRecent(event,'${esc(h.key)}')" title="${esc(h.name)} → ${esc(actionLabel)}&#10;Ctrl+click to pin as favorite&#10;Right-click to remove">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></button>`;
+    return `<button class="recent-chip" data-rname="${esc(h.name)}" data-raction="${esc(h.action)}" onclick="handleRecentClick(event,'${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl},'${esc(h.key)}')" oncontextmenu="removeRecent(event,'${esc(h.key)}')" title="${esc(h.name)} → ${esc(actionLabel)}&#10;Ctrl+click to pin as favorite&#10;Right-click to remove">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></button>`;
   }).join('');
   // Favorite actions
   if (favActions.length) {
@@ -1507,7 +1511,7 @@ function renderRecent() {
       if (h.ctrl) actionLabel += ' YOLO';
       else if (h.shift) actionLabel += ' fresh';
       const isCustom = !labels[h.action];
-      return `<span class="fav-action-chip" draggable="true" data-fav-idx="${favActions.indexOf(h)}" onclick="replayRecent('${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl})" oncontextmenu="removeFavAction(event,'${esc(h.key)}')" ondragstart="favDragStart(event)" ondragover="favDragOver(event)" ondrop="favDrop(event)" ondragend="favDragEnd(event)" title="${esc(h.name)} → ${esc(actionLabel)} ★&#10;Drag to reorder&#10;Right-click to remove">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></span>`;
+      return `<span class="fav-action-chip" draggable="true" data-fav-idx="${favActions.indexOf(h)}" data-rname="${esc(h.name)}" data-raction="${esc(h.action)}" onclick="replayRecent('${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl})" oncontextmenu="removeFavAction(event,'${esc(h.key)}')" ondragstart="favDragStart(event)" ondragover="favDragOver(event)" ondrop="favDrop(event)" ondragend="favDragEnd(event)" title="${esc(h.name)} → ${esc(actionLabel)} ★&#10;Drag to reorder&#10;Right-click to remove">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></span>`;
     }).join('');
     favHtml += '</span>';
     favEl.innerHTML = favHtml;
@@ -1816,6 +1820,7 @@ async function load() {
         </div>
       </div>
     `}).join('');
+    applyRunningGlow();
   } catch (e) {
     el.innerHTML = '<div class="empty-state">Failed to load places.</div>';
   }
@@ -2281,11 +2286,11 @@ function renderDefaultActions(p) {
   const n = esc(p.name);
   const pp = esc(p.path);
   let btns = '';
-  if (!hd.includes('claude')) btns += `<button class="btn-claude" onclick="openAt('${n}','claude',event.shiftKey,event.ctrlKey)" oncontextmenu="hideDefault(event,'${n}','claude')" title="Claude session in ${pp}&#10;Shift=fresh, Ctrl=YOLO&#10;Right-click to hide">cl</button>`;
-  if (!hd.includes('explorer')) btns += `<button class="btn-explorer" onclick="openAt('${n}','explorer')" oncontextmenu="hideDefault(event,'${n}','explorer')" title="Open Explorer at ${pp}&#10;Right-click to hide">dir</button>`;
-  if (!hd.includes('code')) btns += `<button class="btn-code" onclick="openAt('${n}','code')" oncontextmenu="hideDefault(event,'${n}','code')" title="Open VS Code at ${pp}&#10;Right-click to hide">VS</button>`;
-  if (!hd.includes('powershell')) btns += `<button class="btn-ps" onclick="openAt('${n}','powershell')" oncontextmenu="hideDefault(event,'${n}','powershell')" title="Open PowerShell at ${pp}&#10;Right-click to hide">PS</button>`;
-  if (!hd.includes('cmd')) btns += `<button class="btn-cmd" onclick="openAt('${n}','cmd')" oncontextmenu="hideDefault(event,'${n}','cmd')" title="Open cmd at ${pp}&#10;Right-click to hide">&gt;_</button>`;
+  if (!hd.includes('claude')) btns += `<button class="btn-claude" data-place="${n}" data-action="claude" onclick="openAt('${n}','claude',event.shiftKey,event.ctrlKey)" oncontextmenu="hideDefault(event,'${n}','claude')" title="Claude session in ${pp}&#10;Shift=fresh, Ctrl=YOLO&#10;Right-click to hide">cl</button>`;
+  if (!hd.includes('explorer')) btns += `<button class="btn-explorer" data-place="${n}" data-action="explorer" onclick="openAt('${n}','explorer')" oncontextmenu="hideDefault(event,'${n}','explorer')" title="Open Explorer at ${pp}&#10;Right-click to hide">dir</button>`;
+  if (!hd.includes('code')) btns += `<button class="btn-code" data-place="${n}" data-action="code" onclick="openAt('${n}','code')" oncontextmenu="hideDefault(event,'${n}','code')" title="Open VS Code at ${pp}&#10;Right-click to hide">VS</button>`;
+  if (!hd.includes('powershell')) btns += `<button class="btn-ps" data-place="${n}" data-action="powershell" onclick="openAt('${n}','powershell')" oncontextmenu="hideDefault(event,'${n}','powershell')" title="Open PowerShell at ${pp}&#10;Right-click to hide">PS</button>`;
+  if (!hd.includes('cmd')) btns += `<button class="btn-cmd" data-place="${n}" data-action="cmd" onclick="openAt('${n}','cmd')" oncontextmenu="hideDefault(event,'${n}','cmd')" title="Open cmd at ${pp}&#10;Right-click to hide">&gt;_</button>`;
   return btns;
 }
 
@@ -2685,6 +2690,54 @@ applyCompact();
 fetch('/api/desktop-count').then(r => r.json()).then(d => { desktopCount = d.count; }).catch(() => {});
 load().then(function() { updateAllGit(true); });
 setInterval(load, 3000);
+
+// Running session detection
+let runningSessions = []; // [{name, action}, ...]
+async function updateRunningSessions() {
+  try {
+    const res = await fetch('/api/running-sessions');
+    if (!res.ok) return;
+    runningSessions = await res.json() || [];
+    applyRunningGlow();
+  } catch (e) {}
+}
+
+function getRunning(name, action) {
+  return runningSessions.find(s => s.name === name.toLowerCase() && s.action === action);
+}
+
+function runningTip(session) {
+  if (!session) return '';
+  return session.desktop ? '\nRunning on Desktop ' + session.desktop : '\nRunning';
+}
+
+function applyRunningGlow() {
+  // Action buttons in place rows.
+  document.querySelectorAll('[data-place][data-action]').forEach(btn => {
+    const session = getRunning(btn.dataset.place, btn.dataset.action);
+    btn.classList.toggle('running-glow', !!session);
+    if (session) {
+      if (!btn.getAttribute('data-base-title')) btn.setAttribute('data-base-title', btn.title);
+      btn.title = btn.getAttribute('data-base-title') + runningTip(session);
+    } else if (btn.getAttribute('data-base-title')) {
+      btn.title = btn.getAttribute('data-base-title');
+      btn.removeAttribute('data-base-title');
+    }
+  });
+  // Recent chips.
+  document.querySelectorAll('.recent-chip[data-rname]').forEach(chip => {
+    const session = getRunning(chip.dataset.rname, chip.dataset.raction);
+    chip.classList.toggle('running-glow', !!session);
+  });
+  // Favorite chips.
+  document.querySelectorAll('.fav-action-chip[data-rname]').forEach(chip => {
+    const session = getRunning(chip.dataset.rname, chip.dataset.raction);
+    chip.classList.toggle('running-glow', !!session);
+  });
+}
+
+updateRunningSessions();
+setInterval(updateRunningSessions, 5000);
 </script>
 </body>
 </html>
