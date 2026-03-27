@@ -1248,6 +1248,7 @@ function renderActionManager(panel) {
     <input name="am-name" placeholder="name" />
     <input name="am-label" placeholder="label" maxlength="4" />
     <input name="am-cmd" placeholder="command template ({path}, {name})" />
+    <button onclick="browseForApp(this)" title="Pick an executable">…</button>
     <button onclick="addActionDef(this)">Add</button>
   </div>`;
 
@@ -1326,6 +1327,29 @@ async function toggleDefaultAction(action) {
     const panel = document.querySelector('.action-manager');
     if (panel) renderActionManager(panel);
   } catch (e) { toast('Failed to save defaults', true); }
+}
+
+async function browseForApp(btn) {
+  try {
+    const res = await fetch('/api/browse-file', { method: 'POST' });
+    if (res.status === 204) return;
+    if (!res.ok) { toast('Failed to browse', true); return; }
+    const data = await res.json();
+    const exePath = data.path.replace(/\\/g, '\\\\');
+    const form = btn.closest('.am-form');
+    form.querySelector('[name="am-cmd"]').value = 'start "" "' + exePath + '" "{path}"';
+    // Auto-fill label from exe name if empty
+    const labelInput = form.querySelector('[name="am-label"]');
+    if (!labelInput.value) {
+      const exeName = data.path.split(/[/\\]/).pop().replace(/\.exe$/i, '');
+      labelInput.value = exeName.substring(0, 4).toUpperCase();
+    }
+    // Auto-fill name from exe name if empty
+    const nameInput = form.querySelector('[name="am-name"]');
+    if (!nameInput.value) {
+      nameInput.value = data.path.split(/[/\\]/).pop().replace(/\.exe$/i, '').toLowerCase();
+    }
+  } catch (e) { toast('Failed to browse', true); }
 }
 
 function editActionDef(name) {

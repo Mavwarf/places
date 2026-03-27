@@ -127,8 +127,9 @@ type rmReq struct {
 // Callbacks bridges HTTP endpoints to Wails window operations.
 // Any callback may be nil, in which case its endpoint is not registered.
 type Callbacks struct {
-	Show     func()                 // bring window to front (single-instance detection)
-	Browse   func() (string, error) // open native folder picker dialog
+	Show       func()                 // bring window to front (single-instance detection)
+	Browse     func() (string, error) // open native folder picker dialog
+	BrowseFile func() (string, error) // open native file picker dialog
 	Minimize func()                 // minimize the window
 	Quit     func()                 // fully exit the application (called via goroutine to allow response)
 	Topmost  func(bool)             // toggle always-on-top via SetWindowPos
@@ -189,6 +190,24 @@ func Serve(port int, cb Callbacks) error {
 				return
 			}
 			path, err := cb.Browse()
+			if err != nil {
+				http.Error(w, "browse failed", http.StatusInternalServerError)
+				return
+			}
+			if path == "" {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			writeJSON(w, map[string]string{"path": path})
+		})
+	}
+	if cb.BrowseFile != nil {
+		mux.HandleFunc("/api/browse-file", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			path, err := cb.BrowseFile()
 			if err != nil {
 				http.Error(w, "browse failed", http.StatusInternalServerError)
 				return

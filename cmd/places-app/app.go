@@ -95,3 +95,15 @@ func (a *App) BrowseDir() (string, error) {
 		Title: "Select directory",
 	})
 }
+
+// BrowseFile opens a native file picker and returns the selected path.
+func (a *App) BrowseFile() (string, error) {
+	<-a.ready
+	return wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Title: "Select executable",
+		Filters: []wailsRuntime.FileFilter{
+			{DisplayName: "Executables (*.exe)", Pattern: "*.exe"},
+			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+		},
+	})
+}

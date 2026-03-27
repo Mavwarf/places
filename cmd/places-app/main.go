@@ -63,7 +63,8 @@ func main() {
 	go func() {
 		if err := app.Serve(port, app.Callbacks{
 			Show:     a.ShowWindow,
-			Browse:   a.BrowseDir,
+			Browse:     a.BrowseDir,
+			BrowseFile: a.BrowseFile,
 			Minimize: a.MinimizeWindow,
 			Quit:     a.QuitApp,
 			Topmost:  setAlwaysOnTop,
