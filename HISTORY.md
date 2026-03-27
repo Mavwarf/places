@@ -2,6 +2,9 @@
 
 ## Features
 
+- Executable picker for custom actions — browse button in action manager opens native file picker, auto-fills command template and name/label *(Mar 27)*
+- Place health dots — colored dot before each place name: green (clean git), yellow (dirty), red (missing dir); visible in normal and compact mode *(Mar 27)*
+- Favorite action reordering — drag to reorder pinned favorite actions *(Mar 27)*
 - Favorite actions — Ctrl+click a recent chip to pin it as a favorite; favorites shown with ★ icon to the right of recents; right-click to remove; synced to server and shown in system tray *(Mar 27)*
 - Action manager editing — edit button per custom action populates the form for modification; custom actions can be auto-assigned to new places via defaults section *(Mar 26)*
 - Configurable Claude shell — preference to launch Claude in cmd (default) or PowerShell, via gear menu; "Set tab title" toggle controls whether Claude can update the terminal tab title with status indicators *(Mar 26)*
