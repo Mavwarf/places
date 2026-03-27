@@ -110,6 +110,10 @@ func addRecentMenu() {
 			}
 			path := place.Path
 			desk := place.Desktop
+			eff := place.Effort
+			if eff == "" {
+				eff = cfg.DefaultEffort
+			}
 
 			label := actionLabels[e.Action]
 			if label == "" {
@@ -131,7 +135,7 @@ func addRecentMenu() {
 				launcher.SwitchDesktop(desk)
 				switch e.Action {
 				case "claude":
-					launcher.Detach(launcher.Claude(path, e.Name, e.Shift, e.Ctrl, claudeShell, suppressTitle))
+					launcher.Detach(launcher.Claude(path, e.Name, e.Shift, e.Ctrl, claudeShell, suppressTitle, eff))
 				case "explorer":
 					launcher.Detach(launcher.Explorer(path))
 				case "code":
@@ -181,6 +185,10 @@ func addPlaceMenusGrouped() {
 		path := place.Path
 		desk := place.Desktop
 		placeName := name
+		pEffort := place.Effort
+		if pEffort == "" {
+			pEffort = cfg.DefaultEffort
+		}
 		parent := top.AddSubMenuItem(name, path)
 
 		// Custom actions assigned to this place (shown first).
@@ -202,7 +210,7 @@ func addPlaceMenusGrouped() {
 		}
 
 		mClaude := parent.AddSubMenuItem("Claude", "Open Claude here")
-		mClaude.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path, placeName, false, false, cShell, cSuppress)) })
+		mClaude.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path, placeName, false, false, cShell, cSuppress, pEffort)) })
 
 		mExplorer := parent.AddSubMenuItem("Explorer", "Open Explorer here")
 		mExplorer.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Explorer(path)) })

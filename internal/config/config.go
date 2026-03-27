@@ -69,6 +69,7 @@ type Place struct {
 	Actions        []string  `json:"actions,omitempty"`         // names of assigned custom actions
 	Note           string    `json:"note,omitempty"`
 	HiddenDefaults []string  `json:"hidden_defaults,omitempty"` // hidden built-in actions
+	Effort         string    `json:"effort,omitempty"`          // claude effort level (empty = use global)
 }
 
 // Config holds the saved places and custom actions.
@@ -89,6 +90,7 @@ type Config struct {
 	Recent        []RecentEntry      `json:"recent,omitempty"`
 	FavActions    []RecentEntry      `json:"fav_actions,omitempty"`
 	ClaudeShell   string             `json:"claude_shell,omitempty"`    // "cmd" (default) or "powershell"
+	DefaultEffort string             `json:"default_effort,omitempty"` // global default claude effort level
 	SuppressTitle bool               `json:"suppress_title,omitempty"` // suppress application title in Windows Terminal
 }
 

@@ -1162,10 +1162,22 @@ function togglePrefs() {
   const picker = document.getElementById('prefs-picker');
   const isOpen = picker.classList.toggle('open');
   if (!isOpen) return;
-  picker.innerHTML = `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>` +
-    `<button class="theme-picker-item" onclick="toggleClaudeShell()">Claude shell: ${claudeShell}</button>` +
-    `<button class="theme-picker-item" onclick="toggleSuppressTitle()">Set tab title: ${suppressTitle ? 'on' : 'off'}</button>` +
-    `<button class="theme-picker-item" onclick="openActionManager()">Manage actions</button>`;
+  const effortCheck = e => (defaultEffort || '') === e || (!defaultEffort && e === 'medium');
+  picker.innerHTML =
+    // Claude section
+    `<div style="padding:5px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px">Claude</div>` +
+    `<button class="theme-picker-item" onclick="toggleClaudeShell()">Shell: ${claudeShell}</button>` +
+    `<button class="theme-picker-item" onclick="toggleSuppressTitle()">Custom tab title: ${suppressTitle ? 'on' : 'off'}</button>` +
+    `<div style="padding:5px 12px 2px;font-size:0.75em;color:var(--fg-dim)">Effort level:</div>` +
+    EFFORT_LEVELS.filter(e => e !== '').map(e =>
+      `<button class="theme-picker-item${effortCheck(e) ? ' active' : ''}" onclick="setDefaultEffort('${e}')">${effortCheck(e) ? '\u2713 ' : '\u00a0\u00a0\u00a0 '}${e}</button>`
+    ).join('') +
+    // Actions section
+    `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Actions</div>` +
+    `<button class="theme-picker-item" onclick="openActionManager()">Manage custom actions</button>` +
+    // Integration section
+    `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Integration</div>` +
+    `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>`;
 }
 
 async function editNotifyPath() {
@@ -1211,6 +1223,36 @@ async function toggleSuppressTitle() {
     if (!res.ok) { toast(await res.text() || 'Failed', true); return; }
     toast('Set tab title: ' + (suppressTitle ? 'on (keeps custom title)' : 'off (Claude shows status)'));
   } catch (e) { toast('Failed to save setting', true); }
+}
+
+const EFFORT_LEVELS = ['', 'low', 'medium', 'high', 'max'];
+const EFFORT_LABELS = {'': 'default', 'low': 'low', 'medium': 'medium', 'high': 'high', 'max': 'max'};
+
+async function setDefaultEffort(level) {
+  document.getElementById('prefs-picker').classList.remove('open');
+  defaultEffort = level;
+  try {
+    const res = await fetch('/api/default-effort', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({effort: level})
+    });
+    if (!res.ok) { toast(await res.text() || 'Failed', true); return; }
+    toast('Default Claude effort: ' + level);
+  } catch (e) { toast('Failed to save effort', true); }
+}
+
+async function setPlaceEffort(placeName, effort) {
+  try {
+    const res = await fetch('/api/effort', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: placeName, effort: effort})
+    });
+    if (!res.ok) { toast(await res.text() || 'Failed', true); return; }
+    toast(placeName + ' effort: ' + (effort || 'default'));
+    load();
+  } catch (e) { toast('Failed to save effort', true); }
 }
 
 // Action manager dialog
@@ -1395,6 +1437,7 @@ let claudeShell = 'cmd';    // updated from /api/places
 let defaultActions = [];    // updated from /api/places
 let suppressTitle = false;  // updated from /api/places
 let desktopAvailable = true; // updated from /api/places
+let defaultEffort = '';      // updated from /api/places
 
 // Recent action history
 const MAX_RECENT = 8;
@@ -1657,6 +1700,7 @@ async function load() {
     defaultActions = data.default_actions || [];
     suppressTitle = !!data.suppress_title;
     desktopAvailable = !!data.desktop_available;
+    defaultEffort = data.default_effort || '';
     let places = data.places || [];
     lastPlacesData = places;
     if (!places.length) {
@@ -2291,6 +2335,25 @@ function showPlaceMenu(e, placeName) {
       dd.appendChild(item);
     });
   }
+
+  // Effort level
+  const effortSep = document.createElement('div');
+  effortSep.className = 'dropdown-sep';
+  dd.appendChild(effortSep);
+  const currentEffort = (placeData && placeData.effort) || '';
+  EFFORT_LEVELS.forEach(function(level) {
+    const item = document.createElement('div');
+    item.className = 'action-dropdown-item';
+    const isActive = currentEffort === level;
+    const label = level ? level : 'default (' + (defaultEffort || 'medium') + ')';
+    item.innerHTML = (isActive ? '&#10003; ' : '&nbsp;&nbsp;&nbsp; ') + 'Effort: ' + label;
+    item.onclick = function(ev) {
+      ev.stopPropagation();
+      dd.remove();
+      setPlaceEffort(placeName, level);
+    };
+    dd.appendChild(item);
+  });
 
   // Notify hooks setup
   if (placeData && placeData.exists) {

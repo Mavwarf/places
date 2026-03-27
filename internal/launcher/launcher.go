@@ -61,7 +61,7 @@ func Cmd(path string) *exec.Cmd {
 //
 // Fallback (plain conhost): "cmd /c start <title>" sets the window title, but
 // Claude may override it on startup since conhost doesn't support title pinning.
-func Claude(path, name string, cont, yolo bool, shell string, suppressTitle bool) *exec.Cmd {
+func Claude(path, name string, cont, yolo bool, shell string, suppressTitle bool, effort string) *exec.Cmd {
 	title := "claude " + name
 	claudeCmd := "claude --continue"
 	if cont {
@@ -70,6 +70,9 @@ func Claude(path, name string, cont, yolo bool, shell string, suppressTitle bool
 	if yolo {
 		title += " YOLO"
 		claudeCmd += " --dangerously-skip-permissions"
+	}
+	if effort != "" {
+		claudeCmd += " --effort " + effort
 	}
 
 	if shell == "powershell" {

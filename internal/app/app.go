@@ -172,6 +172,8 @@ func Serve(port int, cb Callbacks) error {
 	mux.HandleFunc("/api/sync-fav-actions", handleSyncFavActions)
 	mux.HandleFunc("/api/claude-shell", handleClaudeShell)
 	mux.HandleFunc("/api/suppress-title", handleSuppressTitle)
+	mux.HandleFunc("/api/effort", handleEffort)
+	mux.HandleFunc("/api/default-effort", handleDefaultEffort)
 	mux.HandleFunc("/api/toggle-default", handleToggleDefault)
 	if cb.Show != nil {
 		mux.HandleFunc("/api/show", func(w http.ResponseWriter, r *http.Request) {
@@ -352,6 +354,7 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 		"default_actions": cfg.DefaultActions,
 		"claude_shell":   cfg.ClaudeShell,
 		"suppress_title":    cfg.SuppressTitle,
+		"default_effort":    cfg.DefaultEffort,
 		"fav_actions":       cfg.FavActions,
 		"desktop_available": desktop.Available(),
 	})
@@ -412,6 +415,10 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	desk := place.Desktop
 	claudeShell := cfg.ClaudeShell
 	suppressTitle := cfg.SuppressTitle
+	effort := place.Effort
+	if effort == "" {
+		effort = cfg.DefaultEffort
+	}
 	config.Unlock()
 
 	launcher.SwitchDesktop(desk)
@@ -423,7 +430,7 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	case "cmd":
 		cmd = launcher.Cmd(path)
 	case "claude":
-		cmd = launcher.Claude(path, name, req.Shift, req.Ctrl, claudeShell, suppressTitle)
+		cmd = launcher.Claude(path, name, req.Shift, req.Ctrl, claudeShell, suppressTitle, effort)
 	case "code":
 		cmd = launcher.Code(path)
 	case "explorer":
@@ -1378,6 +1385,89 @@ func handleSuppressTitle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+var validEfforts = map[string]bool{"": true, "low": true, "medium": true, "high": true, "max": true}
+
+// handleEffort sets the effort level for a specific place.
+func handleEffort(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Name   string `json:"name"`
+		Effort string `json:"effort"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	if !validEfforts[req.Effort] {
+		http.Error(w, "effort must be low, medium, high, max, or empty", http.StatusBadRequest)
+		return
+	}
+
+	config.Lock()
+	defer config.Unlock()
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+	place, ok := cfg.Places[req.Name]
+	if !ok {
+		http.Error(w, "place not found", http.StatusNotFound)
+		return
+	}
+	place.Effort = req.Effort
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleDefaultEffort gets or sets the global default effort level.
+func handleDefaultEffort(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		cfg, err := config.Load()
+		if err != nil {
+			http.Error(w, "failed to load config", http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, map[string]string{"effort": cfg.DefaultEffort})
+
+	case http.MethodPost:
+		var req struct {
+			Effort string `json:"effort"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+		if !validEfforts[req.Effort] {
+			http.Error(w, "effort must be low, medium, high, max, or empty", http.StatusBadRequest)
+			return
+		}
+		config.Lock()
+		defer config.Unlock()
+		cfg, err := config.Load()
+		if err != nil {
+			http.Error(w, "failed to load config", http.StatusInternalServerError)
+			return
+		}
+		cfg.DefaultEffort = req.Effort
+		if err := config.Save(cfg); err != nil {
+			http.Error(w, "failed to save config", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 const maxRecent = 8
