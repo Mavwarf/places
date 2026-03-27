@@ -525,6 +525,17 @@ button:active { opacity: 0.7; }
   margin-top: 4px;
 }
 
+.health-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.health-dot.health-green { background: var(--green); }
+.health-dot.health-yellow { background: var(--yellow); }
+.health-dot.health-red { background: var(--red); }
+.health-dot.health-hidden { visibility: hidden; }
 .place-name {
   font-weight: 600;
   color: var(--accent);
@@ -775,6 +786,9 @@ button:active { opacity: 0.7; }
   white-space: nowrap;
 }
 .fav-action-chip:hover { border-color: var(--yellow); }
+.fav-action-chip { cursor: grab; }
+.fav-action-chip.dragging { opacity: 0.4; }
+.fav-action-chip.drag-over { border-color: var(--accent); border-style: dashed; }
 .fav-action-chip .recent-action { color: var(--yellow); font-size: 0.85em; }
 .fav-sep { color: var(--fg-dim); margin: 0 6px; opacity: 0.4; }
 .fav-chips { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
@@ -1423,7 +1437,7 @@ function renderRecent() {
       if (h.ctrl) actionLabel += ' YOLO';
       else if (h.shift) actionLabel += ' fresh';
       const isCustom = !labels[h.action];
-      return `<button class="fav-action-chip" onclick="replayRecent('${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl})" oncontextmenu="removeFavAction(event,'${esc(h.key)}')" title="${esc(h.name)} → ${esc(actionLabel)} ★&#10;Right-click to remove">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></button>`;
+      return `<span class="fav-action-chip" draggable="true" data-fav-idx="${favActions.indexOf(h)}" onclick="replayRecent('${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl})" oncontextmenu="removeFavAction(event,'${esc(h.key)}')" ondragstart="favDragStart(event)" ondragover="favDragOver(event)" ondrop="favDrop(event)" ondragend="favDragEnd(event)" title="${esc(h.name)} → ${esc(actionLabel)} ★&#10;Drag to reorder&#10;Right-click to remove">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></span>`;
     }).join('');
     favHtml += '</span>';
     favEl.innerHTML = favHtml;
@@ -1463,6 +1477,32 @@ function removeFavAction(e, key) {
   saveFavActions();
   renderRecent();
   if (entry) toast('Removed ' + entry.name + ' from favorites');
+}
+
+let favDragIdx = -1;
+function favDragStart(e) {
+  favDragIdx = parseInt(e.target.dataset.favIdx);
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function favDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function favDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const toIdx = parseInt(e.currentTarget.dataset.favIdx);
+  if (favDragIdx < 0 || favDragIdx === toIdx) return;
+  const item = favActions.splice(favDragIdx, 1)[0];
+  favActions.splice(toIdx, 0, item);
+  saveFavActions();
+  renderRecent();
+}
+function favDragEnd(e) {
+  favDragIdx = -1;
+  document.querySelectorAll('.fav-action-chip').forEach(el => el.classList.remove('dragging', 'drag-over'));
 }
 
 function removeRecent(e, key) {
@@ -1673,6 +1713,7 @@ async function load() {
           ${Array.from({length: desktopCount}, (_, i) => `<option value="${i+1}"${p.desktop===i+1 ? ' selected' : ''}>D${i+1}</option>`).join('')}
         </select>
         <button class="btn-desktop-go${p.desktop ? ' visible' : ''}" onclick="switchDesktop(${p.desktop || 0})" title="Switch to desktop ${p.desktop || ''}">\u2192</button>
+        <span class="health-dot ${healthClass(p)}" title="${healthTitle(p)}"></span>
         <span class="place-name" onclick="editName('${esc(p.name)}',this)" title="Click to rename">${esc(dName)}</span>
         <div class="place-info">
           <div class="place-info-row">
@@ -1725,6 +1766,24 @@ function esc(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function healthClass(p) {
+  if (!p.exists) return 'health-red';
+  const g = gitCache[p.name];
+  if (!g) return 'health-hidden';
+  if (g.error) return 'health-hidden';
+  if (g.dirty) return 'health-yellow';
+  return 'health-green';
+}
+
+function healthTitle(p) {
+  if (!p.exists) return 'Directory missing';
+  const g = gitCache[p.name];
+  if (!g) return '';
+  if (g.error) return '';
+  if (g.dirty) return 'Uncommitted changes';
+  return 'Clean';
 }
 
 function renderNote(p) {
