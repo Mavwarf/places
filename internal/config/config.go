@@ -91,7 +91,8 @@ type Config struct {
 	FavActions    []RecentEntry      `json:"fav_actions,omitempty"`
 	ClaudeShell   string             `json:"claude_shell,omitempty"`    // "cmd" (default) or "powershell"
 	DefaultEffort string             `json:"default_effort,omitempty"` // global default claude effort level
-	SuppressTitle bool               `json:"suppress_title,omitempty"` // suppress application title in Windows Terminal
+	SuppressTitle  bool               `json:"suppress_title,omitempty"`  // suppress application title in Windows Terminal
+	DetectRunning  bool               `json:"detect_running,omitempty"` // detect running sessions (default off)
 }
 
 // configDir returns the directory for places config files.

@@ -1180,6 +1180,9 @@ function togglePrefs() {
     // Actions section
     `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Actions</div>` +
     `<button class="theme-picker-item" onclick="openActionManager()">Manage custom actions</button>` +
+    // Monitoring section
+    `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Monitoring</div>` +
+    `<button class="theme-picker-item" onclick="toggleDetectRunning()">Detect running sessions: ${detectRunning ? 'on' : 'off'}</button>` +
     // Integration section
     `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Integration</div>` +
     `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>`;
@@ -1227,6 +1230,22 @@ async function toggleSuppressTitle() {
     });
     if (!res.ok) { toast(await res.text() || 'Failed', true); return; }
     toast('Set tab title: ' + (suppressTitle ? 'on (keeps custom title)' : 'off (Claude shows status)'));
+  } catch (e) { toast('Failed to save setting', true); }
+}
+
+async function toggleDetectRunning() {
+  document.getElementById('prefs-picker').classList.remove('open');
+  detectRunning = !detectRunning;
+  try {
+    const res = await fetch('/api/detect-running', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({enabled: detectRunning})
+    });
+    if (!res.ok) { toast(await res.text() || 'Failed', true); return; }
+    toast('Detect running sessions: ' + (detectRunning ? 'on' : 'off'));
+    if (detectRunning) updateRunningSessions();
+    else { runningSessions = []; applyRunningGlow(); }
   } catch (e) { toast('Failed to save setting', true); }
 }
 
@@ -1443,6 +1462,7 @@ let defaultActions = [];    // updated from /api/places
 let suppressTitle = false;  // updated from /api/places
 let desktopAvailable = true; // updated from /api/places
 let defaultEffort = '';      // updated from /api/places
+let detectRunning = false;   // updated from /api/places
 
 // Recent action history
 const MAX_RECENT = 8;
@@ -1707,6 +1727,7 @@ async function load() {
     defaultActions = data.default_actions || [];
     suppressTitle = !!data.suppress_title;
     desktopAvailable = !!data.desktop_available;
+    detectRunning = !!data.detect_running;
     defaultEffort = data.default_effort || '';
     let places = data.places || [];
     lastPlacesData = places;
@@ -2694,6 +2715,7 @@ setInterval(load, 3000);
 // Running session detection
 let runningSessions = []; // [{name, action}, ...]
 async function updateRunningSessions() {
+  if (!detectRunning) { runningSessions = []; return; }
   try {
     const res = await fetch('/api/running-sessions');
     if (!res.ok) return;

@@ -103,9 +103,11 @@ func detectRunningSessions(placeNames []string) []RunningSession {
 	// Use wmic to find cmd.exe/powershell.exe processes whose command line
 	// contains "claude" and a place path. This catches Claude sessions where
 	// Claude overrides the window title.
-	out, err := exec.Command("wmic", "process", "where",
+	wmicCmd := exec.Command("wmic", "process", "where",
 		"(Name='cmd.exe' OR Name='powershell.exe')",
-		"get", "CommandLine", "/format:list").Output()
+		"get", "CommandLine", "/format:list")
+	wmicCmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x08000000} // CREATE_NO_WINDOW
+	out, err := wmicCmd.Output()
 	if err == nil {
 		for _, line := range bytes.Split(out, []byte("\r\n")) {
 			s := strings.TrimSpace(string(line))

@@ -174,6 +174,7 @@ func Serve(port int, cb Callbacks) error {
 	mux.HandleFunc("/api/sync-fav-actions", handleSyncFavActions)
 	mux.HandleFunc("/api/claude-shell", handleClaudeShell)
 	mux.HandleFunc("/api/suppress-title", handleSuppressTitle)
+	mux.HandleFunc("/api/detect-running", handleDetectRunning)
 	mux.HandleFunc("/api/effort", handleEffort)
 	mux.HandleFunc("/api/default-effort", handleDefaultEffort)
 	mux.HandleFunc("/api/toggle-default", handleToggleDefault)
@@ -389,6 +390,7 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 		"default_actions": cfg.DefaultActions,
 		"claude_shell":   cfg.ClaudeShell,
 		"suppress_title":    cfg.SuppressTitle,
+		"detect_running":    cfg.DetectRunning,
 		"default_effort":    cfg.DefaultEffort,
 		"fav_actions":       cfg.FavActions,
 		"desktop_available": desktop.Available(),
@@ -1415,6 +1417,33 @@ func handleSuppressTitle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cfg.SuppressTitle = req.Suppress
+	if err := config.Save(cfg); err != nil {
+		http.Error(w, "failed to save config", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func handleDetectRunning(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Enabled bool `json:"enabled"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	config.Lock()
+	defer config.Unlock()
+	cfg, err := config.Load()
+	if err != nil {
+		http.Error(w, "failed to load config", http.StatusInternalServerError)
+		return
+	}
+	cfg.DetectRunning = req.Enabled
 	if err := config.Save(cfg); err != nil {
 		http.Error(w, "failed to save config", http.StatusInternalServerError)
 		return
