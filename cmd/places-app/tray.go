@@ -91,64 +91,72 @@ func onTrayReady(app *App) {
 
 func addRecentMenu() {
 	cfg, err := config.Load()
-	if err != nil || len(cfg.Recent) == 0 {
+	if err != nil {
 		return
-	}
-
-	actionLabels := map[string]string{
-		"claude": "CL", "explorer": "dir", "code": "VS", "powershell": "PS", "cmd": ">_",
 	}
 
 	claudeShell := cfg.ClaudeShell
 	suppressTitle := cfg.SuppressTitle
-	parent := systray.AddMenuItem("Recent", "Recently launched actions")
-	for _, entry := range cfg.Recent {
-		e := entry // capture
-		place, ok := cfg.Places[e.Name]
-		if !ok || place == nil {
-			continue
-		}
-		path := place.Path
-		desk := place.Desktop
 
-		label := actionLabels[e.Action]
-		if label == "" {
-			if act, ok := cfg.Actions[e.Action]; ok {
-				label = act.Label
-			} else {
-				label = e.Action
+	addEntries := func(parent *systray.MenuItem, entries []config.RecentEntry) {
+		actionLabels := map[string]string{
+			"claude": "CL", "explorer": "dir", "code": "VS", "powershell": "PS", "cmd": ">_",
+		}
+		for _, entry := range entries {
+			e := entry
+			place, ok := cfg.Places[e.Name]
+			if !ok || place == nil {
+				continue
 			}
-		}
-		if e.Ctrl {
-			label += " YOLO"
-		} else if e.Shift {
-			label += " fresh"
-		}
-		menuLabel := e.Name + " · " + label
+			path := place.Path
+			desk := place.Desktop
 
-		item := parent.AddSubMenuItem(menuLabel, path)
-		item.Click(func() {
-			recordTrayUse(e.Name)
-			launcher.SwitchDesktop(desk)
-			switch e.Action {
-			case "claude":
-				launcher.Detach(launcher.Claude(path, e.Name, e.Shift, e.Ctrl, claudeShell, suppressTitle))
-			case "explorer":
-				launcher.Detach(launcher.Explorer(path))
-			case "code":
-				launcher.Detach(launcher.Code(path))
-			case "powershell":
-				launcher.Detach(launcher.PowerShell(path))
-			case "cmd":
-				launcher.Detach(launcher.Cmd(path))
-			default:
-				// Custom action
+			label := actionLabels[e.Action]
+			if label == "" {
 				if act, ok := cfg.Actions[e.Action]; ok {
-					expanded := launcher.ExpandAction(act.Cmd, path, e.Name)
-					launcher.Detach(launcher.Shell(expanded))
+					label = act.Label
+				} else {
+					label = e.Action
 				}
 			}
-		})
+			if e.Ctrl {
+				label += " YOLO"
+			} else if e.Shift {
+				label += " fresh"
+			}
+
+			item := parent.AddSubMenuItem(e.Name+" · "+label, path)
+			item.Click(func() {
+				recordTrayUse(e.Name)
+				launcher.SwitchDesktop(desk)
+				switch e.Action {
+				case "claude":
+					launcher.Detach(launcher.Claude(path, e.Name, e.Shift, e.Ctrl, claudeShell, suppressTitle))
+				case "explorer":
+					launcher.Detach(launcher.Explorer(path))
+				case "code":
+					launcher.Detach(launcher.Code(path))
+				case "powershell":
+					launcher.Detach(launcher.PowerShell(path))
+				case "cmd":
+					launcher.Detach(launcher.Cmd(path))
+				default:
+					if act, ok := cfg.Actions[e.Action]; ok {
+						expanded := launcher.ExpandAction(act.Cmd, path, e.Name)
+						launcher.Detach(launcher.Shell(expanded))
+					}
+				}
+			})
+		}
+	}
+
+	if len(cfg.FavActions) > 0 {
+		favParent := systray.AddMenuItem("Favorites", "Pinned actions")
+		addEntries(favParent, cfg.FavActions)
+	}
+	if len(cfg.Recent) > 0 {
+		recentParent := systray.AddMenuItem("Recent", "Recently launched actions")
+		addEntries(recentParent, cfg.Recent)
 	}
 }
 

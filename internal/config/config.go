@@ -87,6 +87,7 @@ type Config struct {
 	DefaultHidden  []string           `json:"default_hidden,omitempty"`
 	DefaultActions []string           `json:"default_actions,omitempty"`
 	Recent        []RecentEntry      `json:"recent,omitempty"`
+	FavActions    []RecentEntry      `json:"fav_actions,omitempty"`
 	ClaudeShell   string             `json:"claude_shell,omitempty"`    // "cmd" (default) or "powershell"
 	SuppressTitle bool               `json:"suppress_title,omitempty"` // suppress application title in Windows Terminal
 }

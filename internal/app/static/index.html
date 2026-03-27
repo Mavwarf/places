@@ -745,10 +745,11 @@ button:active { opacity: 0.7; }
   font-size: 0.8em;
   color: var(--fg-dim);
   padding: 8px 0 0;
+  flex-wrap: wrap;
 }
 .recent-bar.hidden { display: none; }
 .recent-label { white-space: nowrap; }
-.recent-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.recent-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .recent-chip {
   background: var(--bg3);
   color: var(--fg-dim);
@@ -762,6 +763,22 @@ button:active { opacity: 0.7; }
 }
 .recent-chip:hover { color: var(--fg); border-color: var(--fg-dim); }
 .recent-chip .recent-action { color: var(--accent); font-size: 0.85em; }
+.fav-action-chip {
+  background: color-mix(in srgb, var(--yellow) 15%, var(--bg3));
+  color: var(--fg);
+  border: 1px solid color-mix(in srgb, var(--yellow) 40%, transparent);
+  padding: 2px 8px;
+  font-size: 0.85em;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font);
+  white-space: nowrap;
+}
+.fav-action-chip:hover { border-color: var(--yellow); }
+.fav-action-chip .recent-action { color: var(--yellow); font-size: 0.85em; }
+.fav-sep { color: var(--fg-dim); margin: 0 6px; opacity: 0.4; }
+.fav-chips { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.fav-label { color: var(--yellow); font-size: 0.85em; }
 .btn-recent-toggle {
   background: transparent;
   color: var(--fg-dim);
@@ -1036,7 +1053,7 @@ button:active { opacity: 0.7; }
 </div>
 
 <div class="tag-bar" id="tag-bar"><span id="tag-bar-left"></span><input class="filter-search" id="filter-search" type="text" placeholder="Filter..." oninput="textFilter=this.value;saveFilters();load()" /><span id="tag-bar-right"></span><span class="spacer"></span><span id="tag-bar-git"></span></div>
-<div class="recent-bar hidden" id="recent-bar"><span class="recent-label">Recent:</span><span class="recent-chips" id="recent-chips"></span></div>
+<div class="recent-bar hidden" id="recent-bar"><span class="recent-label">Recent:</span><span class="recent-chips" id="recent-chips"></span><span id="fav-actions-area"></span></div>
 </div>
 <div id="places" class="place-list"></div>
 
@@ -1344,14 +1361,25 @@ let desktopAvailable = true; // updated from /api/places
 // Recent action history
 const MAX_RECENT = 8;
 let recentHistory = [];
+let favActions = [];
 let recentVisible = localStorage.getItem('places-recent-visible') === 'on';
 
 (function loadHistory() {
   try { recentHistory = JSON.parse(localStorage.getItem('places-recent')) || []; } catch (e) { recentHistory = []; }
+  try { favActions = JSON.parse(localStorage.getItem('places-fav-actions')) || []; } catch (e) { favActions = []; }
 })();
 
 function saveHistory() {
   localStorage.setItem('places-recent', JSON.stringify(recentHistory));
+}
+
+function saveFavActions() {
+  localStorage.setItem('places-fav-actions', JSON.stringify(favActions));
+  fetch('/api/sync-fav-actions', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(favActions.map(h => ({name: h.name, action: h.action, shift: !!h.shift, ctrl: !!h.ctrl})))
+  }).catch(() => {});
 }
 
 function recordHistory(name, action, shift, ctrl) {
@@ -1372,10 +1400,12 @@ function recordHistory(name, action, shift, ctrl) {
 
 function renderRecent() {
   const el = document.getElementById('recent-chips');
+  const favEl = document.getElementById('fav-actions-area');
   const toggle = document.getElementById('recent-toggle');
   const bar = document.getElementById('recent-bar');
   toggle.classList.toggle('active', recentVisible);
-  if (!recentVisible || !recentHistory.length) { bar.classList.add('hidden'); return; }
+  const hasContent = recentVisible && (recentHistory.length || favActions.length);
+  if (!hasContent) { bar.classList.add('hidden'); return; }
   bar.classList.remove('hidden');
   const labels = { claude: 'CL', explorer: 'dir', code: 'VS', powershell: 'PS', cmd: '>_' };
   el.innerHTML = recentHistory.map(h => {
@@ -1383,13 +1413,56 @@ function renderRecent() {
     if (h.ctrl) actionLabel += ' YOLO';
     else if (h.shift) actionLabel += ' fresh';
     const isCustom = !labels[h.action];
-    return `<button class="recent-chip" onclick="replayRecent('${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl})" oncontextmenu="removeRecent(event,'${esc(h.key)}')" title="${esc(h.name)} → ${esc(actionLabel)} (right-click to remove)">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></button>`;
+    return `<button class="recent-chip" onclick="handleRecentClick(event,'${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl},'${esc(h.key)}')" oncontextmenu="removeRecent(event,'${esc(h.key)}')" title="${esc(h.name)} → ${esc(actionLabel)}&#10;Ctrl+click to pin as favorite&#10;Right-click to remove">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></button>`;
   }).join('');
+  // Favorite actions
+  if (favActions.length) {
+    let favHtml = '<span class="fav-sep">|</span><span class="fav-label">&#9733;</span><span class="fav-chips">';
+    favHtml += favActions.map(h => {
+      let actionLabel = labels[h.action] || (actionDefs[h.action] ? actionDefs[h.action].label : h.action);
+      if (h.ctrl) actionLabel += ' YOLO';
+      else if (h.shift) actionLabel += ' fresh';
+      const isCustom = !labels[h.action];
+      return `<button class="fav-action-chip" onclick="replayRecent('${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl})" oncontextmenu="removeFavAction(event,'${esc(h.key)}')" title="${esc(h.name)} → ${esc(actionLabel)} ★&#10;Right-click to remove">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></button>`;
+    }).join('');
+    favHtml += '</span>';
+    favEl.innerHTML = favHtml;
+  } else {
+    favEl.innerHTML = '';
+  }
 }
 
 function replayRecent(name, action, isCustom, shift, ctrl) {
   if (isCustom) runCustomAction(name, action);
   else openAt(name, action, shift, ctrl);
+}
+
+function handleRecentClick(e, name, action, isCustom, shift, ctrl, key) {
+  if (e.ctrlKey) {
+    // Ctrl+click: move to favorites
+    const entry = recentHistory.find(h => h.key === key);
+    if (!entry) return;
+    // Don't add duplicate favorites
+    if (favActions.some(h => h.key === key)) { toast(name + ' already in favorites'); return; }
+    favActions.push({...entry});
+    // Remove from recent
+    recentHistory = recentHistory.filter(h => h.key !== key);
+    saveHistory();
+    saveFavActions();
+    renderRecent();
+    toast('Pinned ' + name + ' to favorites');
+    return;
+  }
+  replayRecent(name, action, isCustom, shift, ctrl);
+}
+
+function removeFavAction(e, key) {
+  e.preventDefault();
+  const entry = favActions.find(h => h.key === key);
+  favActions = favActions.filter(h => h.key !== key);
+  saveFavActions();
+  renderRecent();
+  if (entry) toast('Removed ' + entry.name + ' from favorites');
 }
 
 function removeRecent(e, key) {
@@ -2419,6 +2492,11 @@ if (recentHistory.length) {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(recentHistory.map(h => ({name: h.name, action: h.action, shift: !!h.shift, ctrl: !!h.ctrl})))
+  }).catch(() => {});
+  fetch('/api/sync-fav-actions', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(favActions.map(h => ({name: h.name, action: h.action, shift: !!h.shift, ctrl: !!h.ctrl})))
   }).catch(() => {});
 }
 applyCompact();
