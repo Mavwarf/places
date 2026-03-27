@@ -5,7 +5,9 @@
 - Claude effort level — configurable per-place and global default (low/medium/high/max) via ⋯ menu and preferences; passed as `--effort` flag on launch *(Mar 27)*
 - Preferences reorganization — grouped into Claude, Actions, and Integration sections with clear labels *(Mar 27)*
 - Executable picker for custom actions — browse button in action manager opens native file picker, auto-fills command template and name/label *(Mar 27)*
-- Place health dots — colored dot before each place name: green (clean git), yellow (dirty), red (missing dir); visible in normal and compact mode *(Mar 27)*
+- Pin to all desktops — globe button in header pins the dashboard to all virtual desktops via VirtualDesktopAccessor.dll *(Mar 27)*
+- Place health icons — accessible shape+color indicators: ✓ green (clean git), ◆ yellow (dirty), ✗ red (missing dir); hidden for non-git places *(Mar 27)*
+- Favorites skip recent — launching a favorited action no longer adds duplicates to the recent list *(Mar 27)*
 - Favorite action reordering — drag to reorder pinned favorite actions *(Mar 27)*
 - Favorite actions — Ctrl+click a recent chip to pin it as a favorite; favorites shown with ★ icon to the right of recents; right-click to remove; synced to server and shown in system tray *(Mar 27)*
 - Action manager editing — edit button per custom action populates the form for modification; custom actions can be auto-assigned to new places via defaults section *(Mar 26)*

@@ -526,15 +526,15 @@ button:active { opacity: 0.7; }
 }
 
 .health-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
   flex-shrink: 0;
+  font-size: 0.7em;
+  width: 12px;
+  text-align: center;
+  line-height: 1;
 }
-.health-dot.health-green { background: var(--green); }
-.health-dot.health-yellow { background: var(--yellow); }
-.health-dot.health-red { background: var(--red); }
+.health-dot.health-green { color: var(--green); }
+.health-dot.health-yellow { color: var(--yellow); }
+.health-dot.health-red { color: var(--red); }
 .health-dot.health-hidden { visibility: hidden; }
 .place-name {
   font-weight: 600;
@@ -1467,6 +1467,8 @@ function saveFavActions() {
 function recordHistory(name, action, shift, ctrl) {
   const suffix = ctrl ? ':yolo' : shift ? ':fresh' : '';
   const key = name + '·' + action + suffix;
+  // Skip if this action is already in favorites.
+  if (favActions.some(h => h.key === key)) { renderRecent(); return; }
   recentHistory = recentHistory.filter(h => h.key !== key);
   recentHistory.unshift({ key, name, action, shift: !!shift, ctrl: !!ctrl, ts: Date.now() });
   if (recentHistory.length > MAX_RECENT) recentHistory.length = MAX_RECENT;
@@ -1782,7 +1784,7 @@ async function load() {
           ${Array.from({length: desktopCount}, (_, i) => `<option value="${i+1}"${p.desktop===i+1 ? ' selected' : ''}>D${i+1}</option>`).join('')}
         </select>
         <button class="btn-desktop-go${p.desktop ? ' visible' : ''}" onclick="switchDesktop(${p.desktop || 0})" title="Switch to desktop ${p.desktop || ''}">\u2192</button>
-        <span class="health-dot ${healthClass(p)}" title="${healthTitle(p)}"></span>
+        <span class="health-dot ${healthClass(p)}" title="${healthTitle(p)}">${healthIcon(p)}</span>
         <span class="place-name" onclick="editName('${esc(p.name)}',this)" title="Click to rename">${esc(dName)}</span>
         <div class="place-info">
           <div class="place-info-row">
@@ -1844,6 +1846,14 @@ function healthClass(p) {
   if (g.error) return 'health-hidden';
   if (g.dirty) return 'health-yellow';
   return 'health-green';
+}
+
+function healthIcon(p) {
+  if (!p.exists) return '\u2717';   // ✗
+  const g = gitCache[p.name];
+  if (!g || g.error) return '';
+  if (g.dirty) return '\u25C6';    // ◆
+  return '\u2713';                  // ✓
 }
 
 function healthTitle(p) {
