@@ -67,8 +67,9 @@ func main() {
 			BrowseFile: a.BrowseFile,
 			Minimize: a.MinimizeWindow,
 			Quit:     a.QuitApp,
-			Topmost:  setAlwaysOnTop,
-			LastDrop: a.LastDrop,
+			Topmost:        setAlwaysOnTop,
+			PinAllDesktops: pinAllDesktops,
+			LastDrop:       a.LastDrop,
 		}); err != nil {
 			fmt.Fprintf(os.Stderr, "places-app: %v\n", err)
 			os.Exit(1)

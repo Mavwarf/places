@@ -35,6 +35,15 @@ func WindowDesktop(hwnd uintptr) (int, error) {
 	return -1, fmt.Errorf("virtual desktop switching is only supported on Windows")
 }
 
+// PinWindow is a no-op on non-Windows platforms.
+func PinWindow(hwnd uintptr) error { return fmt.Errorf("not supported") }
+
+// UnPinWindow is a no-op on non-Windows platforms.
+func UnPinWindow(hwnd uintptr) error { return fmt.Errorf("not supported") }
+
+// IsPinnedWindow always returns false on non-Windows platforms.
+func IsPinnedWindow(hwnd uintptr) bool { return false }
+
 // Count returns the number of virtual desktops.
 // Not supported on non-Windows platforms.
 func Count() (int, error) {

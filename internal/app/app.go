@@ -132,8 +132,9 @@ type Callbacks struct {
 	BrowseFile func() (string, error) // open native file picker dialog
 	Minimize func()                 // minimize the window
 	Quit     func()                 // fully exit the application (called via goroutine to allow response)
-	Topmost  func(bool)             // toggle always-on-top via SetWindowPos
-	LastDrop func() string          // retrieve last drag-and-dropped folder path
+	Topmost        func(bool)       // toggle always-on-top via SetWindowPos
+	PinAllDesktops func(bool) bool // pin/unpin to all virtual desktops, returns new state
+	LastDrop       func() string   // retrieve last drag-and-dropped folder path
 }
 
 // Serve starts the HTTP server on the given port.
@@ -256,6 +257,24 @@ func Serve(port int, cb Callbacks) error {
 			}
 			cb.Topmost(req.OnTop)
 			w.WriteHeader(http.StatusNoContent)
+		})
+	}
+
+	if cb.PinAllDesktops != nil {
+		mux.HandleFunc("/api/pin-all-desktops", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			var req struct {
+				Pin bool `json:"pin"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, "bad request", http.StatusBadRequest)
+				return
+			}
+			pinned := cb.PinAllDesktops(req.Pin)
+			writeJSON(w, map[string]bool{"pinned": pinned})
 		})
 	}
 

@@ -113,6 +113,45 @@ func WindowDesktop(hwnd uintptr) (int, error) {
 	return n + 1, nil // convert 0-indexed to 1-indexed
 }
 
+// PinWindow pins a window to all virtual desktops.
+func PinWindow(hwnd uintptr) error {
+	if dll == nil {
+		return fmt.Errorf("VirtualDesktopAccessor.dll not found")
+	}
+	proc := dll.NewProc("PinWindow")
+	if err := proc.Find(); err != nil {
+		return fmt.Errorf("PinWindow not found in DLL: %w", err)
+	}
+	proc.Call(hwnd)
+	return nil
+}
+
+// UnPinWindow removes a window from all virtual desktops (shows only on current).
+func UnPinWindow(hwnd uintptr) error {
+	if dll == nil {
+		return fmt.Errorf("VirtualDesktopAccessor.dll not found")
+	}
+	proc := dll.NewProc("UnPinWindow")
+	if err := proc.Find(); err != nil {
+		return fmt.Errorf("UnPinWindow not found in DLL: %w", err)
+	}
+	proc.Call(hwnd)
+	return nil
+}
+
+// IsPinnedWindow reports whether a window is pinned to all virtual desktops.
+func IsPinnedWindow(hwnd uintptr) bool {
+	if dll == nil {
+		return false
+	}
+	proc := dll.NewProc("IsPinnedWindow")
+	if err := proc.Find(); err != nil {
+		return false
+	}
+	ret, _, _ := proc.Call(hwnd)
+	return ret != 0
+}
+
 // Count returns the number of virtual desktops.
 func Count() (int, error) {
 	if dll == nil {

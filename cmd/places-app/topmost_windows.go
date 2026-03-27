@@ -5,6 +5,8 @@ package main
 import (
 	"syscall"
 	"unsafe"
+
+	"github.com/Mavwarf/places/internal/desktop"
 )
 
 var setWindowPos = user32.NewProc("SetWindowPos")
@@ -20,6 +22,21 @@ const (
 	swpNosize     = 0x0001
 	swpNoactivate = 0x0010
 )
+
+// pinAllDesktops finds the Wails window and pins/unpins it to all virtual desktops.
+func pinAllDesktops(pin bool) bool {
+	title, _ := syscall.UTF16PtrFromString(appTitle)
+	hwnd, _, _ := findWindowW.Call(0, uintptr(unsafe.Pointer(title)))
+	if hwnd == 0 {
+		return false
+	}
+	if pin {
+		desktop.PinWindow(hwnd)
+	} else {
+		desktop.UnPinWindow(hwnd)
+	}
+	return desktop.IsPinnedWindow(hwnd)
+}
 
 // setAlwaysOnTop finds the Wails window by title and toggles its z-order.
 func setAlwaysOnTop(on bool) {

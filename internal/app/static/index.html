@@ -1034,6 +1034,7 @@ button:active { opacity: 0.7; }
   <span style="display:flex;gap:2px;align-items:center"><button class="theme-toggle" id="theme-toggle" title="Toggle theme"></button><button class="theme-more" id="theme-more" onclick="toggleThemePicker()" title="All themes"><div class="theme-picker" id="theme-picker"></div>&#8943;</button></span>
   <button class="theme-more" id="prefs-btn" onclick="togglePrefs()" title="Preferences"><div class="theme-picker" id="prefs-picker"></div>&#9881;</button>
   <div class="window-controls">
+    <button class="win-btn win-btn-pin" id="pin-all-btn" onclick="togglePinAllDesktops()" title="Show on all desktops">&#127760;</button>
     <button class="win-btn win-btn-pin" id="pin-btn" onclick="togglePin()" title="Pin on top">&#128204;</button>
   </div>
 </div>
@@ -2074,6 +2075,31 @@ function updatePinBtn() {
   btn.classList.toggle('active', pinned);
   btn.title = pinned ? 'Unpin from top' : 'Pin on top';
 }
+let pinnedAllDesktops = localStorage.getItem('places-pin-all') === 'on';
+function updatePinAllBtn() {
+  const btn = document.getElementById('pin-all-btn');
+  if (btn) btn.classList.toggle('active', pinnedAllDesktops);
+}
+async function togglePinAllDesktops() {
+  pinnedAllDesktops = !pinnedAllDesktops;
+  localStorage.setItem('places-pin-all', pinnedAllDesktops ? 'on' : '');
+  updatePinAllBtn();
+  try {
+    const res = await fetch('/api/pin-all-desktops', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pin: pinnedAllDesktops})});
+    if (res.ok) {
+      const data = await res.json();
+      pinnedAllDesktops = data.pinned;
+      localStorage.setItem('places-pin-all', pinnedAllDesktops ? 'on' : '');
+      updatePinAllBtn();
+      toast(pinnedAllDesktops ? 'Shown on all desktops' : 'Shown on current desktop only');
+    }
+  } catch(e) {}
+}
+updatePinAllBtn();
+if (pinnedAllDesktops) {
+  fetch('/api/pin-all-desktops', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pin:true})}).catch(function(){});
+}
+
 async function togglePin() {
   pinned = !pinned;
   localStorage.setItem('places-pin', pinned ? 'on' : '');
