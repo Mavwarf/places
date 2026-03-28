@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Mavwarf/places/internal/app"
+	"github.com/Mavwarf/places/internal/sessions"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -55,8 +56,14 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Open session tracker for time tracking.
+	tracker, err := sessions.Open()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "places-app: warning: session tracking disabled: %v\n", err)
+	}
+
 	geom := loadGeometry()
-	a := &App{port: port, ready: make(chan struct{}), geom: geom}
+	a := &App{port: port, ready: make(chan struct{}), geom: geom, tracker: tracker}
 
 	// Start HTTP API server in a goroutine. The dashboard UI is served from
 	// here (not Wails' asset server) so we get a plain HTTP page with full
@@ -71,8 +78,22 @@ func main() {
 			Topmost:        setAlwaysOnTop,
 			PinAllDesktops:  pinAllDesktops,
 			RunningSessions: func(names []string) []byte {
-				sessions := detectRunningSessions(names)
-				data, _ := json.Marshal(sessions)
+				rs := detectRunningSessions(names)
+				// Update session tracker and enrich with timing.
+				if tracker != nil {
+					running := make([]struct{ Place, Action string }, len(rs))
+					for i, s := range rs {
+						running[i] = struct{ Place, Action string }{s.Name, s.Action}
+					}
+					tracker.Update(running)
+					for i := range rs {
+						if info := tracker.GetActiveInfo(rs[i].Name, rs[i].Action); info != nil {
+							rs[i].Elapsed = info.Elapsed
+							rs[i].Today = info.Today
+						}
+					}
+				}
+				data, _ := json.Marshal(rs)
 				return data
 			},
 			LastDrop: a.LastDrop,

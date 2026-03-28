@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/energye/systray"
+	"github.com/Mavwarf/places/internal/sessions"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -18,6 +19,7 @@ type App struct {
 	geom     *WindowGeometry
 	lastDrop string
 	dropMu   sync.Mutex
+	tracker  *sessions.Tracker
 }
 
 // startup redirects the WebView to our HTTP server, bypassing Wails' built-in
@@ -55,6 +57,10 @@ func (a *App) saveWindowGeometry() {
 func (a *App) beforeClose(ctx context.Context) bool {
 	<-a.ready
 	a.saveWindowGeometry()
+	if a.tracker != nil {
+		a.tracker.CloseAll()
+		a.tracker.Close()
+	}
 	systray.Quit()
 	os.Exit(0)
 	return false
@@ -75,6 +81,10 @@ func (a *App) MinimizeWindow() {
 // QuitApp fully exits the application.
 func (a *App) QuitApp() {
 	a.saveWindowGeometry()
+	if a.tracker != nil {
+		a.tracker.CloseAll()
+		a.tracker.Close()
+	}
 	systray.Quit()
 	os.Exit(0)
 }

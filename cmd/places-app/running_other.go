@@ -7,6 +7,8 @@ type RunningSession struct {
 	Name    string `json:"name"`
 	Action  string `json:"action"`
 	Desktop int    `json:"desktop,omitempty"`
+	Elapsed int    `json:"elapsed,omitempty"` // seconds since session start
+	Today   int    `json:"today,omitempty"`   // total seconds today
 }
 
 // detectRunningSessions is a no-op on non-Windows platforms.

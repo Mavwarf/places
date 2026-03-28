@@ -2,7 +2,8 @@
 
 ## Features
 
-- Running session indicator — detects active sessions for all action types (Claude, VS Code, PowerShell, cmd, Explorer, custom actions) via process and window title scanning; green glow on action buttons, recent chips, and fav chips; tooltip shows desktop number; opt-in via preferences *(Mar 27)*
+- Session time tracking — SQLite database records session start/end times; tooltip shows elapsed time and today's total; graceful shutdown and crash recovery via last_seen_at polling *(Mar 28)*
+- Running session indicator — detects active sessions for all action types (Claude, VS Code, PowerShell, cmd, Explorer, custom actions) via process and window title scanning; green glow on action buttons, recent chips, and fav chips; tooltip shows desktop number and elapsed time; opt-in via preferences *(Mar 27)*
 - Claude effort level — configurable per-place and global default (low/medium/high/max) via ⋯ menu and preferences; passed as `--effort` flag on launch *(Mar 27)*
 - Preferences reorganization — grouped into Claude, Actions, and Integration sections with clear labels *(Mar 27)*
 - Executable picker for custom actions — browse button in action manager opens native file picker, auto-fills command template and name/label *(Mar 27)*

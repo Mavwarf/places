@@ -2728,9 +2728,21 @@ function getRunning(name, action) {
   return runningSessions.find(s => s.name === name.toLowerCase() && s.action === action);
 }
 
+function formatDuration(seconds) {
+  if (seconds < 60) return seconds + 's';
+  const m = Math.floor(seconds / 60);
+  if (m < 60) return m + 'm';
+  const h = Math.floor(m / 60);
+  const rm = m % 60;
+  return rm ? h + 'h ' + rm + 'm' : h + 'h';
+}
+
 function runningTip(session) {
   if (!session) return '';
-  return session.desktop ? '\nRunning on Desktop ' + session.desktop : '\nRunning';
+  let tip = session.desktop ? '\nRunning on Desktop ' + session.desktop : '\nRunning';
+  if (session.elapsed) tip += ' \u00b7 ' + formatDuration(session.elapsed);
+  if (session.today) tip += '\nToday: ' + formatDuration(session.today);
+  return tip;
 }
 
 function applyRunningGlow() {
@@ -2750,11 +2762,25 @@ function applyRunningGlow() {
   document.querySelectorAll('.recent-chip[data-rname]').forEach(chip => {
     const session = getRunning(chip.dataset.rname, chip.dataset.raction);
     chip.classList.toggle('running-glow', !!session);
+    if (session) {
+      if (!chip.getAttribute('data-base-title')) chip.setAttribute('data-base-title', chip.title);
+      chip.title = chip.getAttribute('data-base-title') + runningTip(session);
+    } else if (chip.getAttribute('data-base-title')) {
+      chip.title = chip.getAttribute('data-base-title');
+      chip.removeAttribute('data-base-title');
+    }
   });
   // Favorite chips.
   document.querySelectorAll('.fav-action-chip[data-rname]').forEach(chip => {
     const session = getRunning(chip.dataset.rname, chip.dataset.raction);
     chip.classList.toggle('running-glow', !!session);
+    if (session) {
+      if (!chip.getAttribute('data-base-title')) chip.setAttribute('data-base-title', chip.title);
+      chip.title = chip.getAttribute('data-base-title') + runningTip(session);
+    } else if (chip.getAttribute('data-base-title')) {
+      chip.title = chip.getAttribute('data-base-title');
+      chip.removeAttribute('data-base-title');
+    }
   });
 }
 

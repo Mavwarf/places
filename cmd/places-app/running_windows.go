@@ -24,6 +24,8 @@ type RunningSession struct {
 	Name    string `json:"name"`
 	Action  string `json:"action"`
 	Desktop int    `json:"desktop,omitempty"` // 1-indexed, 0 = unknown
+	Elapsed int    `json:"elapsed,omitempty"` // seconds since session start
+	Today   int    `json:"today,omitempty"`   // total seconds today
 }
 
 // detectRunningSessions detects running Claude and VS Code sessions.
