@@ -1168,11 +1168,12 @@ function togglePrefs() {
   const isOpen = picker.classList.toggle('open');
   if (!isOpen) return;
   const effortCheck = e => (defaultEffort || '') === e || (!defaultEffort && e === 'medium');
+  const isWin = placesOS === 'windows';
   picker.innerHTML =
     // Claude section
     `<div style="padding:5px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px">Claude</div>` +
-    `<button class="theme-picker-item" onclick="toggleClaudeShell()">Shell: ${claudeShell}</button>` +
-    `<button class="theme-picker-item" onclick="toggleSuppressTitle()">Custom tab title: ${suppressTitle ? 'on' : 'off'}</button>` +
+    (isWin ? `<button class="theme-picker-item" onclick="toggleClaudeShell()">Shell: ${claudeShell}</button>` : '') +
+    (isWin ? `<button class="theme-picker-item" onclick="toggleSuppressTitle()">Custom tab title: ${suppressTitle ? 'on' : 'off'}</button>` : '') +
     `<div style="padding:5px 12px 2px;font-size:0.75em;color:var(--fg-dim)">Effort level:</div>` +
     EFFORT_LEVELS.filter(e => e !== '').map(e =>
       `<button class="theme-picker-item${effortCheck(e) ? ' active' : ''}" onclick="setDefaultEffort('${e}')">${effortCheck(e) ? '\u2713 ' : '\u00a0\u00a0\u00a0 '}${e}</button>`
@@ -1180,9 +1181,9 @@ function togglePrefs() {
     // Actions section
     `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Actions</div>` +
     `<button class="theme-picker-item" onclick="openActionManager()">Manage custom actions</button>` +
-    // Monitoring section
-    `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Monitoring</div>` +
-    `<button class="theme-picker-item" onclick="toggleDetectRunning()">Detect running sessions: ${detectRunning ? 'on' : 'off'}</button>` +
+    // Monitoring section (Windows only — running session detection requires process scanning)
+    (isWin ? `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Monitoring</div>` +
+    `<button class="theme-picker-item" onclick="toggleDetectRunning()">Detect running sessions: ${detectRunning ? 'on' : 'off'}</button>` : '') +
     // Integration section
     `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Integration</div>` +
     `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>`;
@@ -1296,8 +1297,12 @@ function openActionManager() {
 }
 
 function renderActionManager(panel) {
-  const allDefaults = ['claude', 'explorer', 'code', 'powershell', 'cmd'];
-  const defaultLabels = {claude: 'cl', explorer: 'dir', code: 'VS', powershell: 'PS', cmd: '>_'};
+  const allDefaults = placesOS === 'windows'
+    ? ['claude', 'explorer', 'code', 'powershell', 'cmd']
+    : ['claude', 'explorer', 'code', 'terminal'];
+  const defaultLabels = placesOS === 'windows'
+    ? {claude: 'cl', explorer: 'dir', code: 'VS', powershell: 'PS', cmd: '>_'}
+    : {claude: 'cl', explorer: placesOS === 'darwin' ? 'Finder' : 'dir', code: 'VS', terminal: '>_'};
   const actions = Object.entries(actionDefs).sort((a, b) => a[0].localeCompare(b[0]));
   let html = '<h2>Custom actions <button onclick="this.closest(\'.action-manager-overlay\').remove()">&times;</button></h2>';
 
@@ -1463,6 +1468,7 @@ let suppressTitle = false;  // updated from /api/places
 let desktopAvailable = true; // updated from /api/places
 let defaultEffort = '';      // updated from /api/places
 let detectRunning = false;   // updated from /api/places
+let placesOS = 'windows';    // updated from /api/places
 
 // Recent action history
 const MAX_RECENT = 8;
@@ -1515,7 +1521,9 @@ function renderRecent() {
   const hasContent = recentVisible && (recentHistory.length || favActions.length);
   if (!hasContent) { bar.classList.add('hidden'); return; }
   bar.classList.remove('hidden');
-  const labels = { claude: 'CL', explorer: 'dir', code: 'VS', powershell: 'PS', cmd: '>_' };
+  const labels = placesOS === 'windows'
+    ? { claude: 'CL', explorer: 'dir', code: 'VS', powershell: 'PS', cmd: '>_' }
+    : { claude: 'CL', explorer: placesOS === 'darwin' ? 'Finder' : 'dir', code: 'VS', terminal: '>_' };
   el.innerHTML = recentHistory.map(h => {
     let actionLabel = labels[h.action] || (actionDefs[h.action] ? actionDefs[h.action].label : h.action);
     if (h.ctrl) actionLabel += ' YOLO';
@@ -1729,6 +1737,12 @@ async function load() {
     desktopAvailable = !!data.desktop_available;
     detectRunning = !!data.detect_running;
     defaultEffort = data.default_effort || '';
+    placesOS = data.os || 'windows';
+    // Hide Windows-only UI elements on non-Windows
+    if (placesOS !== 'windows') {
+      document.getElementById('sort-desktop').style.display = 'none';
+      document.getElementById('pin-all-btn').style.display = 'none';
+    }
     let places = data.places || [];
     lastPlacesData = places;
     if (!places.length) {
@@ -1804,11 +1818,11 @@ async function load() {
       return groupHeader + `
       <div class="place-row${!p.exists ? ' stale' : ''}">
         <button class="btn-fav${p.favorite ? ' active' : ''}" onclick="toggleFav('${esc(p.name)}',${!p.favorite})" title="${p.favorite ? 'Unfavorite' : 'Favorite'}">${p.favorite ? '\u2605' : '\u2606'}</button>
-        <select class="desktop-select" onchange="setDesktop('${esc(p.name)}',parseInt(this.value))" title="Virtual desktop">
+        ${placesOS === 'windows' ? `<select class="desktop-select" onchange="setDesktop('${esc(p.name)}',parseInt(this.value))" title="Virtual desktop">
           <option value="0"${p.desktop ? '' : ' selected'}>\u2014</option>
           ${Array.from({length: desktopCount}, (_, i) => `<option value="${i+1}"${p.desktop===i+1 ? ' selected' : ''}>D${i+1}</option>`).join('')}
         </select>
-        <button class="btn-desktop-go${p.desktop ? ' visible' : ''}" onclick="switchDesktop(${p.desktop || 0})" title="Switch to desktop ${p.desktop || ''}">\u2192</button>
+        <button class="btn-desktop-go${p.desktop ? ' visible' : ''}" onclick="switchDesktop(${p.desktop || 0})" title="Switch to desktop ${p.desktop || ''}">\u2192</button>` : ''}
         <span class="health-dot ${healthClass(p)}" title="${healthTitle(p)}">${healthIcon(p)}</span>
         <span class="place-name" onclick="editName('${esc(p.name)}',this)" title="Click to rename">${esc(dName)}</span>
         <div class="place-info">
@@ -1897,7 +1911,12 @@ function renderNote(p) {
   return `<span class="place-note-empty" onclick="editNote('${esc(p.name)}',this)">+ note</span>`;
 }
 
-const actionLabels = {claude:'Claude',explorer:'Explorer',code:'VS Code',powershell:'PowerShell',cmd:'cmd'};
+function getActionLabels() {
+  if (placesOS === 'windows') return {claude:'Claude',explorer:'Explorer',code:'VS Code',powershell:'PowerShell',cmd:'cmd'};
+  if (placesOS === 'darwin') return {claude:'Claude',explorer:'Finder',code:'VS Code',terminal:'Terminal'};
+  return {claude:'Claude',explorer:'Files',code:'VS Code',terminal:'Terminal'};
+}
+const actionLabels = {claude:'Claude',explorer:'Explorer',code:'VS Code',powershell:'PowerShell',cmd:'cmd',terminal:'Terminal'};
 async function openAt(name, action, shift, ctrl) {
   try {
     let label = actionLabels[action] || action;
@@ -2306,12 +2325,20 @@ function renderDefaultActions(p) {
   const hd = p.hidden_defaults || [];
   const n = esc(p.name);
   const pp = esc(p.path);
+  const isWin = placesOS === 'windows';
+  const isMac = placesOS === 'darwin';
+  const explorerLabel = isMac ? 'Finder' : 'dir';
+  const explorerTitle = isMac ? 'Open in Finder' : 'Open Explorer at ' + pp;
   let btns = '';
   if (!hd.includes('claude')) btns += `<button class="btn-claude" data-place="${n}" data-action="claude" onclick="openAt('${n}','claude',event.shiftKey,event.ctrlKey)" oncontextmenu="hideDefault(event,'${n}','claude')" title="Claude session in ${pp}&#10;Shift=fresh, Ctrl=YOLO&#10;Right-click to hide">cl</button>`;
-  if (!hd.includes('explorer')) btns += `<button class="btn-explorer" data-place="${n}" data-action="explorer" onclick="openAt('${n}','explorer')" oncontextmenu="hideDefault(event,'${n}','explorer')" title="Open Explorer at ${pp}&#10;Right-click to hide">dir</button>`;
+  if (!hd.includes('explorer')) btns += `<button class="btn-explorer" data-place="${n}" data-action="explorer" onclick="openAt('${n}','explorer')" oncontextmenu="hideDefault(event,'${n}','explorer')" title="${explorerTitle}&#10;Right-click to hide">${explorerLabel}</button>`;
   if (!hd.includes('code')) btns += `<button class="btn-code" data-place="${n}" data-action="code" onclick="openAt('${n}','code')" oncontextmenu="hideDefault(event,'${n}','code')" title="Open VS Code at ${pp}&#10;Right-click to hide">VS</button>`;
-  if (!hd.includes('powershell')) btns += `<button class="btn-ps" data-place="${n}" data-action="powershell" onclick="openAt('${n}','powershell')" oncontextmenu="hideDefault(event,'${n}','powershell')" title="Open PowerShell at ${pp}&#10;Right-click to hide">PS</button>`;
-  if (!hd.includes('cmd')) btns += `<button class="btn-cmd" data-place="${n}" data-action="cmd" onclick="openAt('${n}','cmd')" oncontextmenu="hideDefault(event,'${n}','cmd')" title="Open cmd at ${pp}&#10;Right-click to hide">&gt;_</button>`;
+  if (isWin) {
+    if (!hd.includes('powershell')) btns += `<button class="btn-ps" data-place="${n}" data-action="powershell" onclick="openAt('${n}','powershell')" oncontextmenu="hideDefault(event,'${n}','powershell')" title="Open PowerShell at ${pp}&#10;Right-click to hide">PS</button>`;
+    if (!hd.includes('cmd')) btns += `<button class="btn-cmd" data-place="${n}" data-action="cmd" onclick="openAt('${n}','cmd')" oncontextmenu="hideDefault(event,'${n}','cmd')" title="Open cmd at ${pp}&#10;Right-click to hide">&gt;_</button>`;
+  } else {
+    if (!hd.includes('terminal')) btns += `<button class="btn-ps" data-place="${n}" data-action="terminal" onclick="openAt('${n}','terminal')" oncontextmenu="hideDefault(event,'${n}','terminal')" title="Open Terminal at ${pp}&#10;Right-click to hide">&gt;_</button>`;
+  }
   return btns;
 }
 
@@ -2352,12 +2379,18 @@ function showPlaceMenu(e, placeName) {
   const placeData = lastPlacesData.find(p => p.name === placeName);
   const hd = (placeData && placeData.hidden_defaults) || [];
 
+  const isWin = placesOS === 'windows';
+  const isMac = placesOS === 'darwin';
   const defaults = [
     {key: 'claude',     label: 'Claude Code (cl)'},
-    {key: 'explorer',   label: 'Explorer (dir)'},
+    {key: 'explorer',   label: (isMac ? 'Finder' : 'Explorer') + ' (dir)'},
     {key: 'code',       label: 'VS Code (VS)'},
-    {key: 'powershell', label: 'PowerShell (PS)'},
-    {key: 'cmd',        label: 'cmd (>_)'},
+    ...(isWin ? [
+      {key: 'powershell', label: 'PowerShell (PS)'},
+      {key: 'cmd',        label: 'cmd (>_)'},
+    ] : [
+      {key: 'terminal',   label: 'Terminal (>_)'},
+    ]),
   ];
 
   const dd = document.createElement('div');

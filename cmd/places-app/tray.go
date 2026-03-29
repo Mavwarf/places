@@ -1,3 +1,5 @@
+//go:build windows
+
 package main
 
 import (
@@ -57,11 +59,17 @@ func pngToICO(png []byte) ([]byte, error) {
 }
 
 func onTrayReady(app *App) {
-	ico, err := pngToICO(trayIcon)
-	if err != nil {
-		systray.SetIcon(trayIcon) // fallback to raw PNG
+	if runtime.GOOS == "windows" {
+		// Windows systray requires ICO format.
+		ico, err := pngToICO(trayIcon)
+		if err != nil {
+			systray.SetIcon(trayIcon)
+		} else {
+			systray.SetIcon(ico)
+		}
 	} else {
-		systray.SetIcon(ico)
+		// macOS and Linux use PNG directly.
+		systray.SetIcon(trayIcon)
 	}
 	systray.SetTooltip("places")
 	systray.SetOnClick(func(menu systray.IMenu) { menu.ShowMenu() })
@@ -143,7 +151,13 @@ func addRecentMenu() {
 				case "powershell":
 					launcher.Detach(launcher.PowerShell(path))
 				case "cmd":
-					launcher.Detach(launcher.Cmd(path))
+					if runtime.GOOS == "windows" {
+						launcher.Detach(launcher.Cmd(path))
+					} else {
+						launcher.Detach(launcher.Terminal(path))
+					}
+				case "terminal":
+					launcher.Detach(launcher.Terminal(path))
 				default:
 					if act, ok := cfg.Actions[e.Action]; ok {
 						expanded := launcher.ExpandAction(act.Cmd, path, e.Name)
@@ -212,15 +226,29 @@ func addPlaceMenusGrouped() {
 		mClaude := parent.AddSubMenuItem("Claude", "Open Claude here")
 		mClaude.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path, placeName, false, false, cShell, cSuppress, pEffort)) })
 
-		mExplorer := parent.AddSubMenuItem("Explorer", "Open Explorer here")
+		explorerLabel := "Explorer"
+		if runtime.GOOS == "darwin" {
+			explorerLabel = "Finder"
+		}
+		mExplorer := parent.AddSubMenuItem(explorerLabel, "Open file manager here")
 		mExplorer.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Explorer(path)) })
 
-		mPS := parent.AddSubMenuItem("PowerShell", "Open PowerShell here")
-		mPS.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.PowerShell(path)) })
+		if runtime.GOOS == "windows" {
+			mPS := parent.AddSubMenuItem("PowerShell", "Open PowerShell here")
+			mPS.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.PowerShell(path)) })
 
-		mCmd := parent.AddSubMenuItem("cmd", "Open cmd.exe here")
-		mCmd.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Cmd(path)) })
+			mCmd := parent.AddSubMenuItem("cmd", "Open cmd.exe here")
+			mCmd.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Cmd(path)) })
+		} else {
+			mTerm := parent.AddSubMenuItem("Terminal", "Open terminal here")
+			mTerm.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Terminal(path)) })
+		}
 	}
+}
+
+// quitTray shuts down the system tray.
+func quitTray() {
+	systray.Quit()
 }
 
 // recordTrayUse increments the use count for a place when launched from the tray.

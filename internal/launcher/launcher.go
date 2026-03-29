@@ -24,11 +24,32 @@ func psEscape(s string) string {
 	return strings.ReplaceAll(s, "'", "''")
 }
 
+// shellQuote wraps a string in single quotes for sh/bash, escaping embedded
+// single quotes with the '\'' idiom.
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
 // PowerShell opens a new PowerShell window at the given directory.
+// On macOS this opens a new Terminal.app window; on Linux a new shell process.
 func PowerShell(path string) *exec.Cmd {
 	if runtime.GOOS == "windows" {
 		return exec.Command("cmd", "/c", "start", "", "powershell", "-NoExit", "-Command",
 			fmt.Sprintf("Set-Location '%s'", psEscape(path)))
+	}
+	return Terminal(path)
+}
+
+// Terminal opens a new terminal window at the given directory.
+// On macOS, opens Terminal.app with a new window via osascript.
+// On Linux, starts the user's default shell.
+func Terminal(path string) *exec.Cmd {
+	if runtime.GOOS == "darwin" {
+		script := fmt.Sprintf(`tell application "Terminal"
+activate
+do script "cd %s"
+end tell`, strings.ReplaceAll(shellQuote(path), `"`, `\"`))
+		return exec.Command("osascript", "-e", script)
 	}
 	shell := os.Getenv("SHELL")
 	if shell == "" {
@@ -75,43 +96,58 @@ func Claude(path, name string, cont, yolo bool, shell string, suppressTitle bool
 		claudeCmd += " --effort " + effort
 	}
 
-	if shell == "powershell" {
-		psCmd := fmt.Sprintf("Set-Location '%s'; %s", psEscape(path), claudeCmd)
-		if runtime.GOOS == "windows" {
-			if _, err := exec.LookPath("wt.exe"); err == nil {
-				wtCmd := strings.ReplaceAll(psCmd, ";", "\\;")
-				args := []string{"new-tab", "--title", title}
-				if suppressTitle {
-					args = append(args, "--suppressApplicationTitle")
-				}
-				args = append(args, "powershell", "-NoExit", "-Command", wtCmd)
-				return exec.Command("wt", args...)
-			}
+	// Non-Windows: open a new terminal window with claude.
+	if runtime.GOOS != "windows" {
+		shCmd := fmt.Sprintf("cd %s && %s", shellQuote(path), claudeCmd)
+		if runtime.GOOS == "darwin" {
+			// Use osascript to open Terminal.app with a new tab/window.
+			script := fmt.Sprintf(`tell application "Terminal"
+activate
+do script "%s"
+end tell`, strings.ReplaceAll(shCmd, `"`, `\"`))
+			return exec.Command("osascript", "-e", script)
 		}
-		return exec.Command("cmd", "/c", "start", title, "powershell", "-NoExit", "-Command", psCmd)
+		// Linux / other: just run in a new shell process.
+		return Shell(shCmd)
 	}
 
-	// Default: cmd
-	cmdStr := fmt.Sprintf("cd /d %s && %s", cmdEscape(path), claudeCmd)
-	if runtime.GOOS == "windows" {
+	if shell == "powershell" {
+		psCmd := fmt.Sprintf("Set-Location '%s'; %s", psEscape(path), claudeCmd)
 		if _, err := exec.LookPath("wt.exe"); err == nil {
+			wtCmd := strings.ReplaceAll(psCmd, ";", "\\;")
 			args := []string{"new-tab", "--title", title}
 			if suppressTitle {
 				args = append(args, "--suppressApplicationTitle")
 			}
-			args = append(args, "cmd", "/k", cmdStr)
+			args = append(args, "powershell", "-NoExit", "-Command", wtCmd)
 			return exec.Command("wt", args...)
 		}
+		return exec.Command("cmd", "/c", "start", title, "powershell", "-NoExit", "-Command", psCmd)
+	}
+
+	// Default: cmd (Windows)
+	cmdStr := fmt.Sprintf("cd /d %s && %s", cmdEscape(path), claudeCmd)
+	if _, err := exec.LookPath("wt.exe"); err == nil {
+		args := []string{"new-tab", "--title", title}
+		if suppressTitle {
+			args = append(args, "--suppressApplicationTitle")
+		}
+		args = append(args, "cmd", "/k", cmdStr)
+		return exec.Command("wt", args...)
 	}
 	return exec.Command("cmd", "/c", "start", title, "cmd", "/k", cmdStr)
 }
 
 // Explorer opens the file explorer at the given directory.
 func Explorer(path string) *exec.Cmd {
-	if runtime.GOOS == "windows" {
+	switch runtime.GOOS {
+	case "windows":
 		return exec.Command("explorer", path)
+	case "darwin":
+		return exec.Command("open", path)
+	default:
+		return exec.Command("xdg-open", path)
 	}
-	return exec.Command("xdg-open", path)
 }
 
 // Code opens VS Code at the given directory.

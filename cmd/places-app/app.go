@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"sync"
 
-	"github.com/energye/systray"
 	"github.com/Mavwarf/places/internal/sessions"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -61,7 +61,7 @@ func (a *App) beforeClose(ctx context.Context) bool {
 		a.tracker.CloseAll()
 		a.tracker.Close()
 	}
-	systray.Quit()
+	quitTray()
 	os.Exit(0)
 	return false
 }
@@ -85,7 +85,7 @@ func (a *App) QuitApp() {
 		a.tracker.CloseAll()
 		a.tracker.Close()
 	}
-	systray.Quit()
+	quitTray()
 	os.Exit(0)
 }
 
@@ -109,11 +109,17 @@ func (a *App) BrowseDir() (string, error) {
 // BrowseFile opens a native file picker and returns the selected path.
 func (a *App) BrowseFile() (string, error) {
 	<-a.ready
-	return wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
-		Title: "Select executable",
-		Filters: []wailsRuntime.FileFilter{
+	filters := []wailsRuntime.FileFilter{
+		{DisplayName: "All Files (*.*)", Pattern: "*.*"},
+	}
+	if runtime.GOOS == "windows" {
+		filters = []wailsRuntime.FileFilter{
 			{DisplayName: "Executables (*.exe)", Pattern: "*.exe"},
 			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-		},
+		}
+	}
+	return wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Title:   "Select executable",
+		Filters: filters,
 	})
 }

@@ -47,6 +47,7 @@ var defaultActions = map[string]bool{
 	"claude":     true,
 	"code":       true,
 	"explorer":   true,
+	"terminal":   true,
 }
 
 type openURLReq struct {
@@ -394,6 +395,7 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 		"default_effort":    cfg.DefaultEffort,
 		"fav_actions":       cfg.FavActions,
 		"desktop_available": desktop.Available(),
+		"os":                runtime.GOOS,
 	})
 }
 
@@ -465,7 +467,13 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 	case "powershell":
 		cmd = launcher.PowerShell(path)
 	case "cmd":
-		cmd = launcher.Cmd(path)
+		if runtime.GOOS == "windows" {
+			cmd = launcher.Cmd(path)
+		} else {
+			cmd = launcher.Terminal(path)
+		}
+	case "terminal":
+		cmd = launcher.Terminal(path)
 	case "claude":
 		cmd = launcher.Claude(path, name, req.Shift, req.Ctrl, claudeShell, suppressTitle, effort)
 	case "code":
