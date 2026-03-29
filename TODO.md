@@ -61,18 +61,19 @@
 ## macOS
 
 ### High priority
-- [ ] **Global hotkey (Cmd+Option+P)** — currently a no-op; needs Cocoa/CGEvent API in `hotkey_darwin.go`
-- [ ] **System tray** — disabled because energye/systray conflicts with Wails' NSApplication run loop on Sequoia; investigate alternatives (native NSStatusItem via CGO, or Wails v3 built-in tray)
-- [ ] **Always-on-top** — `topmost_other.go` is a no-op; implement via NSWindow level API (`NSFloatingWindowLevel`)
 - [ ] **Build automation** — Makefile or script for `CGO_LDFLAGS="-framework UniformTypeIdentifiers"`, `.app` bundle creation with icon, and `~/.local/bin` install
+- [ ] **Fix CI/release workflows** — Go version is `1.24` but `go.mod` requires `1.25.0`; Windows app build uses `CGO_ENABLED=0` on ubuntu which may break with new runtime imports
+- [ ] **macOS `.app` bundle in release** — GitHub Action should package the binary into a `.app` bundle with Info.plist and icon, then zip it for the release artifacts
 
 ### Medium priority
+- [ ] **System tray** — disabled because energye/systray conflicts with Wails' NSApplication run loop on Sequoia; investigate alternatives (native NSStatusItem via CGO, or Wails v3 built-in tray)
+- [ ] **Always-on-top** — `topmost_other.go` is a no-op; implement via NSWindow level API (`NSFloatingWindowLevel`)
 - [ ] **Running session detection** — `running_other.go` returns nil; implement via `ps aux` to detect Claude, VS Code, Terminal processes at place directories
 - [ ] **iTerm2 support** — Claude and Terminal launchers currently use Terminal.app via osascript; detect and prefer iTerm2 if installed
-- [ ] **Autostart (`p autostart`)** — currently Windows-only (registry); implement via LaunchAgent plist in `~/Library/LaunchAgents/`
-- [ ] **Shift-key detection** — `shift_other.go` always returns false; needed if close-to-tray behavior is added later
 
 ### Low priority / nice to have
+- [ ] **Global hotkey (Cmd+Option+P)** — currently a no-op; needs Cocoa/CGEvent API in `hotkey_darwin.go`
+- [ ] **Autostart (`p autostart`)** — currently Windows-only (registry); implement via LaunchAgent plist in `~/Library/LaunchAgents/`
 - [ ] **Native notifications** — use `osascript` or `terminal-notifier` instead of `notify.exe` for Claude hook notifications
 - [ ] **Homebrew formula** — `brew install places` for easier distribution
 - [ ] **Universal binary** — fat binary (amd64 + arm64) for Intel and Apple Silicon Macs
