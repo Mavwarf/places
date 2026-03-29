@@ -1,5 +1,6 @@
 # Build output
 *.exe
+build/
 
 # Go
 vendor/
