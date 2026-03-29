@@ -58,6 +58,28 @@
 - [ ] **Type-to-filter in select** — start typing in the interactive picker to narrow results instead of just arrow keys
 - [ ] **`p back`** — jump to the previous place you were at (like `cd -` but across sessions)
 
+## macOS
+
+### High priority
+- [ ] **Global hotkey (Cmd+Option+P)** — currently a no-op; needs Cocoa/CGEvent API in `hotkey_darwin.go`
+- [ ] **System tray** — disabled because energye/systray conflicts with Wails' NSApplication run loop on Sequoia; investigate alternatives (native NSStatusItem via CGO, or Wails v3 built-in tray)
+- [ ] **Always-on-top** — `topmost_other.go` is a no-op; implement via NSWindow level API (`NSFloatingWindowLevel`)
+- [ ] **Build automation** — Makefile or script for `CGO_LDFLAGS="-framework UniformTypeIdentifiers"`, `.app` bundle creation with icon, and `~/.local/bin` install
+
+### Medium priority
+- [ ] **Running session detection** — `running_other.go` returns nil; implement via `ps aux` to detect Claude, VS Code, Terminal processes at place directories
+- [ ] **iTerm2 support** — Claude and Terminal launchers currently use Terminal.app via osascript; detect and prefer iTerm2 if installed
+- [ ] **Autostart (`p autostart`)** — currently Windows-only (registry); implement via LaunchAgent plist in `~/Library/LaunchAgents/`
+- [ ] **Shift-key detection** — `shift_other.go` always returns false; needed if close-to-tray behavior is added later
+
+### Low priority / nice to have
+- [ ] **Native notifications** — use `osascript` or `terminal-notifier` instead of `notify.exe` for Claude hook notifications
+- [ ] **Homebrew formula** — `brew install places` for easier distribution
+- [ ] **Universal binary** — fat binary (amd64 + arm64) for Intel and Apple Silicon Macs
+- [ ] **Code signing** — sign the `.app` bundle to avoid Gatekeeper warnings on first launch
+- [ ] **DMG installer** — `.dmg` with drag-to-Applications for distribution
+- [ ] **Wails v3 migration** — would fix the systray conflict and improve macOS integration overall
+
 ## Script-Friendly
 
 - [x] ~~**`p list --json`**~~ — machine-readable output for scripting / integrations *(Mar 1)*
@@ -105,7 +127,7 @@
 - [ ] **`os.Exit(0)` bypasses cleanup** — `QuitApp()`, tray quit, and `beforeClose` skip deferred functions, Wails shutdown, HTTP graceful shutdown
 - [ ] **Goroutine leak in `Detach`** — `go cmd.Wait()` goroutines accumulate for long-running child processes on non-Windows
 - [ ] **Unix escape key blocks in selector** — pressing Esc with no following bytes causes `readKeyCode` to block indefinitely (`term_unix.go`)
-- [ ] **`Cmd()` and `Claude()` launchers have no platform guard** — unconditionally build `cmd.exe` commands, fail on non-Windows
+- [x] ~~**`Cmd()` and `Claude()` launchers have no platform guard** — `Claude()` now handles macOS (Terminal.app) and Linux (sh -c); `Cmd()` guarded by `runtime.GOOS` check in `handleOpen`~~ *(Mar 29)*
 - [ ] **`termios` struct is Linux-specific** — ioctl numbers and struct layout in `term_unix.go` won't work on macOS/FreeBSD
 - [x] ~~**Import endpoint skips name validation** — `handleImport` and `cmdImport` now call `ValidateName()`, skip invalid names~~ *(Mar 5)*
 - [x] ~~**`Cmd()` launcher doesn't escape path metacharacters** — added `cmdEscape()` to quote `&`, `^`, `%` etc. in paths~~ *(Mar 5)*
