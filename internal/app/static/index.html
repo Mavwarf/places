@@ -663,16 +663,21 @@ button:active { opacity: 0.7; }
 /* Compact mode — hides git, notes, path; shows tags inline + stats single-line */
 .compact .place-meta,
 .compact .place-note-row,
-.compact .place-info-row { display: none !important; }
-.compact .place-row { padding: 3px 14px 4px; gap: 8px; }
-.compact .place-info { min-width: 0; flex: 1; }
-.compact .place-actions { width: 200px; flex-shrink: 0; }
-.compact .place-stats { width: 110px; text-align: right; flex-shrink: 0; white-space: nowrap; }
+.compact .place-info-row,
+.compact .col-resize[data-col="3"],
+.compact .col-resize[data-col="4"] { display: none !important; }
+.compact .place-row { padding: 3px 14px 4px; gap: 6px; }
+.compact .place-name { width: var(--compact-col1, 120px); }
+.compact .place-info { min-width: 0; width: var(--compact-col2, 150px); flex: 0 0 auto; overflow: hidden; }
+.compact .place-stats { width: var(--compact-col3, 90px); text-align: left; flex-shrink: 0; white-space: nowrap; font-size: 0.85em; }
+.compact .place-actions { flex: 1; flex-shrink: 0; justify-content: flex-end; width: auto; }
 .compact .place-stats .stats-sep { display: inline; }
 .place-stats .stats-sep { display: none; }
 .compact .place-stats .stats-br { display: none; }
 .compact .compact-tags { display: inline-flex !important; gap: 4px; align-items: center; }
 .compact-tags { display: none; }
+.col-resize { width: 3px; flex-shrink: 0; cursor: col-resize; align-self: stretch; background: transparent; border: none; padding: 0; margin: 0 -2px; }
+.col-resize:hover, .col-resize.dragging { background: var(--accent); opacity: 0.5; border-radius: 2px; }
 
 .desktop-group-header {
   font-size: 0.75em;
@@ -696,7 +701,7 @@ button:active { opacity: 0.7; }
 .place-name {
   font-weight: 600;
   color: var(--accent);
-  width: 120px;
+  width: var(--col1, 120px);
   flex-shrink: 0;
   cursor: pointer;
   overflow: hidden;
@@ -718,7 +723,7 @@ button:active { opacity: 0.7; }
   color: var(--fg-dim);
   font-size: 0.75em;
   white-space: nowrap;
-  width: 70px;
+  width: var(--col3, 70px);
   text-align: right;
   flex-shrink: 0;
 }
@@ -727,7 +732,7 @@ button:active { opacity: 0.7; }
   display: flex;
   gap: 6px;
   flex-shrink: 0;
-  width: 260px;
+  width: var(--col5, 260px);
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -737,7 +742,7 @@ button:active { opacity: 0.7; }
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-  width: 240px;
+  width: var(--col4, 240px);
   flex-shrink: 0;
 }
 
@@ -1815,6 +1820,103 @@ function toggleCompact() {
   applyCompact();
 }
 
+// Column resizing — drag handles between sections
+// Columns 1-2 use compact-specific vars when in compact mode, shared vars otherwise.
+// Columns 3-4 only exist in normal mode.
+(function() {
+  const root = document.documentElement;
+  function getColVar(col) {
+    if (compactMode) {
+      return { '1': '--compact-col1', '2': '--compact-col2' }[col];
+    }
+    return { '1': '--col1', '2': '--col3', '3': '--col3', '4': '--col4' }[col];
+  }
+  function getDefault(col) {
+    if (compactMode) return { '1': 120, '2': 150 }[col] || 100;
+    return { '1': 120, '2': 70, '3': 70, '4': 240 }[col] || 100;
+  }
+  function storageKey(col) {
+    if (compactMode) return 'places-ccol' + col;
+    // Col2 in normal mode maps to col3 (stats width)
+    if (col === '2') return 'places-ncol3';
+    return 'places-ncol' + col;
+  }
+  // Restore saved widths for both modes
+  ['--col1','--col3','--col4','--col5'].forEach(function(v, i) {
+    const key = 'places-ncol' + ['1','3','4','5'][i];
+    const saved = localStorage.getItem(key);
+    if (saved) root.style.setProperty(v, saved + 'px');
+  });
+  ['--compact-col1','--compact-col2'].forEach(function(v, i) {
+    const key = 'places-ccol' + (i + 1);
+    const saved = localStorage.getItem(key);
+    if (saved) root.style.setProperty(v, saved + 'px');
+  });
+  // Col4 is paired with col5 — resizing meta must inversely resize actions
+  // so the total stays constant and the path column doesn't shift.
+  let dragCol = null, dragVar = null, startX = 0, startW = 0;
+  let pairedVar = null, pairedStartW = 0;
+  document.addEventListener('mousedown', function(e) {
+    if (!e.target.classList.contains('col-resize')) return;
+    const col = e.target.dataset.col;
+    dragVar = getColVar(col);
+    if (!dragVar) return;
+    dragCol = col;
+    pairedVar = null;
+    e.preventDefault();
+    e.target.classList.add('dragging');
+    startX = e.clientX;
+    // Col2 in normal mode: controls stats (next sibling), drag is inverted
+    if (col === '2' && !compactMode) {
+      const next = e.target.nextElementSibling;
+      startW = next ? next.offsetWidth : getDefault(col);
+    } else {
+      const prev = e.target.previousElementSibling;
+      startW = prev ? prev.offsetWidth : getDefault(col);
+    }
+    // Pair columns for inverse resize so the flex:1 path column doesn't shift
+    if (!compactMode) {
+      if (col === '3') {
+        // stats ↔ meta: grow stats, shrink meta
+        pairedVar = '--col4';
+        const meta = e.target.nextElementSibling;
+        pairedStartW = meta ? meta.offsetWidth : 240;
+      } else if (col === '4') {
+        // meta ↔ actions: grow meta, shrink actions
+        pairedVar = '--col5';
+        const next = e.target.nextElementSibling;
+        pairedStartW = next ? next.offsetWidth : 260;
+      }
+    }
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragCol) return;
+    let delta = e.clientX - startX;
+    // Col2 in normal mode: inverted (drag right = stats shrinks)
+    if (dragCol === '2' && !compactMode) delta = -delta;
+    const newW = Math.max(40, startW + delta);
+    root.style.setProperty(dragVar, newW + 'px');
+    if (pairedVar) {
+      const pairedW = Math.max(40, pairedStartW - delta);
+      root.style.setProperty(pairedVar, pairedW + 'px');
+    }
+  });
+  document.addEventListener('mouseup', function() {
+    if (!dragCol) return;
+    document.querySelectorAll('.col-resize.dragging').forEach(function(el) { el.classList.remove('dragging'); });
+    const val = parseInt(getComputedStyle(root).getPropertyValue(dragVar));
+    localStorage.setItem(storageKey(dragCol), val);
+    if (pairedVar) {
+      const pVal = parseInt(getComputedStyle(root).getPropertyValue(pairedVar));
+      const pKey = pairedVar === '--col4' ? 'places-ncol4' : 'places-ncol5';
+      localStorage.setItem(pKey, pVal);
+    }
+    dragCol = null;
+    dragVar = null;
+    pairedVar = null;
+  });
+})();
+
 // Search-as-you-type: typing anywhere focuses the filter input
 document.addEventListener('keydown', function(e) {
   const tag = document.activeElement.tagName;
@@ -1923,8 +2025,7 @@ async function load() {
     // Hide Windows-only UI elements on non-Windows
     if (placesOS !== 'windows') {
       document.getElementById('sort-desktop').style.display = 'none';
-      document.getElementById('pin-all-btn').style.display = 'none';
-      document.getElementById('pin-btn').style.display = 'none';
+      document.getElementById('pin-all-btn').parentElement.style.display = 'none';
     }
     let places = data.places || [];
     lastPlacesData = places;
@@ -2008,6 +2109,7 @@ async function load() {
         <button class="btn-desktop-go${p.desktop ? ' visible' : ''}" onclick="switchDesktop(${p.desktop || 0})" title="Switch to desktop ${p.desktop || ''}">\u2192</button>` : ''}
         <span class="health-dot ${healthClass(p)}" title="${healthTitle(p)}">${healthIcon(p)}</span>
         <span class="place-name" onclick="editName('${esc(p.name)}',this)" title="Click to rename">${esc(dName)}</span>
+        <div class="col-resize" data-col="1"></div>
         <div class="place-info">
           <div class="place-info-row">
             <span class="place-path" onclick="editPath('${esc(p.name)}',this)" title="Click to edit path">${esc(dPath)}</span>
@@ -2016,9 +2118,11 @@ async function load() {
           <div class="place-note-row">
             ${renderNote(p)}
           </div>
-          <span class="compact-tags">${(p.tags || []).map(t => `<span class="badge-tag">${esc(t)}</span>`).join('')}</span>
+          <span class="compact-tags">${(p.tags || []).map(t => `<span class="badge-tag">${esc(t)}<span class="tag-x" onclick="removeTag('${esc(p.name)}','${esc(t)}')">\u00d7</span></span>`).join('')}<button class="btn-add-tag" onclick="promptAddTag('${esc(p.name)}')" title="Add tag">+</button></span>
         </div>
+        <div class="col-resize" data-col="2"></div>
         <span class="place-stats">${p.use_count}x${p.last_used_at ? '<span class="stats-br"><br></span><span class="stats-sep"> &middot; </span>' + timeAgo(p.last_used_at) : ''}</span>
+        <div class="col-resize" data-col="3"></div>
         <div class="place-meta">
           <div>
             ${p.exists ? (gitCache[p.name] ? renderGitBadge(gitCache[p.name]) : '<span class="badge-git-none">no status</span>') : ''}
@@ -2029,6 +2133,7 @@ async function load() {
             <button class="btn-add-tag" onclick="promptAddTag('${esc(p.name)}')" title="Add tag">+</button>
           </span>
         </div>
+        <div class="col-resize" data-col="4"></div>
         <div class="place-actions">
           ${p.exists ? `
             ${renderCustomActions(p)}
@@ -2284,7 +2389,7 @@ async function removeTag(name, tag) {
 }
 
 async function promptAddTag(name) {
-  const tag = prompt('Add tag to "' + name + '":');
+  const tag = await inputDialog('Add tag to "' + name + '":', '');
   if (!tag || !tag.trim()) return;
   try {
     const res = await fetch('/api/tag', {
@@ -2899,6 +3004,36 @@ async function handleImportFile(e) {
     }
   } catch (e) { toast('Invalid JSON file', true); }
   e.target.value = '';
+}
+
+// Custom input dialog (prompt() doesn't work in Wails WebView on macOS).
+function inputDialog(message, defaultValue) {
+  return new Promise(function(resolve) {
+    const overlay = document.createElement('div');
+    overlay.className = 'action-manager-overlay';
+    overlay.onclick = function(e) { if (e.target === overlay) { overlay.remove(); resolve(null); } };
+    const panel = document.createElement('div');
+    panel.className = 'action-manager';
+    panel.style.maxWidth = '400px';
+    panel.style.padding = '16px';
+    panel.innerHTML = `<div style="margin-bottom:12px;color:var(--fg)">${message}</div>
+      <input type="text" value="${defaultValue || ''}" style="width:100%;padding:6px 8px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px;font-size:14px;box-sizing:border-box">
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+        <button class="btn-io" onclick="this.closest('.action-manager-overlay').remove()">Cancel</button>
+        <button class="btn-io" id="input-dialog-ok">OK</button>
+      </div>`;
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    const input = panel.querySelector('input');
+    input.focus();
+    input.select();
+    function submit() { const v = input.value; overlay.remove(); resolve(v); }
+    panel.querySelector('#input-dialog-ok').onclick = submit;
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') submit();
+      if (e.key === 'Escape') { overlay.remove(); resolve(null); }
+    });
+  });
 }
 
 function toast(msg, err) {
