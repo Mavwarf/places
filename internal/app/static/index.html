@@ -1174,6 +1174,7 @@ function togglePrefs() {
     `<div style="padding:5px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px">Claude</div>` +
     (isWin ? `<button class="theme-picker-item" onclick="toggleClaudeShell()">Shell: ${claudeShell}</button>` : '') +
     (isWin ? `<button class="theme-picker-item" onclick="toggleSuppressTitle()">Custom tab title: ${suppressTitle ? 'on' : 'off'}</button>` : '') +
+    (!isWin && hasITerm ? `<button class="theme-picker-item" onclick="toggleClaudeShell()">Terminal: ${claudeShell === 'terminal' ? 'Terminal.app' : 'iTerm2'}</button>` : '') +
     `<div style="padding:5px 12px 2px;font-size:0.75em;color:var(--fg-dim)">Effort level:</div>` +
     EFFORT_LEVELS.filter(e => e !== '').map(e =>
       `<button class="theme-picker-item${effortCheck(e) ? ' active' : ''}" onclick="setDefaultEffort('${e}')">${effortCheck(e) ? '\u2713 ' : '\u00a0\u00a0\u00a0 '}${e}</button>`
@@ -1207,7 +1208,12 @@ async function editNotifyPath() {
 
 async function toggleClaudeShell() {
   document.getElementById('prefs-picker').classList.remove('open');
-  const newShell = claudeShell === 'cmd' ? 'powershell' : 'cmd';
+  let newShell;
+  if (placesOS === 'windows') {
+    newShell = claudeShell === 'cmd' ? 'powershell' : 'cmd';
+  } else {
+    newShell = claudeShell === 'terminal' ? 'iterm' : 'terminal';
+  }
   try {
     const res = await fetch('/api/claude-shell', {
       method: 'POST',
@@ -1216,7 +1222,8 @@ async function toggleClaudeShell() {
     });
     if (!res.ok) { toast(await res.text() || 'Failed', true); return; }
     claudeShell = newShell;
-    toast('Claude shell: ' + newShell);
+    const label = {cmd:'cmd',powershell:'PowerShell',iterm:'iTerm2',terminal:'Terminal.app'}[newShell] || newShell;
+    toast('Terminal: ' + label);
   } catch (e) { toast('Failed to save Claude shell', true); }
 }
 
@@ -1469,6 +1476,7 @@ let desktopAvailable = true; // updated from /api/places
 let defaultEffort = '';      // updated from /api/places
 let detectRunning = false;   // updated from /api/places
 let placesOS = 'windows';    // updated from /api/places
+let hasITerm = false;        // updated from /api/places
 
 // Recent action history
 const MAX_RECENT = 8;
@@ -1731,13 +1739,14 @@ async function load() {
     actionDefs = data.actions || {};
     notifyPath = data.notify_path || '';
     defaultHidden = data.default_hidden || [];
-    claudeShell = data.claude_shell || 'cmd';
+    claudeShell = data.claude_shell || (placesOS === 'windows' ? 'cmd' : 'iterm');
     defaultActions = data.default_actions || [];
     suppressTitle = !!data.suppress_title;
     desktopAvailable = !!data.desktop_available;
     detectRunning = !!data.detect_running;
     defaultEffort = data.default_effort || '';
     placesOS = data.os || 'windows';
+    hasITerm = !!data.has_iterm;
     // Hide Windows-only UI elements on non-Windows
     if (placesOS !== 'windows') {
       document.getElementById('sort-desktop').style.display = 'none';

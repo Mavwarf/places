@@ -396,6 +396,7 @@ func handlePlaces(w http.ResponseWriter, r *http.Request) {
 		"fav_actions":       cfg.FavActions,
 		"desktop_available": desktop.Available(),
 		"os":                runtime.GOOS,
+		"has_iterm":         launcher.HasITerm2(),
 	})
 }
 
@@ -470,10 +471,10 @@ func handleOpen(w http.ResponseWriter, r *http.Request) {
 		if runtime.GOOS == "windows" {
 			cmd = launcher.Cmd(path)
 		} else {
-			cmd = launcher.Terminal(path)
+			cmd = launcher.TerminalWithShell(path, claudeShell)
 		}
 	case "terminal":
-		cmd = launcher.Terminal(path)
+		cmd = launcher.TerminalWithShell(path, claudeShell)
 	case "claude":
 		cmd = launcher.Claude(path, name, req.Shift, req.Ctrl, claudeShell, suppressTitle, effort)
 	case "code":
@@ -1381,8 +1382,9 @@ func handleClaudeShell(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "bad request", http.StatusBadRequest)
 			return
 		}
-		if req.Shell != "cmd" && req.Shell != "powershell" {
-			http.Error(w, "shell must be cmd or powershell", http.StatusBadRequest)
+		validShells := map[string]bool{"cmd": true, "powershell": true, "terminal": true, "iterm": true}
+		if !validShells[req.Shell] {
+			http.Error(w, "invalid shell", http.StatusBadRequest)
 			return
 		}
 		config.Lock()

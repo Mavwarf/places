@@ -40,18 +40,24 @@ func PowerShell(path string) *exec.Cmd {
 	return Terminal(path)
 }
 
-// hasITerm2 checks if iTerm2 is installed on macOS.
-func hasITerm2() bool {
+// HasITerm2 checks if iTerm2 is installed on macOS.
+func HasITerm2() bool {
 	_, err := os.Stat("/Applications/iTerm.app")
 	return err == nil
 }
 
+// UseITerm reports whether the user preference and system state allow iTerm2.
+// Returns true if iTerm2 is installed and shell preference is not "terminal".
+func UseITerm(shell string) bool {
+	return shell != "terminal" && HasITerm2()
+}
+
 // darwinTerminalScript returns a command that opens a new terminal window and
-// runs shCmd. Prefers iTerm2 if installed, falls back to Terminal.app.
+// runs shCmd. Uses iTerm2 if useITerm is true, otherwise Terminal.app.
 // For iTerm2, writes a temp shell script and opens it, avoiding AppleScript
 // automation permission issues with .app bundles.
-func darwinTerminalScript(shCmd string) *exec.Cmd {
-	if hasITerm2() {
+func darwinTerminalScript(shCmd string, useITerm bool) *exec.Cmd {
+	if useITerm {
 		// Write a temp script that runs the command in an interactive shell.
 		// The script deletes itself after sourcing, so it doesn't linger.
 		f, err := os.CreateTemp("", "places-launch-*.sh")
@@ -79,17 +85,22 @@ end tell`, escaped)
 }
 
 // Terminal opens a new terminal window at the given directory.
-// On macOS, prefers iTerm2 if installed, falls back to Terminal.app.
-// On Linux, starts the user's default shell.
 func Terminal(path string) *exec.Cmd {
+	return TerminalWithShell(path, "")
+}
+
+// TerminalWithShell opens a terminal with the given shell preference.
+// On macOS, shell "terminal" forces Terminal.app, "iterm" forces iTerm2,
+// "" auto-detects (prefers iTerm2 if installed).
+func TerminalWithShell(path, shell string) *exec.Cmd {
 	if runtime.GOOS == "darwin" {
-		return darwinTerminalScript("cd " + shellQuote(path))
+		return darwinTerminalScript("cd "+shellQuote(path), UseITerm(shell))
 	}
-	shell := os.Getenv("SHELL")
-	if shell == "" {
-		shell = "/bin/sh"
+	sh := os.Getenv("SHELL")
+	if sh == "" {
+		sh = "/bin/sh"
 	}
-	cmd := exec.Command(shell)
+	cmd := exec.Command(sh)
 	cmd.Dir = path
 	return cmd
 }
@@ -134,7 +145,7 @@ func Claude(path, name string, cont, yolo bool, shell string, suppressTitle bool
 	if runtime.GOOS != "windows" {
 		shCmd := fmt.Sprintf("cd %s && %s", shellQuote(path), claudeCmd)
 		if runtime.GOOS == "darwin" {
-			return darwinTerminalScript(shCmd)
+			return darwinTerminalScript(shCmd, UseITerm(shell))
 		}
 		// Linux / other: just run in a new shell process.
 		return Shell(shCmd)

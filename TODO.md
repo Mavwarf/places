@@ -69,7 +69,7 @@
 - [ ] **System tray** — disabled because energye/systray conflicts with Wails' NSApplication run loop on Sequoia; investigate alternatives (native NSStatusItem via CGO, or Wails v3 built-in tray)
 - [ ] **Always-on-top** — `topmost_other.go` is a no-op; implement via NSWindow level API (`NSFloatingWindowLevel`)
 - [x] ~~**Running session detection** — detects Claude, VS Code, and custom actions via `ps` command line scanning + `lsof` working directory scanning~~ *(Mar 29)*
-- [x] ~~**iTerm2 support** — auto-detects `/Applications/iTerm.app`, uses AppleScript `create window with default profile` + `write text`; falls back to Terminal.app~~ *(Mar 29)*
+- [x] ~~**iTerm2 support** — auto-detects `/Applications/iTerm.app`, launches via temp shell script + `open -a iTerm`; toggle between iTerm2 and Terminal.app in preferences~~ *(Mar 29)*
 
 ### Low priority / nice to have
 - [ ] **Global hotkey (Cmd+Option+P)** — currently a no-op; needs Cocoa/CGEvent API in `hotkey_darwin.go`
