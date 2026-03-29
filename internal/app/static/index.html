@@ -1529,7 +1529,7 @@ function renderRecent() {
     if (h.ctrl) actionLabel += ' YOLO';
     else if (h.shift) actionLabel += ' fresh';
     const isCustom = !labels[h.action];
-    return `<button class="recent-chip" data-rname="${esc(h.name)}" data-raction="${esc(h.action)}" onclick="handleRecentClick(event,'${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl},'${esc(h.key)}')" oncontextmenu="removeRecent(event,'${esc(h.key)}')" title="${esc(h.name)} → ${esc(actionLabel)}&#10;Ctrl+click to pin as favorite&#10;Right-click to remove">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></button>`;
+    return `<button class="recent-chip" data-rname="${esc(h.name)}" data-raction="${esc(h.action)}" onclick="handleRecentClick(event,'${esc(h.name)}','${esc(h.action)}',${isCustom},${!!h.shift},${!!h.ctrl},'${esc(h.key)}')" oncontextmenu="removeRecent(event,'${esc(h.key)}')" title="${esc(h.name)} → ${esc(actionLabel)}&#10;${placesOS === 'darwin' ? 'Cmd' : 'Ctrl'}+click to pin as favorite&#10;Right-click to remove">${esc(h.name)}<span class="recent-action">·${esc(actionLabel)}</span></button>`;
   }).join('');
   // Favorite actions
   if (favActions.length) {
@@ -1554,8 +1554,8 @@ function replayRecent(name, action, isCustom, shift, ctrl) {
 }
 
 function handleRecentClick(e, name, action, isCustom, shift, ctrl, key) {
-  if (e.ctrlKey) {
-    // Ctrl+click: move to favorites
+  if (e.ctrlKey || e.metaKey) {
+    // Ctrl+click (Cmd+click on Mac): move to favorites
     const entry = recentHistory.find(h => h.key === key);
     if (!entry) return;
     // Don't add duplicate favorites
@@ -2330,7 +2330,7 @@ function renderDefaultActions(p) {
   const explorerLabel = isMac ? 'Finder' : 'dir';
   const explorerTitle = isMac ? 'Open in Finder' : 'Open Explorer at ' + pp;
   let btns = '';
-  if (!hd.includes('claude')) btns += `<button class="btn-claude" data-place="${n}" data-action="claude" onclick="openAt('${n}','claude',event.shiftKey,event.ctrlKey)" oncontextmenu="hideDefault(event,'${n}','claude')" title="Claude session in ${pp}&#10;Shift=fresh, Ctrl=YOLO&#10;Right-click to hide">cl</button>`;
+  if (!hd.includes('claude')) btns += `<button class="btn-claude" data-place="${n}" data-action="claude" onclick="openAt('${n}','claude',event.shiftKey,event.ctrlKey||event.metaKey)" oncontextmenu="hideDefault(event,'${n}','claude')" title="Claude session in ${pp}&#10;Shift=fresh, ${placesOS === 'darwin' ? 'Cmd' : 'Ctrl'}=YOLO&#10;Right-click to hide">cl</button>`;
   if (!hd.includes('explorer')) btns += `<button class="btn-explorer" data-place="${n}" data-action="explorer" onclick="openAt('${n}','explorer')" oncontextmenu="hideDefault(event,'${n}','explorer')" title="${explorerTitle}&#10;Right-click to hide">${explorerLabel}</button>`;
   if (!hd.includes('code')) btns += `<button class="btn-code" data-place="${n}" data-action="code" onclick="openAt('${n}','code')" oncontextmenu="hideDefault(event,'${n}','code')" title="Open VS Code at ${pp}&#10;Right-click to hide">VS</button>`;
   if (isWin) {
@@ -2344,6 +2344,12 @@ function renderDefaultActions(p) {
 
 function hideDefault(e, placeName, action) {
   e.preventDefault();
+  // On macOS, Ctrl+click triggers contextmenu. For the claude button,
+  // treat Ctrl+click as YOLO launch instead of hiding.
+  if (e.ctrlKey && action === 'claude' && placesOS === 'darwin') {
+    openAt(placeName, 'claude', false, true);
+    return;
+  }
   toggleDefault(placeName, action);
 }
 
