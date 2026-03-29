@@ -191,7 +191,7 @@ The place list is sorted by last used (most recent on top) by default, with rela
 
 A **Compact** toggle in the header switches to a dense single-line view showing name, tags, stats, and action buttons. Typing anywhere auto-focuses the filter input for quick search.
 
-15 color themes: Dark, Light, Nord, Dracula, Solarized, Gruvbox, Catppuccin, Catppuccin Latte, One Dark, Rosé Pine, Rosé Dawn, Kanagawa, Everforest, Everforest Light, Monokai. Click to cycle, right-click to restore startup theme, or use the **...** dropdown picker with live preview on hover.
+24 color themes grouped by category: **Dark** (Dark, Nord, Dracula, One Dark, Tokyo Night, Catppuccin, Rosé Pine, Kanagawa, Everforest, Monokai, Palenight, Poimandres, Synthwave, Vesper, Ayu Dark, Flexoki), **Warm** (Gruvbox, Solarized), **Light** (Light, Catppuccin Latte, Rosé Dawn, Everforest Light, Ayu Light, Flexoki Light). Click to cycle, right-click to restore startup theme, or use the **...** dropdown picker with live preview on hover.
 
 A fixed status bar at the bottom of the window shows author/GitHub/Wiki links on the left, a place count in the center (e.g. "5 / 12 places" when filtered), and the build version on the right — always visible regardless of scroll position.
 
@@ -211,7 +211,7 @@ Press **S** to toggle screenshot mode. This anonymizes place names with fantasy 
 
 ### Color Themes
 
-Click the theme toggle button (top-right) to cycle through 6 color schemes: Dark (default), Light, Nord, Dracula, Solarized, and Gruvbox. Your choice is saved in localStorage and persists across sessions.
+Click the theme toggle button (top-right) to cycle through 24 color themes, or use the **...** dropdown picker grouped by Dark, Warm, and Light categories with live preview on hover. Your choice is saved in localStorage and persists across sessions.
 
 ### Window Controls
 

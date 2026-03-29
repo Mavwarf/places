@@ -210,6 +210,159 @@
   --shadow: rgba(0,0,0,0.3);
 }
 
+[data-theme="tokyo-night"] {
+  --bg: #1a1b26;
+  --bg2: #1f2335;
+  --bg3: #292e42;
+  --fg: #c0caf5;
+  --fg-dim: #565f89;
+  --accent: #7aa2f7;
+  --green: #9ece6a;
+  --yellow: #e0af68;
+  --red: #f7768e;
+  --cyan: #7dcfff;
+  --border: #3b4261;
+  --claude: #bb9af7;
+  --code: #7aa2f7;
+  --shadow: rgba(0,0,0,0.4);
+}
+
+[data-theme="ayu-dark"] {
+  --bg: #0b0e14;
+  --bg2: #11151c;
+  --bg3: #1a1f29;
+  --fg: #bfbdb6;
+  --fg-dim: #565b66;
+  --accent: #e6b450;
+  --green: #7fd962;
+  --yellow: #e6b450;
+  --red: #d95757;
+  --cyan: #73b8ff;
+  --border: #2a2f3a;
+  --claude: #d2a6ff;
+  --code: #73b8ff;
+  --shadow: rgba(0,0,0,0.5);
+}
+
+[data-theme="ayu-light"] {
+  --bg: #fafafa;
+  --bg2: #f0f0f0;
+  --bg3: #e7e8e9;
+  --fg: #575f66;
+  --fg-dim: #abb0b6;
+  --accent: #f2ae49;
+  --green: #86b300;
+  --yellow: #f2ae49;
+  --red: #e65050;
+  --cyan: #399ee6;
+  --border: #d9d8d7;
+  --claude: #a37acc;
+  --code: #399ee6;
+  --shadow: rgba(0,0,0,0.08);
+}
+
+[data-theme="synthwave"] {
+  --bg: #2b213a;
+  --bg2: #34294f;
+  --bg3: #3e3158;
+  --fg: #f0e8ff;
+  --fg-dim: #8b7baa;
+  --accent: #ff7edb;
+  --green: #72f1b8;
+  --yellow: #fede5d;
+  --red: #fe4450;
+  --cyan: #36f9f6;
+  --border: #504073;
+  --claude: #ff7edb;
+  --code: #36f9f6;
+  --shadow: rgba(0,0,0,0.4);
+}
+
+[data-theme="poimandres"] {
+  --bg: #1b1e28;
+  --bg2: #1f2330;
+  --bg3: #272b3b;
+  --fg: #e4f0fb;
+  --fg-dim: #506477;
+  --accent: #add7ff;
+  --green: #5de4c7;
+  --yellow: #fffac2;
+  --red: #d0679d;
+  --cyan: #89ddff;
+  --border: #303340;
+  --claude: #a6accd;
+  --code: #add7ff;
+  --shadow: rgba(0,0,0,0.4);
+}
+
+[data-theme="vesper"] {
+  --bg: #101010;
+  --bg2: #1a1a1a;
+  --bg3: #232323;
+  --fg: #d4d4d4;
+  --fg-dim: #6b6b6b;
+  --accent: #ffc799;
+  --green: #99ffe4;
+  --yellow: #ffc799;
+  --red: #ff8080;
+  --cyan: #99ffe4;
+  --border: #2a2a2a;
+  --claude: #ffc799;
+  --code: #99b3ff;
+  --shadow: rgba(0,0,0,0.5);
+}
+
+[data-theme="palenight"] {
+  --bg: #292d3e;
+  --bg2: #2f3344;
+  --bg3: #373c52;
+  --fg: #a6accd;
+  --fg-dim: #676e95;
+  --accent: #82aaff;
+  --green: #c3e88d;
+  --yellow: #ffcb6b;
+  --red: #f07178;
+  --cyan: #89ddff;
+  --border: #3c4158;
+  --claude: #c792ea;
+  --code: #82aaff;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+[data-theme="flexoki-dark"] {
+  --bg: #100f0f;
+  --bg2: #1c1b1a;
+  --bg3: #282726;
+  --fg: #cecdc3;
+  --fg-dim: #878580;
+  --accent: #da702c;
+  --green: #879a39;
+  --yellow: #d0a215;
+  --red: #af3029;
+  --cyan: #3aa99f;
+  --border: #343331;
+  --claude: #da702c;
+  --code: #4385be;
+  --shadow: rgba(0,0,0,0.5);
+}
+
+[data-theme="flexoki-light"] {
+  --bg: #fffcf0;
+  --bg2: #f2f0e5;
+  --bg3: #e6e4d9;
+  --fg: #100f0f;
+  --fg-dim: #878580;
+  --accent: #da702c;
+  --green: #879a39;
+  --yellow: #d0a215;
+  --red: #af3029;
+  --cyan: #3aa99f;
+  --border: #cecdc3;
+  --claude: #da702c;
+  --code: #4385be;
+  --shadow: rgba(0,0,0,0.08);
+}
+
 [data-theme="catppuccin-latte"] {
   --bg: #eff1f5;
   --bg2: #e6e9ef;
@@ -1088,21 +1241,35 @@ function toggleAddForm() {
 
 // Theme cycle
 const THEMES = [
-  { name: 'dark',       icon: '\u263D', label: 'Dark' },
-  { name: 'light',      icon: '\u2600', label: 'Light' },
-  { name: 'nord',       icon: '\u2744', label: 'Nord' },
-  { name: 'dracula',    icon: '\u2605', label: 'Dracula' },
-  { name: 'solarized',  icon: '\u25D0', label: 'Solarized' },
-  { name: 'gruvbox',    icon: '\u25A3', label: 'Gruvbox' },
-  { name: 'catppuccin', icon: '\u2615', label: 'Catppuccin' },
-  { name: 'catppuccin-latte', icon: '\u2615', label: 'Catppuccin Latte' },
-  { name: 'onedark',    icon: '\u25C6', label: 'One Dark' },
-  { name: 'rosepine',   icon: '\u2740', label: 'Ros\u00E9 Pine' },
-  { name: 'rosepine-dawn', icon: '\u2740', label: 'Ros\u00E9 Dawn' },
-  { name: 'kanagawa',   icon: '\u2387', label: 'Kanagawa' },
-  { name: 'everforest', icon: '\u2618', label: 'Everforest' },
-  { name: 'everforest-light', icon: '\u2618', label: 'Everforest Light' },
-  { name: 'monokai',    icon: '\u25B6', label: 'Monokai' },
+  { name: 'dark',       icon: '\u263D', label: 'Dark',       cat: 'dark' },
+  { name: 'nord',       icon: '\u2744', label: 'Nord',       cat: 'dark' },
+  { name: 'dracula',    icon: '\u2605', label: 'Dracula',    cat: 'dark' },
+  { name: 'onedark',    icon: '\u25C6', label: 'One Dark',   cat: 'dark' },
+  { name: 'tokyo-night', icon: '\u{1F303}', label: 'Tokyo Night', cat: 'dark' },
+  { name: 'catppuccin', icon: '\u2615', label: 'Catppuccin', cat: 'dark' },
+  { name: 'rosepine',   icon: '\u2740', label: 'Ros\u00E9 Pine', cat: 'dark' },
+  { name: 'kanagawa',   icon: '\u2387', label: 'Kanagawa',   cat: 'dark' },
+  { name: 'everforest', icon: '\u2618', label: 'Everforest', cat: 'dark' },
+  { name: 'monokai',    icon: '\u25B6', label: 'Monokai',    cat: 'dark' },
+  { name: 'palenight',  icon: '\u263E', label: 'Palenight',  cat: 'dark' },
+  { name: 'poimandres', icon: '\u269B', label: 'Poimandres', cat: 'dark' },
+  { name: 'synthwave',  icon: '\u{1F4FB}', label: 'Synthwave', cat: 'dark' },
+  { name: 'vesper',     icon: '\u2B50', label: 'Vesper',     cat: 'dark' },
+  { name: 'ayu-dark',   icon: '\u2600', label: 'Ayu Dark',   cat: 'dark' },
+  { name: 'flexoki-dark', icon: '\u270E', label: 'Flexoki', cat: 'dark' },
+  { name: 'gruvbox',    icon: '\u25A3', label: 'Gruvbox',    cat: 'warm' },
+  { name: 'solarized',  icon: '\u25D0', label: 'Solarized',  cat: 'warm' },
+  { name: 'light',      icon: '\u2600', label: 'Light',      cat: 'light' },
+  { name: 'catppuccin-latte', icon: '\u2615', label: 'Catppuccin Latte', cat: 'light' },
+  { name: 'rosepine-dawn', icon: '\u2740', label: 'Ros\u00E9 Dawn', cat: 'light' },
+  { name: 'everforest-light', icon: '\u2618', label: 'Everforest Light', cat: 'light' },
+  { name: 'ayu-light',  icon: '\u2600', label: 'Ayu Light',  cat: 'light' },
+  { name: 'flexoki-light', icon: '\u270E', label: 'Flexoki Light', cat: 'light' },
+];
+const THEME_CATS = [
+  { key: 'dark',  label: 'Dark' },
+  { key: 'warm',  label: 'Warm' },
+  { key: 'light', label: 'Light' },
 ];
 const themeToggle = document.getElementById('theme-toggle');
 const savedTheme = localStorage.getItem('places-theme');
@@ -1138,11 +1305,17 @@ function toggleThemePicker() {
   const picker = document.getElementById('theme-picker');
   const isOpen = picker.classList.toggle('open');
   if (!isOpen) return;
-  picker.innerHTML = THEMES.map((t, i) =>
-    `<button class="theme-picker-item${i === themeIdx ? ' active' : ''}" onclick="pickTheme(${i})" onmouseenter="previewTheme(${i})" onmouseleave="previewTheme(${themeIdx})">`
-    + `<span class="theme-picker-check">${i === themeIdx ? '\u2713' : ''}</span>`
-    + `${t.icon} ${t.label}</button>`
-  ).join('');
+  let html = '';
+  THEME_CATS.forEach(function(cat) {
+    html += `<div style="padding:5px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px${cat.key !== 'dark' ? ';border-top:1px solid var(--border);margin-top:4px' : ''}">${cat.label}</div>`;
+    THEMES.forEach(function(t, i) {
+      if (t.cat !== cat.key) return;
+      html += `<button class="theme-picker-item${i === themeIdx ? ' active' : ''}" onclick="pickTheme(${i})" onmouseenter="previewTheme(${i})" onmouseleave="previewTheme(${themeIdx})">` +
+        `<span class="theme-picker-check">${i === themeIdx ? '\u2713' : ''}</span>` +
+        `${t.icon} ${t.label}</button>`;
+    });
+  });
+  picker.innerHTML = html;
 }
 
 function previewTheme(idx) {
