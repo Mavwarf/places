@@ -1302,7 +1302,7 @@ function renderActionManager(panel) {
     : ['claude', 'explorer', 'code', 'terminal'];
   const defaultLabels = placesOS === 'windows'
     ? {claude: 'cl', explorer: 'dir', code: 'VS', powershell: 'PS', cmd: '>_'}
-    : {claude: 'cl', explorer: placesOS === 'darwin' ? 'Finder' : 'dir', code: 'VS', terminal: '>_'};
+    : {claude: 'cl', explorer: placesOS === 'darwin' ? '\uD83D\uDCC1' : 'dir', code: 'VS', terminal: '>_'};
   const actions = Object.entries(actionDefs).sort((a, b) => a[0].localeCompare(b[0]));
   let html = '<h2>Custom actions <button onclick="this.closest(\'.action-manager-overlay\').remove()">&times;</button></h2>';
 
@@ -1523,7 +1523,7 @@ function renderRecent() {
   bar.classList.remove('hidden');
   const labels = placesOS === 'windows'
     ? { claude: 'CL', explorer: 'dir', code: 'VS', powershell: 'PS', cmd: '>_' }
-    : { claude: 'CL', explorer: placesOS === 'darwin' ? 'Finder' : 'dir', code: 'VS', terminal: '>_' };
+    : { claude: 'CL', explorer: placesOS === 'darwin' ? '\uD83D\uDCC1' : 'dir', code: 'VS', terminal: '>_' };
   el.innerHTML = recentHistory.map(h => {
     let actionLabel = labels[h.action] || (actionDefs[h.action] ? actionDefs[h.action].label : h.action);
     if (h.ctrl) actionLabel += ' YOLO';
@@ -1916,10 +1916,10 @@ function getActionLabels() {
   if (placesOS === 'darwin') return {claude:'Claude',explorer:'Finder',code:'VS Code',terminal:'Terminal'};
   return {claude:'Claude',explorer:'Files',code:'VS Code',terminal:'Terminal'};
 }
-const actionLabels = {claude:'Claude',explorer:'Explorer',code:'VS Code',powershell:'PowerShell',cmd:'cmd',terminal:'Terminal'};
+const actionLabels = {claude:'Claude',explorer: placesOS === 'darwin' ? 'Finder' : 'Explorer',code:'VS Code',powershell:'PowerShell',cmd:'cmd',terminal:'Terminal'};
 async function openAt(name, action, shift, ctrl) {
   try {
-    let label = actionLabels[action] || action;
+    let label = getActionLabels()[action] || actionLabels[action] || action;
     if (action === 'claude') {
       if (ctrl) label = 'Claude YOLO session';
       else if (shift) label = 'fresh Claude session';
@@ -2327,8 +2327,8 @@ function renderDefaultActions(p) {
   const pp = esc(p.path);
   const isWin = placesOS === 'windows';
   const isMac = placesOS === 'darwin';
-  const explorerLabel = isMac ? 'Finder' : 'dir';
-  const explorerTitle = isMac ? 'Open in Finder' : 'Open Explorer at ' + pp;
+  const explorerLabel = isMac ? '\uD83D\uDCC1' : 'dir';
+  const explorerTitle = isMac ? 'Open in Finder at ' + pp : 'Open Explorer at ' + pp;
   let btns = '';
   if (!hd.includes('claude')) btns += `<button class="btn-claude" data-place="${n}" data-action="claude" onclick="openAt('${n}','claude',event.shiftKey,event.ctrlKey||event.metaKey)" oncontextmenu="hideDefault(event,'${n}','claude')" title="Claude session in ${pp}&#10;Shift=fresh, ${placesOS === 'darwin' ? 'Cmd' : 'Ctrl'}=YOLO&#10;Right-click to hide">cl</button>`;
   if (!hd.includes('explorer')) btns += `<button class="btn-explorer" data-place="${n}" data-action="explorer" onclick="openAt('${n}','explorer')" oncontextmenu="hideDefault(event,'${n}','explorer')" title="${explorerTitle}&#10;Right-click to hide">${explorerLabel}</button>`;
