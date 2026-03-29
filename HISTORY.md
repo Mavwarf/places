@@ -2,6 +2,7 @@
 
 ## Features
 
+- Dashboard UX — draggable column dividers with persistent widths (both normal and compact mode); tag filter overflow menu (top 5 by usage, rest in "..." popup with inline toggle); AND logic for multi-tag filtering; custom input dialog for macOS (prompt() unsupported in Wails WebView); compact mode tag add/remove; always-visible Clear button *(Mar 29)*
 - 24 color themes — added Tokyo Night, Ayu Dark/Light, Synthwave, Poimandres, Vesper, Palenight, Flexoki Dark/Light; theme picker grouped by category (Dark, Warm, Light) with section headers *(Mar 29)*
 - macOS support — full desktop app port: OS-aware action buttons (📁 Finder / >_ Terminal instead of dir/PS/cmd), iTerm2 auto-detection with Terminal.app fallback (preference toggle), running session detection via `ps`+`lsof`, Cmd+click for YOLO mode, hidden Windows-only UI (virtual desktops, systray); Makefile (`make mac`) for build+install+`.app` bundle; CI/release workflows with `.app` bundle zips *(Mar 29)*
 - Session time tracking — SQLite database records session start/end times; tooltip shows elapsed time and today's total; graceful shutdown and crash recovery via last_seen_at polling *(Mar 28)*

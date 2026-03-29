@@ -153,7 +153,7 @@ p list --json --tag work              # filtered JSON output
 p tags                                # list all tags with counts
 ```
 
-Tags are lowercase, deduplicated, and sorted alphabetically. The desktop app shows tag badges on each place with click-to-add and click-to-remove, plus a filter bar with toggleable tag chips (select multiple tags to show places matching any of them).
+Tags are lowercase, deduplicated, and sorted alphabetically. The desktop app shows tag badges on each place with click-to-add and click-to-remove, plus a filter bar with the top 5 most-used tags as chips and a **...** overflow menu for the rest (select multiple tags to show places matching all of them).
 
 ### Favorites
 
