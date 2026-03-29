@@ -46,25 +46,35 @@ func hasITerm2() bool {
 	return err == nil
 }
 
-// darwinTerminalScript returns an osascript command that opens a new terminal
-// window and runs shCmd. Prefers iTerm2 if installed, falls back to Terminal.app.
+// darwinTerminalScript returns a command that opens a new terminal window and
+// runs shCmd. Prefers iTerm2 if installed, falls back to Terminal.app.
+// For iTerm2, writes a temp shell script and opens it, avoiding AppleScript
+// automation permission issues with .app bundles.
 func darwinTerminalScript(shCmd string) *exec.Cmd {
-	escaped := strings.ReplaceAll(shCmd, `"`, `\"`)
-	var script string
 	if hasITerm2() {
-		script = fmt.Sprintf(`tell application "iTerm"
-activate
-create window with default profile
-tell current session of current window
-write text "%s"
-end tell
-end tell`, escaped)
-	} else {
-		script = fmt.Sprintf(`tell application "Terminal"
+		// Write a temp script that runs the command in an interactive shell.
+		// The script deletes itself after sourcing, so it doesn't linger.
+		f, err := os.CreateTemp("", "places-launch-*.sh")
+		if err != nil {
+			// Fall back to Terminal.app on error.
+			return darwinTerminalAppScript(shCmd)
+		}
+		script := fmt.Sprintf("#!/bin/zsh\nrm -f %q\n%s\n", f.Name(), shCmd)
+		f.WriteString(script)
+		f.Close()
+		os.Chmod(f.Name(), 0755)
+		return exec.Command("open", "-a", "iTerm", f.Name())
+	}
+	return darwinTerminalAppScript(shCmd)
+}
+
+// darwinTerminalAppScript opens Terminal.app and runs shCmd via AppleScript.
+func darwinTerminalAppScript(shCmd string) *exec.Cmd {
+	escaped := strings.ReplaceAll(shCmd, `"`, `\"`)
+	script := fmt.Sprintf(`tell application "Terminal"
 activate
 do script "%s"
 end tell`, escaped)
-	}
 	return exec.Command("osascript", "-e", script)
 }
 
@@ -200,6 +210,10 @@ func Detach(cmd *exec.Cmd) error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	go cmd.Wait()
+	go func() {
+		if err := cmd.Wait(); err != nil {
+			fmt.Fprintf(os.Stderr, "places-app: launch error: %v\n", err)
+		}
+	}()
 	return nil
 }
