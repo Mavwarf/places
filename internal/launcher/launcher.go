@@ -40,16 +40,40 @@ func PowerShell(path string) *exec.Cmd {
 	return Terminal(path)
 }
 
+// hasITerm2 checks if iTerm2 is installed on macOS.
+func hasITerm2() bool {
+	_, err := os.Stat("/Applications/iTerm.app")
+	return err == nil
+}
+
+// darwinTerminalScript returns an osascript command that opens a new terminal
+// window and runs shCmd. Prefers iTerm2 if installed, falls back to Terminal.app.
+func darwinTerminalScript(shCmd string) *exec.Cmd {
+	escaped := strings.ReplaceAll(shCmd, `"`, `\"`)
+	var script string
+	if hasITerm2() {
+		script = fmt.Sprintf(`tell application "iTerm"
+activate
+create window with default profile
+tell current session of current window
+write text "%s"
+end tell
+end tell`, escaped)
+	} else {
+		script = fmt.Sprintf(`tell application "Terminal"
+activate
+do script "%s"
+end tell`, escaped)
+	}
+	return exec.Command("osascript", "-e", script)
+}
+
 // Terminal opens a new terminal window at the given directory.
-// On macOS, opens Terminal.app with a new window via osascript.
+// On macOS, prefers iTerm2 if installed, falls back to Terminal.app.
 // On Linux, starts the user's default shell.
 func Terminal(path string) *exec.Cmd {
 	if runtime.GOOS == "darwin" {
-		script := fmt.Sprintf(`tell application "Terminal"
-activate
-do script "cd %s"
-end tell`, strings.ReplaceAll(shellQuote(path), `"`, `\"`))
-		return exec.Command("osascript", "-e", script)
+		return darwinTerminalScript("cd " + shellQuote(path))
 	}
 	shell := os.Getenv("SHELL")
 	if shell == "" {
@@ -100,12 +124,7 @@ func Claude(path, name string, cont, yolo bool, shell string, suppressTitle bool
 	if runtime.GOOS != "windows" {
 		shCmd := fmt.Sprintf("cd %s && %s", shellQuote(path), claudeCmd)
 		if runtime.GOOS == "darwin" {
-			// Use osascript to open Terminal.app with a new tab/window.
-			script := fmt.Sprintf(`tell application "Terminal"
-activate
-do script "%s"
-end tell`, strings.ReplaceAll(shCmd, `"`, `\"`))
-			return exec.Command("osascript", "-e", script)
+			return darwinTerminalScript(shCmd)
 		}
 		// Linux / other: just run in a new shell process.
 		return Shell(shCmd)
