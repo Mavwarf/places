@@ -1181,9 +1181,9 @@ function togglePrefs() {
     // Actions section
     `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Actions</div>` +
     `<button class="theme-picker-item" onclick="openActionManager()">Manage custom actions</button>` +
-    // Monitoring section (Windows only — running session detection requires process scanning)
-    (isWin ? `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Monitoring</div>` +
-    `<button class="theme-picker-item" onclick="toggleDetectRunning()">Detect running sessions: ${detectRunning ? 'on' : 'off'}</button>` : '') +
+    // Monitoring section
+    `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Monitoring</div>` +
+    `<button class="theme-picker-item" onclick="toggleDetectRunning()">Detect running sessions: ${detectRunning ? 'on' : 'off'}</button>` +
     // Integration section
     `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Integration</div>` +
     `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>`;
