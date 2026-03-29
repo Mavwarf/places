@@ -61,15 +61,15 @@
 ## macOS
 
 ### High priority
-- [ ] **Build automation** — Makefile or script for `CGO_LDFLAGS="-framework UniformTypeIdentifiers"`, `.app` bundle creation with icon, and `~/.local/bin` install
-- [ ] **Fix CI/release workflows** — Go version is `1.24` but `go.mod` requires `1.25.0`; Windows app build uses `CGO_ENABLED=0` on ubuntu which may break with new runtime imports
-- [ ] **macOS `.app` bundle in release** — GitHub Action should package the binary into a `.app` bundle with Info.plist and icon, then zip it for the release artifacts
+- [x] ~~**Build automation** — Makefile: `make mac` builds CLI + app, installs to `~/.local/bin`, creates `.app` bundle in `/Applications` with icon~~ *(Mar 29)*
+- [x] ~~**Fix CI/release workflows** — `go-version-file: go.mod` instead of hardcoded 1.24~~ *(Mar 29)*
+- [x] ~~**macOS `.app` bundle in release** — `bundle-mac` job creates `.app` with Info.plist + icon, zips for release artifacts~~ *(Mar 29)*
 
 ### Medium priority
 - [ ] **System tray** — disabled because energye/systray conflicts with Wails' NSApplication run loop on Sequoia; investigate alternatives (native NSStatusItem via CGO, or Wails v3 built-in tray)
 - [ ] **Always-on-top** — `topmost_other.go` is a no-op; implement via NSWindow level API (`NSFloatingWindowLevel`)
-- [ ] **Running session detection** — `running_other.go` returns nil; implement via `ps aux` to detect Claude, VS Code, Terminal processes at place directories
-- [ ] **iTerm2 support** — Claude and Terminal launchers currently use Terminal.app via osascript; detect and prefer iTerm2 if installed
+- [x] ~~**Running session detection** — detects Claude, VS Code, and custom actions via `ps` command line scanning + `lsof` working directory scanning~~ *(Mar 29)*
+- [x] ~~**iTerm2 support** — auto-detects `/Applications/iTerm.app`, uses AppleScript `create window with default profile` + `write text`; falls back to Terminal.app~~ *(Mar 29)*
 
 ### Low priority / nice to have
 - [ ] **Global hotkey (Cmd+Option+P)** — currently a no-op; needs Cocoa/CGEvent API in `hotkey_darwin.go`

@@ -12,7 +12,7 @@ Switching between project directories means typing long paths or hunting through
 - Interactive picker — just type `p` to browse all saved places with arrow keys
 - Usage tracking — see which directories you visit most often
 
-Works on Windows (PowerShell, cmd.exe) and Unix (Bash, Zsh). Includes a desktop app for managing places with one-click terminal launching. No external dependencies (CLI) / Wails v2 (desktop app).
+Works on Windows (PowerShell, cmd.exe) and macOS/Linux (Bash, Zsh). Includes a desktop app for managing places with one-click terminal launching. No external dependencies (CLI) / Wails v2 (desktop app).
 
 ## Usage
 
@@ -172,11 +172,10 @@ Favorites show a ★ marker in `p list`. The desktop app has a clickable star to
 
 `p app` launches a desktop GUI (built with Wails v2) that shows all saved places with action buttons:
 
-- **cl** — continue last Claude Code session at that directory (Shift+click for fresh session with confirmation, Ctrl+click for YOLO mode with `--dangerously-skip-permissions`)
-- **dir** — open Explorer at that directory
+- **cl** — continue last Claude Code session at that directory (Shift+click for fresh session with confirmation, Ctrl+click / Cmd+click for YOLO mode with `--dangerously-skip-permissions`)
+- **dir** / **📁** — open Explorer (Windows) or Finder (macOS) at that directory
 - **VS** — open VS Code at that directory
-- **PS** — open PowerShell at that directory
-- **>_** — open cmd.exe at that directory
+- **PS** / **>_** — open PowerShell/cmd (Windows) or Terminal/iTerm2 (macOS) at that directory
 - **⋯** — place menu: toggle built-in action visibility, assign/unassign custom actions, remove place
 - **Recent** — toggleable bar showing last 8 launched place+action pairs as quick-replay chips
 
@@ -233,12 +232,20 @@ The desktop app lives in the system tray. Closing the window hides it to the tra
 
 ### Build
 
+**Windows:**
 ```
 cd cmd/places-app
 go build -tags production -ldflags "-X main.version=$(git describe --tags --always) -X 'main.buildTime=$(date -u +%Y-%m-%d\ %H:%M\ UTC)' -H windowsgui" -o places-app.exe .
 ```
 
 Copy `places-app.exe` next to `places.exe` on your PATH.
+
+**macOS:**
+```
+make mac
+```
+
+This builds the CLI and desktop app, installs to `~/.local/bin`, and creates `/Applications/Places.app` (launchable via Spotlight). Requires Xcode command line tools.
 
 ## How it works
 
