@@ -59,17 +59,11 @@ func pngToICO(png []byte) ([]byte, error) {
 }
 
 func onTrayReady(app *App) {
-	if runtime.GOOS == "windows" {
-		// Windows systray requires ICO format.
-		ico, err := pngToICO(trayIcon)
-		if err != nil {
-			systray.SetIcon(trayIcon)
-		} else {
-			systray.SetIcon(ico)
-		}
-	} else {
-		// macOS and Linux use PNG directly.
+	ico, err := pngToICO(trayIcon)
+	if err != nil {
 		systray.SetIcon(trayIcon)
+	} else {
+		systray.SetIcon(ico)
 	}
 	systray.SetTooltip("places")
 	systray.SetOnClick(func(menu systray.IMenu) { menu.ShowMenu() })
@@ -151,11 +145,7 @@ func addRecentMenu() {
 				case "powershell":
 					launcher.Detach(launcher.PowerShell(path))
 				case "cmd":
-					if runtime.GOOS == "windows" {
-						launcher.Detach(launcher.Cmd(path))
-					} else {
-						launcher.Detach(launcher.Terminal(path))
-					}
+					launcher.Detach(launcher.Cmd(path))
 				case "terminal":
 					launcher.Detach(launcher.Terminal(path))
 				default:
@@ -226,23 +216,14 @@ func addPlaceMenusGrouped() {
 		mClaude := parent.AddSubMenuItem("Claude", "Open Claude here")
 		mClaude.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Claude(path, placeName, false, false, cShell, cSuppress, pEffort)) })
 
-		explorerLabel := "Explorer"
-		if runtime.GOOS == "darwin" {
-			explorerLabel = "Finder"
-		}
-		mExplorer := parent.AddSubMenuItem(explorerLabel, "Open file manager here")
+		mExplorer := parent.AddSubMenuItem("Explorer", "Open Explorer here")
 		mExplorer.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Explorer(path)) })
 
-		if runtime.GOOS == "windows" {
-			mPS := parent.AddSubMenuItem("PowerShell", "Open PowerShell here")
-			mPS.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.PowerShell(path)) })
+		mPS := parent.AddSubMenuItem("PowerShell", "Open PowerShell here")
+		mPS.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.PowerShell(path)) })
 
-			mCmd := parent.AddSubMenuItem("cmd", "Open cmd.exe here")
-			mCmd.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Cmd(path)) })
-		} else {
-			mTerm := parent.AddSubMenuItem("Terminal", "Open terminal here")
-			mTerm.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Terminal(path)) })
-		}
+		mCmd := parent.AddSubMenuItem("cmd", "Open cmd.exe here")
+		mCmd.Click(func() { recordTrayUse(placeName); launcher.SwitchDesktop(desk); launcher.Detach(launcher.Cmd(path)) })
 	}
 }
 

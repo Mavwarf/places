@@ -15,12 +15,12 @@ mac-app:  ## Build the desktop app (requires CGO)
 	CGO_LDFLAGS="-framework UniformTypeIdentifiers" \
 	go build -tags production -ldflags "$(LDFLAGS)" -o build/places-app ./cmd/places-app
 
-mac-install: build/places build/places-app  ## Install binaries to ~/.local/bin
+mac-install: mac-cli mac-app  ## Install binaries to ~/.local/bin
 	@mkdir -p ~/.local/bin
 	cp build/places ~/.local/bin/places
 	cp build/places-app ~/.local/bin/places-app
 
-mac-bundle: build/places-app  ## Create/update Places.app bundle in /Applications
+mac-bundle: mac-app  ## Create/update Places.app bundle in /Applications
 	@mkdir -p /Applications/Places.app/Contents/MacOS
 	@mkdir -p /Applications/Places.app/Contents/Resources
 	cp build/places-app /Applications/Places.app/Contents/MacOS/places-app
@@ -70,9 +70,6 @@ windows-app:  ## Build the desktop app
 # --- Common -----------------------------------------------------------
 
 .PHONY: clean
-
-build/places build/places-app build/places.exe build/places-app.exe:
-	@mkdir -p build
 
 clean:  ## Remove all build artifacts
 	rm -rf build/

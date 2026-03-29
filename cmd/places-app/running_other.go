@@ -3,7 +3,6 @@
 package main
 
 import (
-	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -134,16 +133,6 @@ func detectRunningSessions(placeNames []string) []RunningSession {
 
 		// Batch lsof call for all candidate PIDs.
 		if len(candidates) > 0 {
-			pidArgs := make([]string, 0, len(candidates)*2+2)
-			pidArgs = append(pidArgs, "-a", "-d", "cwd")
-			for i, c := range candidates {
-				if i > 0 {
-					// lsof OR: multiple -p flags without -a between them
-					// Use comma-separated PIDs with single -p instead.
-				}
-				_ = c
-			}
-			// Build comma-separated PID list for single lsof call.
 			pidStrs := make([]string, len(candidates))
 			for i, c := range candidates {
 				pidStrs[i] = strconv.Itoa(c.pid)
@@ -199,9 +188,4 @@ func dedup(sessions []RunningSession) []RunningSession {
 		}
 	}
 	return result
-}
-
-// logDetect is a helper for debug logging (uncomment for troubleshooting).
-func logDetect(format string, args ...interface{}) {
-	_ = fmt.Sprintf(format, args...)
 }

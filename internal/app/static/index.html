@@ -1916,10 +1916,9 @@ function getActionLabels() {
   if (placesOS === 'darwin') return {claude:'Claude',explorer:'Finder',code:'VS Code',terminal:'Terminal'};
   return {claude:'Claude',explorer:'Files',code:'VS Code',terminal:'Terminal'};
 }
-const actionLabels = {claude:'Claude',explorer: placesOS === 'darwin' ? 'Finder' : 'Explorer',code:'VS Code',powershell:'PowerShell',cmd:'cmd',terminal:'Terminal'};
 async function openAt(name, action, shift, ctrl) {
   try {
-    let label = getActionLabels()[action] || actionLabels[action] || action;
+    let label = getActionLabels()[action] || action;
     if (action === 'claude') {
       if (ctrl) label = 'Claude YOLO session';
       else if (shift) label = 'fresh Claude session';
