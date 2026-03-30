@@ -81,6 +81,35 @@
 - [ ] **DMG installer** — `.dmg` with drag-to-Applications for distribution
 - [ ] **Wails v3 migration** — would fix the systray conflict and improve macOS integration overall
 
+## AI (optional, requires Ollama)
+
+- [ ] **Ollama integration** — detect local Ollama service at `localhost:11434`; expose `has_ollama` in API; show/hide AI features in dashboard
+- [ ] **Smart place notes** — auto-generate place descriptions from README or project structure
+- [ ] **Natural language search** — `p find "the billing API"` matches places by semantic similarity
+- [ ] **Git diff summary** — summarize uncommitted changes in the dashboard git status tooltip
+
+## Future Ideas
+
+### Productivity
+- [ ] **Project templates** — `p clone api new-api` duplicates a place's config (tags, actions, desktop) for a new directory
+- [ ] **Time tracking dashboard** — weekly/monthly summary view with charts per place (session data already exists)
+- [ ] **Quick notes log** — `p log api "fixed auth bug"` appends timestamped entries to a place's log
+
+### Integration
+- [ ] **GitHub status** — show open PRs, CI status badge next to git info in dashboard
+- [ ] **Docker status** — detect running containers associated with a place directory
+- [ ] **SSH places** — bookmark remote directories, `p ssh-api` connects and cd's
+
+### Navigation
+- [ ] **Frecent subfolders** — `p api/src` jumps to subdirectories of a place
+- [ ] **Place groups** — `p @work` opens all work-tagged places at once (multiple terminals)
+- [ ] **Auto-discover** — scan `~/projects/` and suggest unbookmarked directories
+
+### Dashboard
+- [ ] **Kanban view** — drag places between tag columns (like Trello)
+- [ ] **Minimap** — show recent activity timeline per place
+- [ ] **Keyboard shortcuts** — j/k navigation, number keys for quick launch
+
 ## Script-Friendly
 
 - [x] ~~**`p list --json`**~~ — machine-readable output for scripting / integrations *(Mar 1)*
