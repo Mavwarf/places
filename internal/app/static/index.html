@@ -816,6 +816,7 @@ button:active { opacity: 0.7; }
 .compact .place-info { min-width: 0; width: var(--compact-col2, 150px); flex: 0 0 auto; overflow: hidden; }
 .compact .place-stats { width: var(--compact-col3, 90px); text-align: left; flex-shrink: 0; white-space: nowrap; font-size: 0.85em; }
 .compact .place-actions { flex: 1; flex-shrink: 0; justify-content: flex-end; width: auto; }
+.compact .health-dot { font-size: 1em; }
 .compact .place-stats .stats-sep { display: inline; }
 .place-stats .stats-sep { display: none; }
 .compact .place-stats .stats-br { display: none; }
@@ -834,7 +835,7 @@ button:active { opacity: 0.7; }
 
 .health-dot {
   flex-shrink: 0;
-  font-size: 0.7em;
+  font-size: 0.9em;
   width: 12px;
   text-align: center;
   line-height: 1;
@@ -930,7 +931,7 @@ button:active { opacity: 0.7; }
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 1.1em;
+  font-size: 1.3em;
   padding: 0 4px;
   color: var(--fg-dim);
   line-height: 1;
@@ -1308,6 +1309,7 @@ button:active { opacity: 0.7; }
   border-radius: 4px;
   background: color-mix(in srgb, var(--green) 15%, transparent);
   color: var(--green);
+  cursor: default;
 }
 .badge-git-dirty {
   font-size: 0.7em;
@@ -1315,6 +1317,7 @@ button:active { opacity: 0.7; }
   border-radius: 4px;
   background: color-mix(in srgb, var(--yellow) 15%, transparent);
   color: var(--yellow);
+  cursor: default;
 }
 .badge-git-error {
   font-size: 0.7em;
@@ -2521,7 +2524,11 @@ function healthTitle(p) {
   const g = gitCache[p.name];
   if (!g) return '';
   if (g.error) return '';
-  if (g.dirty) return 'Uncommitted changes';
+  if (g.dirty) {
+    let tip = 'Uncommitted changes';
+    if (g.files && g.files.length) tip += '&#10;' + g.files.map(f => esc(f)).join('&#10;');
+    return tip;
+  }
   return 'Clean';
 }
 
@@ -2991,7 +2998,11 @@ function renderGitBadge(info) {
   if (info.error) return `<span class="badge-git-error">${esc(info.error)}</span>`;
   const cls = info.dirty ? 'badge-git-dirty' : 'badge-git-clean';
   const icon = info.dirty ? '\u25CF' : '\u2713';
-  return `<span class="${cls}">${icon} ${esc(info.branch)}</span>`;
+  let tooltip = esc(info.branch);
+  if (info.dirty && info.files && info.files.length) {
+    tooltip += '&#10;' + info.files.map(f => esc(f)).join('&#10;');
+  }
+  return `<span class="${cls}" title="${tooltip}">${icon} ${esc(info.branch)}</span>`;
 }
 
 function renderDefaultActions(p) {

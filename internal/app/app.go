@@ -1244,20 +1244,24 @@ func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	branch, dirty, err := gitStatus(r.Context(), path)
+	result, err := gitStatus(r.Context(), path)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	writeJSON(w,map[string]interface{}{
-		"branch": branch,
-		"dirty":  dirty,
-	})
+	writeJSON(w, result)
 }
 
-// gitStatus returns the current branch name and dirty flag for a git repo.
-func gitStatus(parent context.Context, path string) (string, bool, error) {
+// gitStatusResult holds git status info for a repository.
+type gitStatusResult struct {
+	Branch  string   `json:"branch"`
+	Dirty   bool     `json:"dirty"`
+	Files   []string `json:"files,omitempty"`
+}
+
+// gitStatus returns the current branch name, dirty flag, and changed files for a git repo.
+func gitStatus(parent context.Context, path string) (gitStatusResult, error) {
 	ctx, cancel := context.WithTimeout(parent, 10*time.Second)
 	defer cancel()
 
@@ -1265,19 +1269,31 @@ func gitStatus(parent context.Context, path string) (string, bool, error) {
 	hideWindow(branchCmd)
 	branchOut, err := branchCmd.Output()
 	if err != nil {
-		return "", false, fmt.Errorf("not a git repository")
+		return gitStatusResult{}, fmt.Errorf("not a git repository")
 	}
 
 	statusCmd := exec.CommandContext(ctx, "git", "-C", path, "status", "--porcelain")
 	hideWindow(statusCmd)
 	statusOut, err := statusCmd.Output()
 	if err != nil {
-		return "", false, fmt.Errorf("failed to read git status")
+		return gitStatusResult{}, fmt.Errorf("failed to read git status")
 	}
 
 	branch := strings.TrimSpace(string(branchOut))
-	dirty := len(strings.TrimSpace(string(statusOut))) > 0
-	return branch, dirty, nil
+	raw := strings.TrimRight(string(statusOut), "\n\r ")
+	dirty := len(raw) > 0
+	var files []string
+	if dirty {
+		for _, line := range strings.Split(raw, "\n") {
+			if len(line) >= 4 {
+				// Porcelain format: XY<space>filename (positions 0,1,2,3+)
+				status := strings.TrimSpace(line[:2])
+				filename := line[3:]
+				files = append(files, status+" "+filename)
+			}
+		}
+	}
+	return gitStatusResult{Branch: branch, Dirty: dirty, Files: files}, nil
 }
 
 // handleToggleDefault toggles a built-in action's visibility for a place.
