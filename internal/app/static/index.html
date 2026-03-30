@@ -1240,6 +1240,8 @@ button:active { opacity: 0.7; }
   <button class="sort-btn" onclick="setSort('added')" id="sort-added">Added</button>
   <button class="sort-btn" onclick="setSort('frecency')" id="sort-frecency" title="Frequency + recency combined">Frecency</button>
   <button class="sort-btn" onclick="setSort('desktop')" id="sort-desktop" title="Group by virtual desktop, unassigned at bottom">Desktop</button>
+  <span style="width:12px"></span>
+  <button class="sort-btn" id="pin-favs-btn" onclick="togglePinFavs()" title="Pin favorites to top of list">Pin &#9733;</button>
   <span class="spacer"></span>
   <button class="btn-io" onclick="exportPlaces()" title="Export places as JSON">Export</button>
   <button class="btn-io" onclick="importPlaces()" title="Import places from JSON">Import</button>
@@ -2065,7 +2067,7 @@ async function load() {
     const hasFilters = activeTags.size > 0 || excludedTags.size > 0 || favFilter || dirtyFilter || textFilter;
     const favChip = `<button class="tag-chip chip-gap-right${favFilter ? ' active' : ''}" onclick="toggleFavFilter()" title="Show favorites only">&#9733;</button>`;
     const dirtyChip = `<button class="tag-chip chip-gap-left${dirtyFilter ? ' active' : ''}" onclick="toggleDirtyFilter()" title="Show only git-dirty places">Git dirty</button>`;
-    const pinChip = `<button class="tag-chip${pinFavs ? ' active' : ''}" onclick="togglePinFavs()" title="Pin favorites to top of list">Pin &#9733;</button>`;
+
     function tagChip(t, overflow) {
       const fn = overflow ? 'overflowFilterTag' : 'filterTag';
       const efn = overflow ? 'overflowExcludeTag' : 'excludeTag';
@@ -2079,7 +2081,8 @@ async function load() {
     }
     const clearBtn = `<button class="tag-chip chip-gap-left${hasFilters ? '' : ' disabled'}" onclick="clearFilters()"${hasFilters ? '' : ' disabled'} style="${hasFilters ? '' : 'opacity:0.3;pointer-events:none'}">Clear</button>`;
     document.getElementById('tag-bar-left').innerHTML = '<span>Filter:</span>' + favChip + tagChips + overflowBtn + dirtyChip;
-    document.getElementById('tag-bar-right').innerHTML = clearBtn + pinChip;
+    document.getElementById('tag-bar-right').innerHTML = clearBtn;
+    document.getElementById('pin-favs-btn').classList.toggle('active', pinFavs);
     document.getElementById('tag-bar-git').innerHTML = gitBtn;
     // Reopen overflow menu if it was open before reload
     if (overflowOpen) {

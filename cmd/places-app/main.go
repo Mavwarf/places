@@ -132,7 +132,7 @@ func main() {
 		Title:             appTitle,
 		Width:             width,
 		Height:            height,
-		MinWidth:          1000,
+		MinWidth:          700,
 		MinHeight:         400,
 		AssetServer: &assetserver.Options{
 			Handler: loader,
