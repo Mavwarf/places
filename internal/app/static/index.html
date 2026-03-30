@@ -1996,7 +1996,12 @@ function toggleSessions() {
   document.getElementById('compact-toggle').style.display = hide;
   document.querySelector('.sort-bar').style.display = hide;
   document.getElementById('tag-bar').style.display = hide;
-  document.getElementById('recent-bar').style.display = sessionsMode ? 'none' : (recentVisible && (recentHistory.length || favActions.length) ? '' : 'none');
+  if (sessionsMode) {
+    document.getElementById('recent-bar').style.display = 'none';
+  } else {
+    document.getElementById('recent-bar').style.display = '';
+    renderRecent();
+  }
   // Hide add form if open
   if (sessionsMode) {
     const form = document.querySelector('.add-form');
