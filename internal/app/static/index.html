@@ -552,6 +552,8 @@ body {
   margin: 0 -12px;
   padding-left: 12px;
   padding-right: 12px;
+  position: relative;
+  z-index: 200;
 }
 h1 {
   font-size: 1.3em;
@@ -1471,6 +1473,7 @@ function togglePrefs() {
     (isWin ? `<button class="theme-picker-item" onclick="toggleClaudeShell()">Shell: ${claudeShell}</button>` : '') +
     (isWin ? `<button class="theme-picker-item" onclick="toggleSuppressTitle()">Custom tab title: ${suppressTitle ? 'on' : 'off'}</button>` : '') +
     (!isWin && hasITerm ? `<button class="theme-picker-item" onclick="toggleClaudeShell()">Terminal: ${claudeShell === 'terminal' ? 'Terminal.app' : 'iTerm2'}</button>` : '') +
+    `<button class="theme-picker-item" onclick="toggleSkipFreshConfirm()">Confirm fresh session: ${skipFreshConfirm ? 'off' : 'on'}</button>` +
     `<div style="padding:5px 12px 2px;font-size:0.75em;color:var(--fg-dim)">Effort level:</div>` +
     EFFORT_LEVELS.filter(e => e !== '').map(e =>
       `<button class="theme-picker-item${effortCheck(e) ? ' active' : ''}" onclick="setDefaultEffort('${e}')">${effortCheck(e) ? '\u2713 ' : '\u00a0\u00a0\u00a0 '}${e}</button>`
@@ -1488,7 +1491,7 @@ function togglePrefs() {
 
 async function editNotifyPath() {
   document.getElementById('prefs-picker').classList.remove('open');
-  const p = prompt('Path to notify.exe:', notifyPath || 'C:/dev/tools/cli/notify.exe');
+  const p = await inputDialog('Path to notify executable:', notifyPath || 'C:/dev/tools/cli/notify.exe');
   if (p === null) return;
   try {
     const res = await fetch('/api/notify-path', {
@@ -1500,6 +1503,13 @@ async function editNotifyPath() {
     notifyPath = p;
     toast('Notify path saved');
   } catch (e) { toast('Failed to save notify path', true); }
+}
+
+function toggleSkipFreshConfirm() {
+  document.getElementById('prefs-picker').classList.remove('open');
+  skipFreshConfirm = !skipFreshConfirm;
+  localStorage.setItem('places-skip-fresh-confirm', skipFreshConfirm ? 'on' : '');
+  toast('Confirm fresh session: ' + (skipFreshConfirm ? 'off' : 'on'));
 }
 
 async function toggleClaudeShell() {
@@ -1649,7 +1659,7 @@ async function addActionDef(btn) {
   const label = form.querySelector('[name="am-label"]').value.trim();
   const cmd = form.querySelector('[name="am-cmd"]').value.trim();
   if (!name || !label || !cmd) { toast('All fields required', true); return; }
-  if (actionDefs[name] && !confirm('Action "' + name + '" already exists. Overwrite?')) return;
+  if (actionDefs[name] && !(await confirmDialog('Action "' + name + '" already exists. Overwrite?'))) return;
   try {
     const res = await fetch('/api/action-define', {
       method: 'POST',
@@ -1671,7 +1681,7 @@ async function deleteActionDef(name, btn) {
   const msg = used > 0
     ? 'Delete action "' + name + '"? It is assigned to ' + used + ' place' + (used > 1 ? 's' : '') + ' and will be removed.'
     : 'Delete action "' + name + '"?';
-  if (!confirm(msg)) return;
+  if (!(await confirmDialog(msg))) return;
   try {
     const res = await fetch('/api/action-delete', {
       method: 'POST',
@@ -1928,6 +1938,7 @@ function toggleRecent() {
 
 // Compact mode
 let compactMode = localStorage.getItem('places-compact') === 'on';
+let skipFreshConfirm = localStorage.getItem('places-skip-fresh-confirm') === 'on';
 function applyCompact() {
   document.getElementById('places').classList.toggle('compact', compactMode);
   document.getElementById('compact-toggle').classList.toggle('active', compactMode);
@@ -2348,7 +2359,10 @@ async function openAt(name, action, shift, ctrl) {
       if (ctrl) label = 'Claude YOLO session';
       else if (shift) label = 'fresh Claude session';
       else label = 'Claude session';
-      if (shift && !confirm('Start a fresh Claude session at ' + name + '?\nThis will NOT continue the previous conversation.')) return;
+      if (shift && !skipFreshConfirm) {
+        const ok = await confirmDialog('Start a fresh Claude session at ' + name + '?\nThis will NOT continue the previous conversation.');
+        if (!ok) return;
+      }
     }
     toast('Opening ' + label + ' at ' + name);
     const res = await fetch('/api/open', {
@@ -2365,7 +2379,7 @@ async function openAt(name, action, shift, ctrl) {
 }
 
 async function rm(name) {
-  if (!confirm('Remove "' + name + '"?')) return;
+  if (!(await confirmDialog('Remove "' + name + '"?'))) return;
   try {
     const res = await fetch('/api/rm', {
       method: 'POST',
@@ -2974,7 +2988,7 @@ function showPlaceMenu(e, placeName) {
 async function setupNotify(placeName) {
   // Ensure notify path is configured.
   if (!notifyPath) {
-    const p = prompt('Path to notify.exe:', 'C:/dev/tools/cli/notify.exe');
+    const p = await inputDialog('Path to notify executable:', 'C:/dev/tools/cli/notify.exe');
     if (!p) return;
     try {
       const res = await fetch('/api/notify-path', {
@@ -2988,7 +3002,7 @@ async function setupNotify(placeName) {
   }
   // Prompt for profile name.
   const defaultProfile = placeName.toLowerCase().replace(/[^a-z-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  const profile = prompt('Notify profile name (lowercase letters and hyphens):', defaultProfile);
+  const profile = await inputDialog('Notify profile name (lowercase letters and hyphens):', defaultProfile);
   if (!profile) return;
   if (!/^[a-z]+(-[a-z]+)*$/.test(profile)) {
     toast('Invalid profile: use lowercase letters and hyphens only', true);
@@ -3042,9 +3056,9 @@ async function unassignAction(placeName, actionName) {
   } catch (e) { toast('Failed', true); }
 }
 
-function confirmUnassign(e, placeName, actionName) {
+async function confirmUnassign(e, placeName, actionName) {
   e.preventDefault();
-  if (confirm(`Remove "${actionName}" from "${placeName}"?`)) {
+  if (await confirmDialog(`Remove "${actionName}" from "${placeName}"?`)) {
     unassignAction(placeName, actionName);
   }
 }
@@ -3195,6 +3209,33 @@ async function handleImportFile(e) {
 }
 
 // Custom input dialog (prompt() doesn't work in Wails WebView on macOS).
+// Custom confirm dialog (confirm() doesn't work in Wails WebView on macOS).
+function confirmDialog(message) {
+  return new Promise(function(resolve) {
+    const overlay = document.createElement('div');
+    overlay.className = 'action-manager-overlay';
+    overlay.onclick = function(e) { if (e.target === overlay) { overlay.remove(); resolve(false); } };
+    const panel = document.createElement('div');
+    panel.className = 'action-manager';
+    panel.style.maxWidth = '400px';
+    panel.style.padding = '16px';
+    panel.innerHTML = `<div style="margin-bottom:12px;color:var(--fg);white-space:pre-line">${message}</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-io" id="confirm-cancel">Cancel</button>
+        <button class="btn-io" id="confirm-ok" style="color:var(--accent)">OK</button>
+      </div>`;
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    panel.querySelector('#confirm-ok').onclick = function() { overlay.remove(); resolve(true); };
+    panel.querySelector('#confirm-cancel').onclick = function() { overlay.remove(); resolve(false); };
+    panel.querySelector('#confirm-ok').focus();
+    document.addEventListener('keydown', function handler(e) {
+      if (e.key === 'Enter') { overlay.remove(); resolve(true); document.removeEventListener('keydown', handler); }
+      if (e.key === 'Escape') { overlay.remove(); resolve(false); document.removeEventListener('keydown', handler); }
+    });
+  });
+}
+
 function inputDialog(message, defaultValue) {
   return new Promise(function(resolve) {
     const overlay = document.createElement('div');
