@@ -227,6 +227,125 @@
   --shadow: rgba(0,0,0,0.4);
 }
 
+[data-theme="high-contrast"] {
+  --bg: #000000;
+  --bg2: #0a0a0a;
+  --bg3: #1a1a1a;
+  --fg: #ffffff;
+  --fg-dim: #999999;
+  --accent: #00bfff;
+  --green: #00ff7f;
+  --yellow: #ffdd00;
+  --red: #ff3333;
+  --cyan: #00ffff;
+  --border: #444444;
+  --claude: #ff9500;
+  --code: #00bfff;
+  --shadow: rgba(0,0,0,0.6);
+}
+
+[data-theme="github-dark"] {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --fg: #e6edf3;
+  --fg-dim: #7d8590;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --cyan: #58a6ff;
+  --border: #30363d;
+  --claude: #bc8cff;
+  --code: #58a6ff;
+  --shadow: rgba(0,0,0,0.4);
+}
+
+[data-theme="github-light"] {
+  --bg: #ffffff;
+  --bg2: #f6f8fa;
+  --bg3: #eaeef2;
+  --fg: #1f2328;
+  --fg-dim: #656d76;
+  --accent: #0969da;
+  --green: #1a7f37;
+  --yellow: #9a6700;
+  --red: #cf222e;
+  --cyan: #0969da;
+  --border: #d0d7de;
+  --claude: #8250df;
+  --code: #0550ae;
+  --shadow: rgba(0,0,0,0.08);
+}
+
+[data-theme="night-owl"] {
+  --bg: #011627;
+  --bg2: #0b2942;
+  --bg3: #13344f;
+  --fg: #d6deeb;
+  --fg-dim: #637777;
+  --accent: #82aaff;
+  --green: #22da6e;
+  --yellow: #ecc48d;
+  --red: #ef5350;
+  --cyan: #7fdbca;
+  --border: #1d3b53;
+  --claude: #c792ea;
+  --code: #82aaff;
+  --shadow: rgba(0,0,0,0.5);
+}
+
+[data-theme="cobalt2"] {
+  --bg: #193549;
+  --bg2: #1f4662;
+  --bg3: #245578;
+  --fg: #e1efff;
+  --fg-dim: #6699cc;
+  --accent: #ffc600;
+  --green: #3ad900;
+  --yellow: #ffc600;
+  --red: #ff628c;
+  --cyan: #80fcff;
+  --border: #2a5a7b;
+  --claude: #ff9d00;
+  --code: #80fcff;
+  --shadow: rgba(0,0,0,0.4);
+}
+
+[data-theme="horizon"] {
+  --bg: #1c1e26;
+  --bg2: #232530;
+  --bg3: #2e303e;
+  --fg: #d5d8da;
+  --fg-dim: #6c6f93;
+  --accent: #e95678;
+  --green: #27d796;
+  --yellow: #fab795;
+  --red: #e95678;
+  --cyan: #25b0bc;
+  --border: #383b50;
+  --claude: #ee64ae;
+  --code: #25b0bc;
+  --shadow: rgba(0,0,0,0.4);
+}
+
+[data-theme="high-contrast-light"] {
+  --bg: #ffffff;
+  --bg2: #f5f5f5;
+  --bg3: #e0e0e0;
+  --fg: #000000;
+  --fg-dim: #555555;
+  --accent: #0050a0;
+  --green: #006b00;
+  --yellow: #8a6900;
+  --red: #cc0000;
+  --cyan: #005f87;
+  --border: #999999;
+  --claude: #9b2393;
+  --code: #0050a0;
+  --shadow: rgba(0,0,0,0.15);
+}
+
 [data-theme="ayu-dark"] {
   --bg: #0b0e14;
   --bg2: #11151c;
@@ -1056,22 +1175,6 @@ button:active { opacity: 0.7; }
 /* Theme toggle */
 .header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
 .header h1 { margin-bottom: 0; }
-.theme-toggle {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--fg-dim);
-  cursor: pointer;
-  font-size: 13px;
-  font-family: var(--font);
-  height: 32px;
-  padding: 0 10px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: color 0.15s, border-color 0.15s;
-}
-.theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
 .theme-more {
   background: transparent;
   border: 1px solid var(--border);
@@ -1101,6 +1204,8 @@ button:active { opacity: 0.7; }
   z-index: 100;
   box-shadow: 0 4px 12px var(--shadow);
   min-width: 160px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 .theme-picker.open { display: block; }
 .theme-picker-item {
@@ -1210,7 +1315,7 @@ button:active { opacity: 0.7; }
   <button class="btn-add-toggle" id="add-toggle" onclick="toggleAddForm()" title="Add new place">+</button>
   <button class="btn-recent-toggle" id="recent-toggle" onclick="toggleRecent()" title="Toggle recent actions">Recent</button>
   <button class="btn-recent-toggle" id="compact-toggle" onclick="toggleCompact()" title="Toggle compact view">Compact</button>
-  <span style="display:flex;gap:2px;align-items:center"><button class="theme-toggle" id="theme-toggle" title="Toggle theme"></button><button class="theme-more" id="theme-more" onclick="toggleThemePicker()" title="All themes"><div class="theme-picker" id="theme-picker"></div>&#8943;</button></span>
+  <button class="theme-more" id="theme-more" onclick="toggleThemePicker()" title="Color theme"><div class="theme-picker" id="theme-picker"></div>&#127912;</button>
   <button class="theme-more" id="prefs-btn" onclick="togglePrefs()" title="Preferences"><div class="theme-picker" id="prefs-picker"></div>&#9881;</button>
   <div class="window-controls">
     <button class="win-btn win-btn-pin" id="pin-all-btn" onclick="togglePinAllDesktops()" title="Show on all desktops">&#127760;</button>
@@ -1265,80 +1370,74 @@ function toggleAddForm() {
 
 // Theme cycle
 const THEMES = [
-  { name: 'dark',       icon: '\u263D', label: 'Dark',       cat: 'dark' },
-  { name: 'nord',       icon: '\u2744', label: 'Nord',       cat: 'dark' },
-  { name: 'dracula',    icon: '\u2605', label: 'Dracula',    cat: 'dark' },
-  { name: 'onedark',    icon: '\u25C6', label: 'One Dark',   cat: 'dark' },
-  { name: 'tokyo-night', icon: '\u{1F303}', label: 'Tokyo Night', cat: 'dark' },
-  { name: 'catppuccin', icon: '\u2615', label: 'Catppuccin', cat: 'dark' },
-  { name: 'rosepine',   icon: '\u2740', label: 'Ros\u00E9 Pine', cat: 'dark' },
-  { name: 'kanagawa',   icon: '\u2387', label: 'Kanagawa',   cat: 'dark' },
-  { name: 'everforest', icon: '\u2618', label: 'Everforest', cat: 'dark' },
-  { name: 'monokai',    icon: '\u25B6', label: 'Monokai',    cat: 'dark' },
-  { name: 'palenight',  icon: '\u263E', label: 'Palenight',  cat: 'dark' },
-  { name: 'poimandres', icon: '\u269B', label: 'Poimandres', cat: 'dark' },
-  { name: 'synthwave',  icon: '\u{1F4FB}', label: 'Synthwave', cat: 'dark' },
-  { name: 'vesper',     icon: '\u2B50', label: 'Vesper',     cat: 'dark' },
-  { name: 'ayu-dark',   icon: '\u2600', label: 'Ayu Dark',   cat: 'dark' },
-  { name: 'flexoki-dark', icon: '\u270E', label: 'Flexoki', cat: 'dark' },
-  { name: 'gruvbox',    icon: '\u25A3', label: 'Gruvbox',    cat: 'warm' },
-  { name: 'solarized',  icon: '\u25D0', label: 'Solarized',  cat: 'warm' },
-  { name: 'light',      icon: '\u2600', label: 'Light',      cat: 'light' },
-  { name: 'catppuccin-latte', icon: '\u2615', label: 'Catppuccin Latte', cat: 'light' },
-  { name: 'rosepine-dawn', icon: '\u2740', label: 'Ros\u00E9 Dawn', cat: 'light' },
-  { name: 'everforest-light', icon: '\u2618', label: 'Everforest Light', cat: 'light' },
-  { name: 'ayu-light',  icon: '\u2600', label: 'Ayu Light',  cat: 'light' },
-  { name: 'flexoki-light', icon: '\u270E', label: 'Flexoki Light', cat: 'light' },
+  // Dark (10)
+  { name: 'dark',           icon: '\u263D', label: 'Dark',            cat: 'dark' },
+  { name: 'high-contrast',  icon: '\u25C9', label: 'High Contrast',   cat: 'dark' },
+  { name: 'nord',           icon: '\u2744', label: 'Nord',            cat: 'dark' },
+  { name: 'dracula',        icon: '\u2605', label: 'Dracula',         cat: 'dark' },
+  { name: 'onedark',        icon: '\u25C6', label: 'One Dark',        cat: 'dark' },
+  { name: 'tokyo-night',    icon: '\u{1F303}', label: 'Tokyo Night',  cat: 'dark' },
+  { name: 'github-dark',    icon: '\u{1F4BB}', label: 'GitHub Dark',  cat: 'dark' },
+  { name: 'palenight',      icon: '\u263E', label: 'Palenight',       cat: 'dark' },
+  { name: 'poimandres',     icon: '\u269B', label: 'Poimandres',      cat: 'dark' },
+  { name: 'synthwave',      icon: '\u{1F4FB}', label: 'Synthwave',    cat: 'dark' },
+  // Warm (11)
+  { name: 'catppuccin',     icon: '\u2615', label: 'Catppuccin',      cat: 'warm' },
+  { name: 'rosepine',       icon: '\u2740', label: 'Ros\u00E9 Pine',  cat: 'warm' },
+  { name: 'kanagawa',       icon: '\u2387', label: 'Kanagawa',        cat: 'warm' },
+  { name: 'gruvbox',        icon: '\u25A3', label: 'Gruvbox',         cat: 'warm' },
+  { name: 'solarized',      icon: '\u25D0', label: 'Solarized',       cat: 'warm' },
+  { name: 'monokai',        icon: '\u25B6', label: 'Monokai',         cat: 'warm' },
+  { name: 'everforest',     icon: '\u2618', label: 'Everforest',      cat: 'warm' },
+  { name: 'vesper',         icon: '\u2B50', label: 'Vesper',          cat: 'warm' },
+  { name: 'night-owl',      icon: '\u{1F989}', label: 'Night Owl',    cat: 'warm' },
+  { name: 'cobalt2',        icon: '\u{1F4A0}', label: 'Cobalt2',      cat: 'warm' },
+  { name: 'horizon',        icon: '\u{1F305}', label: 'Horizon',      cat: 'warm' },
+  // Light (10)
+  { name: 'light',               icon: '\u2600', label: 'Light',             cat: 'light' },
+  { name: 'high-contrast-light', icon: '\u25C9', label: 'High Contrast',     cat: 'light' },
+  { name: 'github-light',        icon: '\u{1F4BB}', label: 'GitHub Light',   cat: 'light' },
+  { name: 'catppuccin-latte',    icon: '\u2615', label: 'Catppuccin Latte',  cat: 'light' },
+  { name: 'rosepine-dawn',       icon: '\u2740', label: 'Ros\u00E9 Dawn',    cat: 'light' },
+  { name: 'everforest-light',    icon: '\u2618', label: 'Everforest Light',  cat: 'light' },
+  { name: 'ayu-light',           icon: '\u2600', label: 'Ayu Light',         cat: 'light' },
+  { name: 'ayu-dark',            icon: '\u2600', label: 'Ayu Dark',          cat: 'warm' },
+  { name: 'flexoki-dark',        icon: '\u270E', label: 'Flexoki',           cat: 'warm' },
+  { name: 'flexoki-light',       icon: '\u270E', label: 'Flexoki Light',     cat: 'light' },
 ];
 const THEME_CATS = [
   { key: 'dark',  label: 'Dark' },
   { key: 'warm',  label: 'Warm' },
   { key: 'light', label: 'Light' },
 ];
-const themeToggle = document.getElementById('theme-toggle');
 const savedTheme = localStorage.getItem('places-theme');
 let themeIdx = Math.max(0, THEMES.findIndex(function(t) { return t.name === savedTheme; }));
-const startThemeIdx = themeIdx;
 document.documentElement.dataset.theme = THEMES[themeIdx].name;
-
-function updateToggleIcon() {
-  const t = THEMES[themeIdx];
-  themeToggle.textContent = t.icon + ' ' + t.label;
-  themeToggle.title = 'Theme: ' + t.label + ' (click to cycle, right-click to restore startup theme)';
-}
-updateToggleIcon();
 
 function applyTheme(idx) {
   themeIdx = idx;
   document.documentElement.dataset.theme = THEMES[themeIdx].name;
   localStorage.setItem('places-theme', THEMES[themeIdx].name);
-  updateToggleIcon();
   toast(THEMES[themeIdx].label);
 }
-
-themeToggle.addEventListener('click', function() {
-  applyTheme((themeIdx + 1) % THEMES.length);
-});
-
-themeToggle.addEventListener('contextmenu', function(e) {
-  e.preventDefault();
-  applyTheme(startThemeIdx);
-});
 
 function toggleThemePicker() {
   const picker = document.getElementById('theme-picker');
   const isOpen = picker.classList.toggle('open');
   if (!isOpen) return;
-  let html = '';
-  THEME_CATS.forEach(function(cat) {
-    html += `<div style="padding:5px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px${cat.key !== 'dark' ? ';border-top:1px solid var(--border);margin-top:4px' : ''}">${cat.label}</div>`;
+  let html = '<div style="display:flex;gap:0">';
+  THEME_CATS.forEach(function(cat, ci) {
+    html += `<div style="flex:1;${ci > 0 ? 'border-left:1px solid var(--border)' : ''}">`;
+    html += `<div style="padding:5px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px">${cat.label}</div>`;
     THEMES.forEach(function(t, i) {
       if (t.cat !== cat.key) return;
       html += `<button class="theme-picker-item${i === themeIdx ? ' active' : ''}" onclick="pickTheme(${i})" onmouseenter="previewTheme(${i})" onmouseleave="previewTheme(${themeIdx})">` +
         `<span class="theme-picker-check">${i === themeIdx ? '\u2713' : ''}</span>` +
         `${t.icon} ${t.label}</button>`;
     });
+    html += '</div>';
   });
+  html += '</div>';
   picker.innerHTML = html;
 }
 
