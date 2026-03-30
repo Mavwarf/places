@@ -2102,11 +2102,21 @@ async function loadSessions() {
       const rangeStart = earliest;
       const rangeLen = Math.max(latest - earliest, 1);
 
-      // Group sessions by place
+      // Group sessions by place, merge nearby sessions of same action
+      const GAP_THRESHOLD = 300; // 5 minutes
       const byPlace = {};
       day.sessions.forEach(function(s) {
         if (!byPlace[s.place]) byPlace[s.place] = { sessions: [], total: 0 };
-        byPlace[s.place].sessions.push(s);
+        const list = byPlace[s.place].sessions;
+        // Merge with previous if same action and gap < threshold
+        const prev = list.length ? list[list.length - 1] : null;
+        if (prev && prev.action === s.action && (s.started_at - prev.ended_at) < GAP_THRESHOLD) {
+          prev.ended_at = s.ended_at;
+          prev.duration += s.duration;
+          prev.count = (prev.count || 1) + 1;
+        } else {
+          list.push({...s, count: 1});
+        }
         byPlace[s.place].total += s.duration;
       });
 
@@ -2115,13 +2125,15 @@ async function loadSessions() {
         const firstStart = Math.min(...data.sessions.map(s => s.started_at));
         const lastEnd = Math.max(...data.sessions.map(s => s.ended_at));
         html += '<div class="session-row">';
-        html += `<span class="session-place">${esc(place)}</span>`;
+        html += `<span class="session-place" title="${esc(place)}&#10;${data.sessions.length} session${data.sessions.length > 1 ? 's' : ''}&#10;${fmtTime(firstStart)} – ${fmtTime(lastEnd)}">${esc(place)}</span>`;
         html += `<span class="session-time">${fmtTime(firstStart)} – ${fmtTime(lastEnd)}</span>`;
         html += '<div class="session-bar-wrap">';
         data.sessions.forEach(function(s) {
           const left = ((s.started_at - rangeStart) / rangeLen * 100).toFixed(1);
           const width = Math.max(((s.ended_at - s.started_at) / rangeLen * 100), 1).toFixed(1);
-          html += `<div class="session-bar ${actionColor(s.action)}" style="position:absolute;left:${left}%;width:${width}%;top:0;height:100%" title="${esc(s.place)} · ${getActionLabels()[s.action] || s.action}&#10;${fmtTime(s.started_at)} – ${fmtTime(s.ended_at)} (${fmtDuration(s.duration)})"></div>`;
+          const label = getActionLabels()[s.action] || s.action;
+          const merged = s.count > 1 ? ' (' + s.count + ' sessions merged)' : '';
+          html += `<div class="session-bar ${actionColor(s.action)}" style="position:absolute;left:${left}%;width:${width}%;top:0;height:100%" title="${label}${merged}&#10;${fmtTime(s.started_at)} – ${fmtTime(s.ended_at)}&#10;${fmtDuration(s.duration)}"></div>`;
         });
         html += '</div>';
         html += `<span class="session-duration">${fmtDuration(data.total)}</span>`;
