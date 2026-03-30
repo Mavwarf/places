@@ -767,7 +767,7 @@ button:active { opacity: 0.7; }
 .sort-btn.active { color: var(--accent); border-color: var(--accent); }
 
 /* Place list */
-.place-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; min-height: 0; padding-top: 4px; padding-bottom: 28px; }
+.place-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; min-height: 0; padding-top: 4px; padding-bottom: 60px; }
 .session-day { padding: 8px 14px; }
 .session-day-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .session-day-header h3 { margin: 0; font-size: 0.9em; color: var(--fg); }
@@ -1080,8 +1080,18 @@ button:active { opacity: 0.7; }
   align-items: center;
   font-size: 0.8em;
   color: var(--fg-dim);
-  padding: 8px 0 0;
+  padding: 6px 12px;
   flex-wrap: wrap;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  position: fixed;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  background: var(--bg);
+  z-index: 50;
+  margin: 0 -12px;
+  padding-left: 24px;
 }
 .recent-bar.hidden { display: none; }
 .recent-label { white-space: nowrap; }
@@ -1385,10 +1395,10 @@ button:active { opacity: 0.7; }
 </div>
 
 <div class="tag-bar" id="tag-bar"><span id="tag-bar-left"></span><input class="filter-search" id="filter-search" type="text" placeholder="Filter..." oninput="textFilter=this.value;saveFilters();load()" /><span id="tag-bar-right"></span><span class="spacer"></span><span id="tag-bar-git"></span></div>
-<div class="recent-bar hidden" id="recent-bar"><span class="recent-label">Recent:</span><span class="recent-chips" id="recent-chips"></span><span id="fav-actions-area"></span></div>
 </div>
 <div id="places" class="place-list"></div>
 <div id="sessions-view" class="place-list" style="display:none"></div>
+<div class="recent-bar hidden" id="recent-bar"><span class="recent-label">Recent:</span><span class="recent-chips" id="recent-chips"></span><span id="fav-actions-area"></span></div>
 
 <script>
 // Add form toggle
