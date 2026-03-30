@@ -65,7 +65,7 @@ func darwinTerminalScript(shCmd string, useITerm bool) *exec.Cmd {
 			// Fall back to Terminal.app on error.
 			return darwinTerminalAppScript(shCmd)
 		}
-		script := fmt.Sprintf("#!/bin/zsh\nrm -f %q\n%s\n", f.Name(), shCmd)
+		script := fmt.Sprintf("#!/bin/zsh\nrm -f %q\nsource ~/.zshrc 2>/dev/null\n%s\nexec zsh\n", f.Name(), shCmd)
 		f.WriteString(script)
 		f.Close()
 		os.Chmod(f.Name(), 0755)
