@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -135,8 +136,9 @@ type Callbacks struct {
 	Quit     func()                 // fully exit the application (called via goroutine to allow response)
 	Topmost        func(bool)       // toggle always-on-top via SetWindowPos
 	PinAllDesktops  func(bool) bool       // pin/unpin to all virtual desktops, returns new state
-	RunningSessions func([]string) []byte // detect running sessions, returns JSON
-	LastDrop        func() string         // retrieve last drag-and-dropped folder path
+	RunningSessions func([]string) []byte    // detect running sessions, returns JSON
+	SessionHistory  func(from, to int64) []byte // query session history, returns JSON
+	LastDrop        func() string                // retrieve last drag-and-dropped folder path
 }
 
 // Serve starts the HTTP server on the given port.
@@ -290,6 +292,22 @@ func Serve(port int, cb Callbacks) error {
 			}
 			names := config.SortedNames(cfg)
 			data := cb.RunningSessions(names)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(data)
+		})
+	}
+
+	if cb.SessionHistory != nil {
+		mux.HandleFunc("/api/sessions", func(w http.ResponseWriter, r *http.Request) {
+			from, _ := strconv.ParseInt(r.URL.Query().Get("from"), 10, 64)
+			to, _ := strconv.ParseInt(r.URL.Query().Get("to"), 10, 64)
+			if from == 0 {
+				from = time.Now().Truncate(24 * time.Hour).Unix()
+			}
+			if to == 0 {
+				to = time.Now().Unix()
+			}
+			data := cb.SessionHistory(from, to)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(data)
 		})

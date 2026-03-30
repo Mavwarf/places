@@ -96,6 +96,13 @@ func main() {
 				data, _ := json.Marshal(rs)
 				return data
 			},
+			SessionHistory: func(from, to int64) []byte {
+				if tracker == nil {
+					return []byte("[]")
+				}
+				data, _ := json.Marshal(tracker.QueryHistory(from, to))
+				return data
+			},
 			LastDrop: a.LastDrop,
 		}); err != nil {
 			fmt.Fprintf(os.Stderr, "places-app: %v\n", err)

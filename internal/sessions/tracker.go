@@ -198,3 +198,39 @@ func (t *Tracker) GetActiveInfo(place, action string) *ActiveInfo {
 		Today:   todayTotal,
 	}
 }
+
+// Session represents a completed or active session for history queries.
+type Session struct {
+	Place     string `json:"place"`
+	Action    string `json:"action"`
+	StartedAt int64  `json:"started_at"`
+	EndedAt   int64  `json:"ended_at"`   // 0 if still active
+	Duration  int    `json:"duration"`   // seconds
+}
+
+// QueryHistory returns all sessions that overlap the given time range.
+func (t *Tracker) QueryHistory(from, to int64) []Session {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	rows, err := t.db.Query(`
+		SELECT place, action, started_at, COALESCE(ended_at, ?), COALESCE(ended_at, ?) - started_at
+		FROM sessions
+		WHERE started_at < ? AND COALESCE(ended_at, ?) >= ?
+		ORDER BY started_at ASC
+	`, time.Now().Unix(), time.Now().Unix(), to, time.Now().Unix(), from)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var sessions []Session
+	for rows.Next() {
+		var s Session
+		if err := rows.Scan(&s.Place, &s.Action, &s.StartedAt, &s.EndedAt, &s.Duration); err != nil {
+			continue
+		}
+		sessions = append(sessions, s)
+	}
+	return sessions
+}

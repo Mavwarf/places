@@ -768,6 +768,30 @@ button:active { opacity: 0.7; }
 
 /* Place list */
 .place-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; min-height: 0; padding-top: 4px; padding-bottom: 28px; }
+.session-day { padding: 8px 14px; }
+.session-day-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.session-day-header h3 { margin: 0; font-size: 0.9em; color: var(--fg); }
+.session-day-header span { font-size: 0.8em; color: var(--fg-dim); }
+.session-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 0.85em; }
+.session-time { color: var(--fg-dim); width: 110px; flex-shrink: 0; text-align: right; }
+.session-bar-wrap { flex: 1; height: 18px; background: var(--bg3); border-radius: 4px; overflow: hidden; position: relative; }
+.session-bar { height: 100%; border-radius: 4px; min-width: 2px; display: flex; align-items: center; padding-left: 6px; font-size: 0.75em; color: var(--bg); font-weight: 600; white-space: nowrap; overflow: hidden; }
+.session-bar.claude { background: var(--claude); }
+.session-bar.code { background: var(--code); }
+.session-bar.terminal { background: var(--accent); }
+.session-bar.explorer { background: var(--yellow); }
+.session-bar.other { background: var(--fg-dim); }
+.session-place { width: 100px; flex-shrink: 0; color: var(--accent); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-duration { width: 60px; flex-shrink: 0; color: var(--fg-dim); text-align: right; }
+.session-nav { display: flex; gap: 8px; align-items: center; padding: 8px 14px; }
+.session-nav button { background: transparent; border: 1px solid var(--border); color: var(--fg-dim); padding: 4px 12px; border-radius: 6px; cursor: pointer; font-family: var(--font); font-size: 0.85em; }
+.session-nav button:hover { color: var(--accent); border-color: var(--accent); }
+.session-nav button.active { color: var(--accent); border-color: var(--accent); }
+.session-nav span { color: var(--fg-dim); font-size: 0.85em; }
+.session-summary { display: flex; gap: 16px; padding: 8px 14px; flex-wrap: wrap; }
+.session-summary-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; min-width: 100px; }
+.session-summary-item .ss-label { font-size: 0.75em; color: var(--fg-dim); text-transform: uppercase; }
+.session-summary-item .ss-value { font-size: 1.1em; color: var(--fg); font-weight: 600; }
 
 .place-row {
   display: flex;
@@ -1314,9 +1338,11 @@ button:active { opacity: 0.7; }
 <div class="header">
   <h1>places dashboard <span>workspace navigator</span></h1>
   <span class="screenshot-badge" id="screenshot-badge">screenshot</span>
+  <button class="btn-recent-toggle" id="sessions-toggle" onclick="toggleSessions()" title="Session time tracking">Sessions</button>
   <button class="btn-add-toggle" id="add-toggle" onclick="toggleAddForm()" title="Add new place">+</button>
   <button class="btn-recent-toggle" id="recent-toggle" onclick="toggleRecent()" title="Toggle recent actions">Recent</button>
   <button class="btn-recent-toggle" id="compact-toggle" onclick="toggleCompact()" title="Toggle compact view">Compact</button>
+  <span class="spacer"></span>
   <button class="theme-more" id="theme-more" onclick="toggleThemePicker()" title="Color theme"><div class="theme-picker" id="theme-picker"></div>&#127912;</button>
   <button class="theme-more" id="prefs-btn" onclick="togglePrefs()" title="Preferences"><div class="theme-picker" id="prefs-picker"></div>&#9881;</button>
   <div class="window-controls">
@@ -1359,6 +1385,7 @@ button:active { opacity: 0.7; }
 <div class="recent-bar hidden" id="recent-bar"><span class="recent-label">Recent:</span><span class="recent-chips" id="recent-chips"></span><span id="fav-actions-area"></span></div>
 </div>
 <div id="places" class="place-list"></div>
+<div id="sessions-view" class="place-list" style="display:none"></div>
 
 <script>
 // Add form toggle
@@ -1947,6 +1974,163 @@ function toggleCompact() {
   compactMode = !compactMode;
   localStorage.setItem('places-compact', compactMode ? 'on' : '');
   applyCompact();
+}
+
+// Sessions view
+let sessionsMode = false;
+let sessionsRange = 'today'; // 'today' or 'week'
+
+function toggleSessions() {
+  sessionsMode = !sessionsMode;
+  const btn = document.getElementById('sessions-toggle');
+  btn.classList.toggle('active', sessionsMode);
+  document.getElementById('places').style.display = sessionsMode ? 'none' : '';
+  document.getElementById('sessions-view').style.display = sessionsMode ? '' : 'none';
+  // Hide places-only UI in sessions mode
+  const hide = sessionsMode ? 'none' : '';
+  document.getElementById('add-toggle').style.display = hide;
+  document.getElementById('recent-toggle').style.display = hide;
+  document.getElementById('compact-toggle').style.display = hide;
+  document.querySelector('.sort-bar').style.display = hide;
+  document.getElementById('tag-bar').style.display = hide;
+  document.getElementById('recent-bar').style.display = sessionsMode ? 'none' : (recentVisible && (recentHistory.length || favActions.length) ? '' : 'none');
+  // Hide add form if open
+  if (sessionsMode) {
+    const form = document.querySelector('.add-form');
+    if (form) form.classList.remove('open');
+  }
+  if (sessionsMode) loadSessions();
+}
+
+function fmtDuration(secs) {
+  if (secs < 60) return secs + 's';
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  if (h > 0) return h + 'h ' + (m > 0 ? m + 'm' : '');
+  return m + 'm';
+}
+
+function fmtTime(unix) {
+  const d = new Date(unix * 1000);
+  return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+}
+
+function fmtDate(d) {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate();
+}
+
+function actionColor(action) {
+  if (action === 'claude') return 'claude';
+  if (action === 'code') return 'code';
+  if (action === 'terminal' || action === 'powershell' || action === 'cmd') return 'terminal';
+  if (action === 'explorer') return 'explorer';
+  return 'other';
+}
+
+async function loadSessions() {
+  const el = document.getElementById('sessions-view');
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let from, to;
+  if (sessionsRange === 'week') {
+    const dayOfWeek = todayStart.getDay();
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    from = Math.floor(new Date(todayStart.getTime() - mondayOffset * 86400000).getTime() / 1000);
+    to = Math.floor(now.getTime() / 1000);
+  } else {
+    from = Math.floor(todayStart.getTime() / 1000);
+    to = Math.floor(now.getTime() / 1000);
+  }
+
+  try {
+    const res = await fetch('/api/sessions?from=' + from + '&to=' + to);
+    const sessions = await res.json() || [];
+
+    // Group by day
+    const days = {};
+    sessions.forEach(function(s) {
+      const d = new Date(s.started_at * 1000);
+      const key = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+      if (!days[key]) days[key] = { date: new Date(d.getFullYear(), d.getMonth(), d.getDate()), sessions: [], total: 0 };
+      days[key].sessions.push(s);
+      days[key].total += s.duration;
+    });
+
+    const sortedDays = Object.values(days).sort((a, b) => b.date - a.date);
+    const grandTotal = sortedDays.reduce((sum, d) => sum + d.total, 0);
+
+    // Summary by place
+    const byPlace = {};
+    sessions.forEach(function(s) {
+      if (!byPlace[s.place]) byPlace[s.place] = 0;
+      byPlace[s.place] += s.duration;
+    });
+    const topPlaces = Object.entries(byPlace).sort((a, b) => b[1] - a[1]);
+
+    // Navigation
+    let html = '<div class="session-nav">';
+    html += `<button class="${sessionsRange === 'today' ? 'active' : ''}" onclick="sessionsRange='today';loadSessions()">Today</button>`;
+    html += `<button class="${sessionsRange === 'week' ? 'active' : ''}" onclick="sessionsRange='week';loadSessions()">This week</button>`;
+    html += `<span>Total: ${fmtDuration(grandTotal)}</span>`;
+    html += '</div>';
+
+    // Summary cards
+    if (topPlaces.length) {
+      html += '<div class="session-summary">';
+      topPlaces.forEach(function(entry) {
+        html += `<div class="session-summary-item"><div class="ss-label">${esc(entry[0])}</div><div class="ss-value">${fmtDuration(entry[1])}</div></div>`;
+      });
+      html += '</div>';
+    }
+
+    // Day-by-day timeline
+    if (!sortedDays.length) {
+      html += '<div class="empty-state">No sessions recorded for this period.</div>';
+    }
+    sortedDays.forEach(function(day) {
+      html += '<div class="session-day">';
+      html += `<div class="session-day-header"><h3>${fmtDate(day.date)}</h3><span>${fmtDuration(day.total)}</span></div>`;
+
+      // Find day bounds for bar scaling
+      const earliest = Math.min(...day.sessions.map(s => s.started_at));
+      const latest = Math.max(...day.sessions.map(s => s.ended_at));
+      const rangeStart = earliest;
+      const rangeLen = Math.max(latest - earliest, 1);
+
+      // Group sessions by place
+      const byPlace = {};
+      day.sessions.forEach(function(s) {
+        if (!byPlace[s.place]) byPlace[s.place] = { sessions: [], total: 0 };
+        byPlace[s.place].sessions.push(s);
+        byPlace[s.place].total += s.duration;
+      });
+
+      Object.entries(byPlace).forEach(function(entry) {
+        const place = entry[0], data = entry[1];
+        const firstStart = Math.min(...data.sessions.map(s => s.started_at));
+        const lastEnd = Math.max(...data.sessions.map(s => s.ended_at));
+        html += '<div class="session-row">';
+        html += `<span class="session-place">${esc(place)}</span>`;
+        html += `<span class="session-time">${fmtTime(firstStart)} – ${fmtTime(lastEnd)}</span>`;
+        html += '<div class="session-bar-wrap">';
+        data.sessions.forEach(function(s) {
+          const left = ((s.started_at - rangeStart) / rangeLen * 100).toFixed(1);
+          const width = Math.max(((s.ended_at - s.started_at) / rangeLen * 100), 1).toFixed(1);
+          html += `<div class="session-bar ${actionColor(s.action)}" style="position:absolute;left:${left}%;width:${width}%;top:0;height:100%" title="${esc(s.place)} · ${getActionLabels()[s.action] || s.action}&#10;${fmtTime(s.started_at)} – ${fmtTime(s.ended_at)} (${fmtDuration(s.duration)})"></div>`;
+        });
+        html += '</div>';
+        html += `<span class="session-duration">${fmtDuration(data.total)}</span>`;
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = '<div class="empty-state">Failed to load session data.</div>';
+  }
 }
 
 // Column resizing — drag handles between sections
