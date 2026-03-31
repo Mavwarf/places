@@ -533,6 +533,108 @@
   --shadow: rgba(0,0,0,0.08);
 }
 
+[data-theme="solarized-light"] {
+  --bg: #fdf6e3;
+  --bg2: #eee8d5;
+  --bg3: #e4ddc8;
+  --fg: #657b83;
+  --fg-dim: #93a1a1;
+  --accent: #268bd2;
+  --green: #859900;
+  --yellow: #b58900;
+  --red: #dc322f;
+  --cyan: #2aa198;
+  --border: #d3cbab;
+  --claude: #d33682;
+  --code: #6c71c4;
+  --shadow: rgba(0,0,0,0.08);
+}
+
+[data-theme="zenburn"] {
+  --bg: #3f3f3f;
+  --bg2: #4f4f4f;
+  --bg3: #5f5f5f;
+  --fg: #dcdccc;
+  --fg-dim: #7f9f7f;
+  --accent: #8cd0d3;
+  --green: #7f9f7f;
+  --yellow: #f0dfaf;
+  --red: #cc9393;
+  --cyan: #93e0e3;
+  --border: #6f6f6f;
+  --claude: #dc8cc3;
+  --code: #8cd0d3;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+[data-theme="material"] {
+  --bg: #263238;
+  --bg2: #2c3b41;
+  --bg3: #37474f;
+  --fg: #eeffff;
+  --fg-dim: #546e7a;
+  --accent: #82aaff;
+  --green: #c3e88d;
+  --yellow: #ffcb6b;
+  --red: #f07178;
+  --cyan: #89ddff;
+  --border: #37474f;
+  --claude: #f78c6c;
+  --code: #c792ea;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+[data-theme="one-light"] {
+  --bg: #fafafa;
+  --bg2: #f0f0f0;
+  --bg3: #e5e5e6;
+  --fg: #383a42;
+  --fg-dim: #a0a1a7;
+  --accent: #4078f2;
+  --green: #50a14f;
+  --yellow: #c18401;
+  --red: #e45649;
+  --cyan: #0184bc;
+  --border: #d3d3d4;
+  --claude: #a626a4;
+  --code: #4078f2;
+  --shadow: rgba(0,0,0,0.08);
+}
+
+[data-theme="quiet-light"] {
+  --bg: #f5f5f5;
+  --bg2: #ebebeb;
+  --bg3: #e0e0e0;
+  --fg: #333333;
+  --fg-dim: #aaaaaa;
+  --accent: #4b69c6;
+  --green: #7a9f37;
+  --yellow: #c4a500;
+  --red: #c4001e;
+  --cyan: #0094c2;
+  --border: #d4d4d4;
+  --claude: #9c3388;
+  --code: #7a3e9d;
+  --shadow: rgba(0,0,0,0.08);
+}
+
+[data-theme="alabaster"] {
+  --bg: #f7f7f7;
+  --bg2: #efefef;
+  --bg3: #e6e6e6;
+  --fg: #434343;
+  --fg-dim: #999999;
+  --accent: #007acc;
+  --green: #448c27;
+  --yellow: #cb9000;
+  --red: #aa3731;
+  --cyan: #0083b2;
+  --border: #d9d9d9;
+  --claude: #9c276b;
+  --code: #7b5cb8;
+  --shadow: rgba(0,0,0,0.06);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: var(--font);
@@ -1412,40 +1514,46 @@ function toggleAddForm() {
 
 // Theme cycle
 const THEMES = [
-  // Dark (10)
-  { name: 'dark',           icon: '\u263D', label: 'Dark',            cat: 'dark' },
+  // Dark — deepest backgrounds (#000-#1a), sorted darkest first
   { name: 'high-contrast',  icon: '\u25C9', label: 'High Contrast',   cat: 'dark' },
-  { name: 'nord',           icon: '\u2744', label: 'Nord',            cat: 'dark' },
-  { name: 'dracula',        icon: '\u2605', label: 'Dracula',         cat: 'dark' },
-  { name: 'onedark',        icon: '\u25C6', label: 'One Dark',        cat: 'dark' },
-  { name: 'tokyo-night',    icon: '\u{1F303}', label: 'Tokyo Night',  cat: 'dark' },
+  { name: 'ayu-dark',       icon: '\u2600', label: 'Ayu Dark',        cat: 'dark' },
+  { name: 'flexoki-dark',   icon: '\u270E', label: 'Flexoki',         cat: 'dark' },
+  { name: 'vesper',         icon: '\u2B50', label: 'Vesper',          cat: 'dark' },
   { name: 'github-dark',    icon: '\u{1F4BB}', label: 'GitHub Dark',  cat: 'dark' },
-  { name: 'palenight',      icon: '\u263E', label: 'Palenight',       cat: 'dark' },
+  { name: 'night-owl',      icon: '\u{1F989}', label: 'Night Owl',    cat: 'dark' },
+  { name: 'cobalt2',        icon: '\u{1F4A0}', label: 'Cobalt2',      cat: 'dark' },
+  { name: 'rosepine',       icon: '\u2740', label: 'Ros\u00E9 Pine',  cat: 'dark' },
+  { name: 'dark',           icon: '\u263D', label: 'Dark',            cat: 'dark' },
+  { name: 'tokyo-night',    icon: '\u{1F303}', label: 'Tokyo Night',  cat: 'dark' },
   { name: 'poimandres',     icon: '\u269B', label: 'Poimandres',      cat: 'dark' },
-  { name: 'synthwave',      icon: '\u{1F4FB}', label: 'Synthwave',    cat: 'dark' },
-  // Warm (11)
-  { name: 'catppuccin',     icon: '\u2615', label: 'Catppuccin',      cat: 'warm' },
-  { name: 'rosepine',       icon: '\u2740', label: 'Ros\u00E9 Pine',  cat: 'warm' },
-  { name: 'kanagawa',       icon: '\u2387', label: 'Kanagawa',        cat: 'warm' },
-  { name: 'gruvbox',        icon: '\u25A3', label: 'Gruvbox',         cat: 'warm' },
-  { name: 'solarized',      icon: '\u25D0', label: 'Solarized',       cat: 'warm' },
+  { name: 'horizon',        icon: '\u{1F305}', label: 'Horizon',      cat: 'dark' },
+  { name: 'catppuccin',     icon: '\u2615', label: 'Catppuccin',      cat: 'dark' },
+  { name: 'kanagawa',       icon: '\u2387', label: 'Kanagawa',        cat: 'dark' },
+  // Warm — medium-dark backgrounds (#26-#40), sorted darkest first
+  { name: 'material',       icon: '\u25FC', label: 'Material',        cat: 'warm' },
   { name: 'monokai',        icon: '\u25B6', label: 'Monokai',         cat: 'warm' },
+  { name: 'gruvbox',        icon: '\u25A3', label: 'Gruvbox',         cat: 'warm' },
+  { name: 'dracula',        icon: '\u2605', label: 'Dracula',         cat: 'warm' },
+  { name: 'onedark',        icon: '\u25C6', label: 'One Dark',        cat: 'warm' },
+  { name: 'synthwave',      icon: '\u{1F4FB}', label: 'Synthwave',    cat: 'warm' },
+  { name: 'palenight',      icon: '\u263E', label: 'Palenight',       cat: 'warm' },
+  { name: 'solarized',      icon: '\u25D0', label: 'Solarized',       cat: 'warm' },
   { name: 'everforest',     icon: '\u2618', label: 'Everforest',      cat: 'warm' },
-  { name: 'vesper',         icon: '\u2B50', label: 'Vesper',          cat: 'warm' },
-  { name: 'night-owl',      icon: '\u{1F989}', label: 'Night Owl',    cat: 'warm' },
-  { name: 'cobalt2',        icon: '\u{1F4A0}', label: 'Cobalt2',      cat: 'warm' },
-  { name: 'horizon',        icon: '\u{1F305}', label: 'Horizon',      cat: 'warm' },
-  // Light (10)
+  { name: 'nord',           icon: '\u2744', label: 'Nord',            cat: 'warm' },
+  { name: 'zenburn',        icon: '\u2623', label: 'Zenburn',         cat: 'warm' },
+  // Light — bright backgrounds (#ef+)
   { name: 'light',               icon: '\u2600', label: 'Light',             cat: 'light' },
   { name: 'high-contrast-light', icon: '\u25C9', label: 'High Contrast',     cat: 'light' },
   { name: 'github-light',        icon: '\u{1F4BB}', label: 'GitHub Light',   cat: 'light' },
   { name: 'catppuccin-latte',    icon: '\u2615', label: 'Catppuccin Latte',  cat: 'light' },
   { name: 'rosepine-dawn',       icon: '\u2740', label: 'Ros\u00E9 Dawn',    cat: 'light' },
   { name: 'everforest-light',    icon: '\u2618', label: 'Everforest Light',  cat: 'light' },
-  { name: 'ayu-light',           icon: '\u2600', label: 'Ayu Light',         cat: 'light' },
-  { name: 'ayu-dark',            icon: '\u2600', label: 'Ayu Dark',          cat: 'warm' },
-  { name: 'flexoki-dark',        icon: '\u270E', label: 'Flexoki',           cat: 'warm' },
   { name: 'flexoki-light',       icon: '\u270E', label: 'Flexoki Light',     cat: 'light' },
+  { name: 'solarized-light',     icon: '\u25D0', label: 'Solarized Light',   cat: 'light' },
+  { name: 'one-light',          icon: '\u25C6', label: 'One Light',          cat: 'light' },
+  { name: 'quiet-light',        icon: '\u25CB', label: 'Quiet Light',        cat: 'light' },
+  { name: 'alabaster',          icon: '\u25A1', label: 'Alabaster',          cat: 'light' },
+  { name: 'ayu-light',          icon: '\u2600', label: 'Ayu Light',          cat: 'light' },
 ];
 const THEME_CATS = [
   { key: 'dark',  label: 'Dark' },
