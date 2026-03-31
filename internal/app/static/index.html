@@ -1452,10 +1452,11 @@ button:active { opacity: 0.7; }
 <div class="header-section">
 <div class="header">
   <h1>places dashboard <span>workspace navigator</span></h1>
-  <span class="screenshot-badge" id="screenshot-badge">screenshot</span>
-  <button class="btn-recent-toggle" id="sessions-toggle" onclick="toggleSessions()" title="Session time tracking">Sessions</button>
   <button class="btn-add-toggle" id="add-toggle" onclick="toggleAddForm()" title="Add new place">+</button>
   <span class="spacer"></span>
+  <button class="btn-recent-toggle" id="sessions-toggle" onclick="toggleSessions()" title="Session time tracking (F3)">Sessions</button>
+  <span class="spacer"></span>
+  <span class="screenshot-badge" id="screenshot-badge" onclick="toggleScreenshot()" style="cursor:pointer" title="Click to exit screenshot mode">screenshot</span>
   <button class="btn-recent-toggle" id="recent-toggle" onclick="toggleRecent()" title="Toggle recent actions">Recent</button>
   <button class="btn-recent-toggle" id="compact-toggle" onclick="toggleCompact()" title="Toggle compact view">Compact</button>
   <button class="theme-more" id="theme-more" onclick="toggleThemePicker()" title="Color theme"><div class="theme-picker" id="theme-picker"></div>&#127912;</button>
@@ -2202,11 +2203,21 @@ async function loadSessions() {
     html += `<span>Total: ${fmtDuration(grandTotal)}</span>`;
     html += '</div>';
 
-    // Summary cards
+    // Summary cards — include action breakdown in tooltip
+    const byPlaceAction = {};
+    sessions.forEach(function(s) {
+      const k = s.place;
+      if (!byPlaceAction[k]) byPlaceAction[k] = {};
+      if (!byPlaceAction[k][s.action]) byPlaceAction[k][s.action] = 0;
+      byPlaceAction[k][s.action] += s.duration;
+    });
     if (topPlaces.length) {
       html += '<div class="session-summary">';
       topPlaces.forEach(function(entry) {
-        html += `<div class="session-summary-item"><div class="ss-label">${esc(entry[0])}</div><div class="ss-value">${fmtDuration(entry[1])}</div></div>`;
+        const labels = getActionLabels();
+        const actions = Object.entries(byPlaceAction[entry[0]] || {}).sort((a, b) => b[1] - a[1]);
+        const actionTip = actions.map(a => (labels[a[0]] || a[0]) + ': ' + fmtDuration(a[1])).join('&#10;');
+        html += `<div class="session-summary-item" title="${esc(entry[0])}&#10;${actionTip}"><div class="ss-label">${esc(entry[0])}</div><div class="ss-value">${fmtDuration(entry[1])}</div></div>`;
       });
       html += '</div>';
     }
@@ -2248,7 +2259,11 @@ async function loadSessions() {
         const firstStart = Math.min(...data.sessions.map(s => s.started_at));
         const lastEnd = Math.max(...data.sessions.map(s => s.ended_at));
         html += '<div class="session-row">';
-        html += `<span class="session-place" title="${esc(place)}&#10;${data.sessions.length} session${data.sessions.length > 1 ? 's' : ''}&#10;${fmtTime(firstStart)} – ${fmtTime(lastEnd)}">${esc(place)}</span>`;
+        const actionBreakdown = {};
+        data.sessions.forEach(function(s) { actionBreakdown[s.action] = (actionBreakdown[s.action] || 0) + s.duration; });
+        const labels = getActionLabels();
+        const actionTip = Object.entries(actionBreakdown).sort((a, b) => b[1] - a[1]).map(a => (labels[a[0]] || a[0]) + ': ' + fmtDuration(a[1])).join('&#10;');
+        html += `<span class="session-place" title="${esc(place)}&#10;${data.sessions.length} session${data.sessions.length > 1 ? 's' : ''}&#10;${fmtTime(firstStart)} – ${fmtTime(lastEnd)}&#10;${actionTip}">${esc(place)}</span>`;
         html += `<span class="session-time">${fmtTime(firstStart)} – ${fmtTime(lastEnd)}</span>`;
         html += '<div class="session-bar-wrap">';
         data.sessions.forEach(function(s) {
@@ -2369,9 +2384,12 @@ async function loadSessions() {
 })();
 
 // Search-as-you-type: typing anywhere focuses the filter input
+// 'S' toggles sessions mode (when not in screenshot mode)
 document.addEventListener('keydown', function(e) {
   const tag = document.activeElement.tagName;
   if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'F2') { e.preventDefault(); toggleScreenshot(); return; }
+  if (e.key === 'F3') { e.preventDefault(); toggleSessions(); return; }
   if (e.ctrlKey || e.altKey || e.metaKey) return;
   if (e.key.length === 1) {
     const input = document.getElementById('filter-search');
@@ -3088,10 +3106,7 @@ function toggleScreenshot() {
   load();
 }
 
-document.addEventListener('keydown', function(e) {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  if (e.key === 's' || e.key === 'S') toggleScreenshot();
-});
+// Screenshot toggle handled in the main keydown handler below (Ctrl+Shift+S).
 
 // Git status
 async function fetchGitStatus(name) {
