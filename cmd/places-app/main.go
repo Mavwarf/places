@@ -50,7 +50,8 @@ func main() {
 
 	// If an instance is already running, ask it to show its window and exit.
 	showURL := fmt.Sprintf("http://127.0.0.1:%d/api/show", port)
-	resp, err := http.Post(showURL, "", nil)
+	showClient := &http.Client{Timeout: 500 * time.Millisecond}
+	resp, err := showClient.Post(showURL, "", nil)
 	if err == nil {
 		resp.Body.Close()
 		os.Exit(0)

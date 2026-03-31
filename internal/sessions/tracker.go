@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -37,6 +38,12 @@ func dbPath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(dir, "sessions.db"), nil
+}
+
+func logErr(context string, err error) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "places-app: sessions: %s: %v\n", context, err)
+	}
 }
 
 // Open creates or opens the sessions database.
@@ -89,10 +96,11 @@ func (t *Tracker) Close() {
 // closeStale ends any sessions left open from a previous run,
 // using last_seen_at as the end time.
 func (t *Tracker) closeStale() {
-	t.db.Exec(`
+	_, err := t.db.Exec(`
 		UPDATE sessions SET ended_at = last_seen_at
 		WHERE ended_at IS NULL
 	`)
+	logErr("close stale", err)
 }
 
 // key returns a dedup key for a place+action pair.
@@ -114,33 +122,32 @@ func (t *Tracker) Update(running []struct{ Place, Action string }) {
 		current[k] = true
 
 		if !t.previous[k] {
-			// New session started.
-			t.db.Exec(`
+			_, err := t.db.Exec(`
 				INSERT INTO sessions (place, action, started_at, last_seen_at)
 				VALUES (?, ?, ?, ?)
 			`, r.Place, r.Action, now, now)
+			logErr("insert session", err)
 		} else {
-			// Still running — update last_seen_at.
-			t.db.Exec(`
+			_, err := t.db.Exec(`
 				UPDATE sessions SET last_seen_at = ?
 				WHERE place = ? AND action = ? AND ended_at IS NULL
 			`, now, r.Place, r.Action)
+			logErr("update last_seen", err)
 		}
 	}
 
 	// Sessions that ended.
 	for k := range t.previous {
 		if !current[k] {
-			for i := 0; i < len(k); i++ {
-				if k[i] == ':' {
-					place, action := k[:i], k[i+1:]
-					t.db.Exec(`
-						UPDATE sessions SET ended_at = ?, last_seen_at = ?
-						WHERE place = ? AND action = ? AND ended_at IS NULL
-					`, now, now, place, action)
-					break
-				}
+			place, action, ok := strings.Cut(k, ":")
+			if !ok {
+				continue
 			}
+			_, err := t.db.Exec(`
+				UPDATE sessions SET ended_at = ?, last_seen_at = ?
+				WHERE place = ? AND action = ? AND ended_at IS NULL
+			`, now, now, place, action)
+			logErr("end session", err)
 		}
 	}
 
@@ -152,10 +159,11 @@ func (t *Tracker) CloseAll() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	now := time.Now().Unix()
-	t.db.Exec(`
+	_, err := t.db.Exec(`
 		UPDATE sessions SET ended_at = ?, last_seen_at = ?
 		WHERE ended_at IS NULL
 	`, now, now)
+	logErr("close all", err)
 	t.previous = make(map[string]bool)
 }
 
@@ -181,12 +189,15 @@ func (t *Tracker) GetActiveInfo(place, action string) *ActiveInfo {
 	todayStart := time.Now().Truncate(24 * time.Hour).Unix()
 	nowUnix := time.Now().Unix()
 	var totalSeconds sql.NullInt64
-	t.db.QueryRow(`
+	err = t.db.QueryRow(`
 		SELECT SUM(
 			COALESCE(ended_at, ?) - started_at
 		) FROM sessions
 		WHERE place = ? AND action = ? AND started_at >= ?
 	`, nowUnix, place, action, todayStart).Scan(&totalSeconds)
+	if err != nil && err != sql.ErrNoRows {
+		logErr("query today total", err)
+	}
 
 	todayTotal := 0
 	if totalSeconds.Valid {
@@ -204,8 +215,8 @@ type Session struct {
 	Place     string `json:"place"`
 	Action    string `json:"action"`
 	StartedAt int64  `json:"started_at"`
-	EndedAt   int64  `json:"ended_at"`   // 0 if still active
-	Duration  int    `json:"duration"`   // seconds
+	EndedAt   int64  `json:"ended_at"`  // 0 if still active
+	Duration  int    `json:"duration"`  // seconds
 }
 
 // QueryHistory returns all sessions that overlap the given time range.
@@ -220,6 +231,7 @@ func (t *Tracker) QueryHistory(from, to int64) []Session {
 		ORDER BY started_at ASC
 	`, time.Now().Unix(), time.Now().Unix(), to, time.Now().Unix(), from)
 	if err != nil {
+		logErr("query history", err)
 		return nil
 	}
 	defer rows.Close()
