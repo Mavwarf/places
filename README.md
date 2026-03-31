@@ -260,7 +260,7 @@ The `places shell-hook install` command injects this `p()` function into your sh
 
 ### Requirements
 
-- Go 1.24+ (to build from source)
+- Go 1.26+ (to build from source)
 - Bash, Zsh, PowerShell, or cmd.exe
 
 ### Quick setup

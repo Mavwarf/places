@@ -38,7 +38,7 @@ The Windows PowerShell profile must also be updated manually (separate from pwsh
 
 ## Conventions
 
-- Go 1.24, stdlib only — no external dependencies
+- Go 1.26, stdlib only (CLI) / Wails v2 + modernc.org/sqlite (desktop app)
 - Manual arg parsing with `switch args[0]`, no framework
 - `fatal()` helper for stderr + os.Exit(1)
 - stdout is reserved for machine-readable output (`go`, `select` print paths only)
