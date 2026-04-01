@@ -83,10 +83,12 @@
 
 ## AI (optional, requires Ollama)
 
-- [ ] **Ollama integration** — detect local Ollama service at `localhost:11434`; expose `has_ollama` in API; show/hide AI features in dashboard
-- [ ] **Smart place notes** — auto-generate place descriptions from README or project structure
-- [ ] **Natural language search** — `p find "the billing API"` matches places by semantic similarity
-- [ ] **Git diff summary** — summarize uncommitted changes in the dashboard git status tooltip
+See **[docs/local-ai-roadmap.md](docs/local-ai-roadmap.md)** for the full learning roadmap.
+
+- [ ] **Level 1** — Ollama basics: install, REST API, system prompts
+- [ ] **Level 2** — RAG: inject places as context, AI-powered search bar
+- [ ] **Level 3** — Embeddings: semantic search via vector similarity in SQLite
+- [ ] **Level 4** — Advanced: git diff summary, smart notes, streaming, function calling
 
 ## Future Ideas
 
