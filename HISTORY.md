@@ -4,6 +4,7 @@
 
 - Session history view — "Sessions" toggle in header shows today/this week timeline with colored bars per place, grouped sessions per row, summary cards; hides places UI (sort/filter/recent/compact) when active *(Mar 30)*
 - Dashboard UX — visible column drag handles in place rows; git dirty tooltip shows changed files; recent bar docked to bottom above footer; header buttons reordered (Sessions, + left; Recent, Compact, 🎨, ⚙ right); merged nearby sessions in timeline; bigger fav/health icons; "Confirm fresh session" pref toggle; custom input/confirm dialogs; tag overflow menu with AND filter; always-visible Clear button *(Mar 30)*
+- Aggregate git status for multi-repo places — places containing sub-repos show "2 repos: 1 clean, 1 dirty" with per-repo tooltip; health dots and dirty filter work for both *(Apr 1)*
 - Tech debt cleanup — SQLite error logging in session tracker, strings.Cut for key parsing, validate default hidden/actions lists, shutdown hook closes tracker, single-instance check timeout *(Mar 31)*
 - UI polish — Sessions button centered in header; screenshot badge moved right and clickable to exit; session tooltips show action breakdown; keyboard shortcuts F2 (screenshot) and F3 (sessions); fixed search-as-you-type conflict with screenshot key *(Mar 31)*
 - 37 color themes — added Solarized Light, One Light, Quiet Light, Alabaster, Material, Zenburn; themes sorted by background darkness within Dark/Warm/Light groups *(Mar 31)*
