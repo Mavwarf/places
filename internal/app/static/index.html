@@ -2556,7 +2556,7 @@ async function load() {
 
     // Filter by git dirty (only places with fetched dirty status).
     if (dirtyFilter) {
-      places = places.filter(p => gitCache[p.name] && gitCache[p.name].dirty);
+      places = places.filter(p => isGitDirty(gitCache[p.name]));
     }
 
     // Filter by text search (name, path, note).
@@ -2655,28 +2655,45 @@ function esc(s) {
   return d.innerHTML.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
 
+function isGitDirty(g) {
+  if (!g) return false;
+  if (g.dirty) return true;
+  if (g.sub_repos) return g.sub_repos.some(r => r.dirty);
+  return false;
+}
+
+function hasGitInfo(g) {
+  if (!g) return false;
+  if (g.error) return false;
+  if (g.branch) return true;
+  if (g.sub_repos && g.sub_repos.length) return true;
+  return false;
+}
+
 function healthClass(p) {
   if (!p.exists) return 'health-red';
   const g = gitCache[p.name];
-  if (!g) return 'health-hidden';
-  if (g.error) return 'health-hidden';
-  if (g.dirty) return 'health-yellow';
+  if (!hasGitInfo(g)) return 'health-hidden';
+  if (isGitDirty(g)) return 'health-yellow';
   return 'health-green';
 }
 
 function healthIcon(p) {
   if (!p.exists) return '\u2717';   // ✗
   const g = gitCache[p.name];
-  if (!g || g.error) return '';
-  if (g.dirty) return '\u25C6';    // ◆
-  return '\u2713';                  // ✓
+  if (!hasGitInfo(g)) return '';
+  if (isGitDirty(g)) return '\u25C6';    // ◆
+  return '\u2713';                        // ✓
 }
 
 function healthTitle(p) {
   if (!p.exists) return 'Directory missing';
   const g = gitCache[p.name];
-  if (!g) return '';
-  if (g.error) return '';
+  if (!hasGitInfo(g)) return '';
+  if (g.sub_repos && g.sub_repos.length) {
+    const dirty = g.sub_repos.filter(r => r.dirty).length;
+    return g.sub_repos.length + ' repos: ' + (g.sub_repos.length - dirty) + ' clean' + (dirty ? ', ' + dirty + ' dirty' : '');
+  }
   if (g.dirty) {
     let tip = 'Uncommitted changes';
     if (g.files && g.files.length) tip += '&#10;' + g.files.map(f => esc(f)).join('&#10;');
@@ -3146,6 +3163,25 @@ async function updateAllGit(silent) {
 
 function renderGitBadge(info) {
   if (info.error) return `<span class="badge-git-error">${esc(info.error)}</span>`;
+  // Aggregate sub-repo status.
+  if (info.sub_repos && info.sub_repos.length) {
+    const total = info.sub_repos.length;
+    const dirty = info.sub_repos.filter(r => r.dirty).length;
+    const clean = total - dirty;
+    const cls = dirty > 0 ? 'badge-git-dirty' : 'badge-git-clean';
+    const icon = dirty > 0 ? '\u25CF' : '\u2713';
+    const label = total + ' repo' + (total > 1 ? 's' : '') + ': ' + clean + ' clean' + (dirty ? ', ' + dirty + ' dirty' : '');
+    let tooltip = info.sub_repos.map(r => {
+      const rIcon = r.dirty ? '\u25CF' : '\u2713';
+      let tip = rIcon + ' ' + esc(r.name) + ' (' + esc(r.branch) + ')';
+      if (r.dirty && r.files && r.files.length) {
+        tip += '&#10;  ' + r.files.map(f => esc(f)).join('&#10;  ');
+      }
+      return tip;
+    }).join('&#10;');
+    return `<span class="${cls}" title="${tooltip}">${icon} ${esc(label)}</span>`;
+  }
+  // Single repo status.
   const cls = info.dirty ? 'badge-git-dirty' : 'badge-git-clean';
   const icon = info.dirty ? '\u25CF' : '\u2713';
   let tooltip = esc(info.branch);

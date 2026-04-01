@@ -1246,18 +1246,84 @@ func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 
 	result, err := gitStatus(r.Context(), path)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		// Not a git repo — check for sub-repos (1-2 levels deep).
+		subs := findSubRepos(r.Context(), path)
+		if len(subs) == 0 {
+			http.Error(w, "not a git repository", http.StatusBadRequest)
+			return
+		}
+		writeJSON(w, gitStatusResult{SubRepos: subs})
 		return
 	}
 
 	writeJSON(w, result)
 }
 
-// gitStatusResult holds git status info for a repository.
+// gitStatusResult holds git status info for a repository or aggregate of sub-repos.
 type gitStatusResult struct {
-	Branch  string   `json:"branch"`
-	Dirty   bool     `json:"dirty"`
-	Files   []string `json:"files,omitempty"`
+	Branch   string          `json:"branch,omitempty"`
+	Dirty    bool            `json:"dirty"`
+	Files    []string        `json:"files,omitempty"`
+	SubRepos []subRepoStatus `json:"sub_repos,omitempty"`
+}
+
+// subRepoStatus holds git status for a sub-repository within a place.
+type subRepoStatus struct {
+	Name   string   `json:"name"`
+	Branch string   `json:"branch"`
+	Dirty  bool     `json:"dirty"`
+	Files  []string `json:"files,omitempty"`
+}
+
+// findSubRepos scans a directory for git repositories up to 2 levels deep.
+func findSubRepos(parent context.Context, root string) []subRepoStatus {
+	var subs []subRepoStatus
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return nil
+	}
+	for _, e := range entries {
+		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
+			continue
+		}
+		subPath := filepath.Join(root, e.Name())
+		// Check if this directory is a git repo.
+		if _, err := os.Stat(filepath.Join(subPath, ".git")); err == nil {
+			result, err := gitStatus(parent, subPath)
+			if err == nil {
+				subs = append(subs, subRepoStatus{
+					Name:   e.Name(),
+					Branch: result.Branch,
+					Dirty:  result.Dirty,
+					Files:  result.Files,
+				})
+			}
+			continue
+		}
+		// Check one more level deep.
+		subEntries, err := os.ReadDir(subPath)
+		if err != nil {
+			continue
+		}
+		for _, se := range subEntries {
+			if !se.IsDir() || strings.HasPrefix(se.Name(), ".") {
+				continue
+			}
+			subSubPath := filepath.Join(subPath, se.Name())
+			if _, err := os.Stat(filepath.Join(subSubPath, ".git")); err == nil {
+				result, err := gitStatus(parent, subSubPath)
+				if err == nil {
+					subs = append(subs, subRepoStatus{
+						Name:   e.Name() + "/" + se.Name(),
+						Branch: result.Branch,
+						Dirty:  result.Dirty,
+						Files:  result.Files,
+					})
+				}
+			}
+		}
+	}
+	return subs
 }
 
 // gitStatus returns the current branch name, dirty flag, and changed files for a git repo.
