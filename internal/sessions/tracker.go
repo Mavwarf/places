@@ -6,6 +6,7 @@ package sessions
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,7 +43,7 @@ func dbPath() (string, error) {
 
 func logErr(context string, err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "places-app: sessions: %s: %v\n", context, err)
+		log.Printf("places-app: sessions: %s: %v", context, err)
 	}
 }
 

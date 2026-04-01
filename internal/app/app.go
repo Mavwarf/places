@@ -1801,10 +1801,9 @@ func handleDefaultHidden(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "failed to load config", http.StatusInternalServerError)
 			return
 		}
-		validDefaults := map[string]bool{"claude": true, "explorer": true, "code": true, "powershell": true, "cmd": true}
 		for _, h := range req.Hidden {
-			if !validDefaults[h] {
-				http.Error(w, "unknown default action: "+h, http.StatusBadRequest)
+			if !defaultActions[h] {
+				http.Error(w, "unknown default action", http.StatusBadRequest)
 				return
 			}
 		}
@@ -1848,7 +1847,7 @@ func handleDefaultActions(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, a := range req.Actions {
 			if _, ok := cfg.Actions[a]; !ok {
-				http.Error(w, "unknown action: "+a, http.StatusBadRequest)
+				http.Error(w, "unknown action", http.StatusBadRequest)
 				return
 			}
 		}

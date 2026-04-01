@@ -43,12 +43,7 @@ func (a *App) startup(ctx context.Context) {
 	close(a.ready)
 }
 
-func (a *App) shutdown(ctx context.Context) {
-	if a.tracker != nil {
-		a.tracker.CloseAll()
-		a.tracker.Close()
-	}
-}
+func (a *App) shutdown(ctx context.Context) {}
 
 // saveWindowGeometry persists the current window position and size.
 func (a *App) saveWindowGeometry() {
