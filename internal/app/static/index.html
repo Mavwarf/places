@@ -2102,7 +2102,16 @@ function toggleCompact() {
 
 // Sessions view
 let sessionsMode = false;
-let sessionsRange = 'today'; // 'today' or 'week'
+let sessionsRange = 'day'; // 'day' or 'week'
+let sessionsDate = new Date(); // current day being viewed
+
+function sessionsShift(delta) {
+  const days = sessionsRange === 'week' ? delta * 7 : delta;
+  sessionsDate = new Date(sessionsDate.getFullYear(), sessionsDate.getMonth(), sessionsDate.getDate() + days);
+  const today = new Date();
+  if (sessionsDate > today) sessionsDate = today;
+  loadSessions();
+}
 
 function toggleSessions() {
   sessionsMode = !sessionsMode;
@@ -2143,6 +2152,10 @@ function fmtTime(unix) {
   const d = new Date(unix * 1000);
   return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
 }
+function fmtDateTime(unix) {
+  const d = new Date(unix * 1000);
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + fmtTime(unix);
+}
 
 function fmtDate(d) {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -2161,21 +2174,21 @@ function actionColor(action) {
 async function loadSessions() {
   const el = document.getElementById('sessions-view');
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayStart = new Date(sessionsDate.getFullYear(), sessionsDate.getMonth(), sessionsDate.getDate());
   let from, to;
   if (sessionsRange === 'week') {
-    const dayOfWeek = todayStart.getDay();
+    const dayOfWeek = dayStart.getDay();
     const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    from = Math.floor(new Date(todayStart.getTime() - mondayOffset * 86400000).getTime() / 1000);
-    to = Math.floor(now.getTime() / 1000);
+    from = Math.floor(new Date(dayStart.getTime() - mondayOffset * 86400000).getTime() / 1000);
+    to = Math.floor(new Date(dayStart.getTime() + 7 * 86400000).getTime() / 1000);
   } else {
-    from = Math.floor(todayStart.getTime() / 1000);
-    to = Math.floor(now.getTime() / 1000);
+    from = Math.floor(dayStart.getTime() / 1000);
+    to = Math.floor(new Date(dayStart.getTime() + 86400000).getTime() / 1000);
   }
 
   try {
     const res = await fetch('/api/sessions?from=' + from + '&to=' + to);
-    const sessions = await res.json() || [];
+    const sessions = (await res.json() || []).filter(s => s.duration >= 60);
 
     // Group by day
     const days = {};
@@ -2210,9 +2223,26 @@ async function loadSessions() {
     const topPlaces = Object.entries(byPlace).sort((a, b) => b[1] - a[1]);
 
     // Navigation
+    const todayDate = new Date();
+    const isToday = dayStart.toDateString() === todayDate.toDateString();
     let html = '<div class="session-nav">';
-    html += `<button class="${sessionsRange === 'today' ? 'active' : ''}" onclick="sessionsRange='today';loadSessions()">Today</button>`;
-    html += `<button class="${sessionsRange === 'week' ? 'active' : ''}" onclick="sessionsRange='week';loadSessions()">This week</button>`;
+    html += `<button onclick="sessionsShift(-1)">◀</button>`;
+    if (sessionsRange === 'week') {
+      const dow = dayStart.getDay();
+      const monOff = dow === 0 ? 6 : dow - 1;
+      const mon = new Date(dayStart.getTime() - monOff * 86400000);
+      const sun = new Date(mon.getTime() + 6 * 86400000);
+      const wkLabel = mon.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' – ' + sun.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      html += `<button class="active">${esc(wkLabel)}</button>`;
+    } else {
+      const dayLabel = isToday ? 'Today' : dayStart.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      html += `<button class="active">${esc(dayLabel)}</button>`;
+    }
+    const atEnd = isToday || (sessionsRange === 'week' && (() => { const dow = dayStart.getDay(); const monOff = dow === 0 ? 6 : dow - 1; const sun = new Date(dayStart.getTime() - monOff * 86400000 + 6 * 86400000); return sun >= todayDate; })());
+    html += `<button onclick="sessionsShift(1)"${atEnd ? ' disabled' : ''}>▶</button>`;
+    html += `<button class="${sessionsRange === 'day' ? 'active' : ''}" onclick="sessionsRange='day';loadSessions()">Day</button>`;
+    html += `<button class="${sessionsRange === 'week' ? 'active' : ''}" onclick="sessionsRange='week';loadSessions()">Week</button>`;
+    if (!isToday) html += `<button onclick="sessionsDate=new Date();loadSessions()">Today</button>`;
     html += `<span>Total: ${fmtDuration(grandTotal)}</span>`;
     html += '</div>';
 
@@ -2235,40 +2265,15 @@ async function loadSessions() {
       html += '</div>';
     }
 
-    // Day-by-day timeline
-    if (!sortedDays.length) {
-      html += '<div class="empty-state">No sessions recorded for this period.</div>';
-    }
-    sortedDays.forEach(function(day) {
-      // Compute de-overlapped total for the day
-      const daySorted = day.sessions.slice().sort((a, b) => a.started_at - b.started_at);
-      const dayMerged = [];
-      daySorted.forEach(function(s) {
-        const prev = dayMerged.length ? dayMerged[dayMerged.length - 1] : null;
-        if (prev && s.started_at <= prev.ended_at) {
-          prev.ended_at = Math.max(prev.ended_at, s.ended_at);
-        } else {
-          dayMerged.push({ started_at: s.started_at, ended_at: s.ended_at });
-        }
-      });
-      const dayDeduped = dayMerged.reduce((sum, s) => sum + (s.ended_at - s.started_at), 0);
-
-      html += '<div class="session-day">';
-      html += `<div class="session-day-header"><h3>${fmtDate(day.date)}</h3><span>${fmtDuration(dayDeduped)}</span></div>`;
-
-      // Find day bounds for bar scaling
-      const earliest = Math.min(...day.sessions.map(s => s.started_at));
-      const latest = Math.max(...day.sessions.map(s => s.ended_at));
-      const rangeStart = earliest;
-      const rangeLen = Math.max(latest - earliest, 1);
-
-      // Group sessions by place, merge nearby sessions of same action
+    // Render timeline rows for a set of sessions within a given time range
+    function renderTimeline(sess, rangeStart, rangeLen, showDate) {
+      const tf = showDate ? fmtDateTime : fmtTime;
+      let out = '';
       const GAP_THRESHOLD = 300; // 5 minutes
       const byPlace = {};
-      day.sessions.forEach(function(s) {
+      sess.forEach(function(s) {
         if (!byPlace[s.place]) byPlace[s.place] = { sessions: [], total: 0 };
         const list = byPlace[s.place].sessions;
-        // Merge with previous if same action and gap < threshold
         const prev = list.length ? list[list.length - 1] : null;
         if (prev && prev.action === s.action && (s.started_at - prev.ended_at) < GAP_THRESHOLD) {
           prev.ended_at = s.ended_at;
@@ -2280,62 +2285,107 @@ async function loadSessions() {
         byPlace[s.place].total += s.duration;
       });
 
-      // "All" combined row — merge all sessions across places
+      // "All" combined row
       if (Object.keys(byPlace).length > 1) {
-        const allSessions = day.sessions.slice().sort((a, b) => a.started_at - b.started_at);
-        const allFirst = Math.min(...allSessions.map(s => s.started_at));
-        const allLast = Math.max(...allSessions.map(s => s.ended_at));
-        // Merge overlapping intervals into unified blocks
+        const sorted = sess.slice().sort((a, b) => a.started_at - b.started_at);
         const merged = [];
-        allSessions.forEach(function(s) {
+        sorted.forEach(function(s) {
           const prev = merged.length ? merged[merged.length - 1] : null;
           if (prev && s.started_at <= prev.ended_at) {
             prev.ended_at = Math.max(prev.ended_at, s.ended_at);
-            prev.duration = prev.ended_at - prev.started_at;
           } else {
-            merged.push({ started_at: s.started_at, ended_at: s.ended_at, duration: s.ended_at - s.started_at, action: 'all' });
+            merged.push({ started_at: s.started_at, ended_at: s.ended_at });
           }
         });
-        html += '<div class="session-row all-row">';
-        html += `<span class="session-place" title="All projects&#10;${fmtTime(allFirst)} – ${fmtTime(allLast)}">All</span>`;
-        html += `<span class="session-time">${fmtTime(allFirst)} – ${fmtTime(allLast)}</span>`;
-        html += '<div class="session-bar-wrap">';
+        out += '<div class="session-row all-row">';
+        out += '<span class="session-place">All</span>';
+        out += '<div class="session-bar-wrap">';
         merged.forEach(function(s) {
           const left = ((s.started_at - rangeStart) / rangeLen * 100).toFixed(1);
           const width = Math.max(((s.ended_at - s.started_at) / rangeLen * 100), 1).toFixed(1);
-          html += `<div class="session-bar other" style="position:absolute;left:${left}%;width:${width}%;top:0;height:100%" title="Active&#10;${fmtTime(s.started_at)} – ${fmtTime(s.ended_at)}&#10;${fmtDuration(s.duration)}"></div>`;
+          const dur = s.ended_at - s.started_at;
+          out += `<div class="session-bar other" style="position:absolute;left:${left}%;width:${width}%;top:0;height:100%" title="Active&#10;${tf(s.started_at)} – ${tf(s.ended_at)}&#10;${fmtDuration(dur)}"></div>`;
         });
-        html += '</div>';
-        const mergedTotal = merged.reduce((sum, s) => sum + s.duration, 0);
-        html += `<span class="session-duration">${fmtDuration(mergedTotal)}</span>`;
-        html += '</div>';
+        out += '</div>';
+        const mergedTotal = merged.reduce((sum, s) => sum + (s.ended_at - s.started_at), 0);
+        out += `<span class="session-duration">${fmtDuration(mergedTotal)}</span>`;
+        out += '</div>';
       }
 
       Object.entries(byPlace).forEach(function(entry) {
         const place = entry[0], data = entry[1];
-        const firstStart = Math.min(...data.sessions.map(s => s.started_at));
-        const lastEnd = Math.max(...data.sessions.map(s => s.ended_at));
-        html += '<div class="session-row">';
+        out += '<div class="session-row">';
         const actionBreakdown = {};
         data.sessions.forEach(function(s) { actionBreakdown[s.action] = (actionBreakdown[s.action] || 0) + s.duration; });
         const labels = getActionLabels();
         const actionTip = Object.entries(actionBreakdown).sort((a, b) => b[1] - a[1]).map(a => (labels[a[0]] || a[0]) + ': ' + fmtDuration(a[1])).join('&#10;');
-        html += `<span class="session-place" title="${esc(place)}&#10;${data.sessions.length} session${data.sessions.length > 1 ? 's' : ''}&#10;${fmtTime(firstStart)} – ${fmtTime(lastEnd)}&#10;${actionTip}">${esc(place)}</span>`;
-        html += `<span class="session-time">${fmtTime(firstStart)} – ${fmtTime(lastEnd)}</span>`;
-        html += '<div class="session-bar-wrap">';
+        out += `<span class="session-place" title="${esc(place)}&#10;${data.sessions.length} session${data.sessions.length > 1 ? 's' : ''}&#10;${actionTip}">${esc(place)}</span>`;
+        out += '<div class="session-bar-wrap">';
         data.sessions.forEach(function(s) {
           const left = ((s.started_at - rangeStart) / rangeLen * 100).toFixed(1);
           const width = Math.max(((s.ended_at - s.started_at) / rangeLen * 100), 1).toFixed(1);
           const label = getActionLabels()[s.action] || s.action;
           const merged = s.count > 1 ? ' (' + s.count + ' sessions merged)' : '';
-          html += `<div class="session-bar ${actionColor(s.action)}" style="position:absolute;left:${left}%;width:${width}%;top:0;height:100%" title="${label}${merged}&#10;${fmtTime(s.started_at)} – ${fmtTime(s.ended_at)}&#10;${fmtDuration(s.duration)}"></div>`;
+          out += `<div class="session-bar ${actionColor(s.action)}" style="position:absolute;left:${left}%;width:${width}%;top:0;height:100%" title="${label}${merged}&#10;${tf(s.started_at)} – ${tf(s.ended_at)}&#10;${fmtDuration(s.duration)}"></div>`;
         });
-        html += '</div>';
-        html += `<span class="session-duration">${fmtDuration(data.total)}</span>`;
-        html += '</div>';
+        out += '</div>';
+        out += `<span class="session-duration">${fmtDuration(data.total)}</span>`;
+        out += '</div>';
+      });
+      return out;
+    }
+
+    // Timeline
+    if (!sessions.length) {
+      html += '<div class="empty-state">No sessions recorded for this period.</div>';
+    } else if (sessionsRange === 'week') {
+      // Week mode: one combined timeline spanning Mon–Sun
+      const dow = dayStart.getDay();
+      const monOff = dow === 0 ? 6 : dow - 1;
+      const monStart = new Date(dayStart.getTime() - monOff * 86400000);
+      const rangeStart = Math.floor(monStart.getTime() / 1000);
+      const rangeLen = 7 * 86400;
+      // Day labels across the bar
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      html += '<div class="session-day">';
+      html += '<div class="session-row" style="margin-bottom:2px">';
+      html += '<span class="session-place"></span>';
+      html += '<div class="session-bar-wrap" style="background:transparent;overflow:visible;height:14px">';
+      dayNames.forEach(function(name, i) {
+        const left = (i / 7 * 100).toFixed(1);
+        html += `<span style="position:absolute;left:${left}%;font-size:0.7em;color:var(--fg-dim)">${name}</span>`;
       });
       html += '</div>';
-    });
+      html += '<span class="session-duration"></span>';
+      html += '</div>';
+      html += renderTimeline(sessions, rangeStart, rangeLen, true);
+      html += '</div>';
+    } else {
+      // Day mode: day-by-day sections
+      sortedDays.forEach(function(day) {
+        const daySorted = day.sessions.slice().sort((a, b) => a.started_at - b.started_at);
+        const dayMerged = [];
+        daySorted.forEach(function(s) {
+          const prev = dayMerged.length ? dayMerged[dayMerged.length - 1] : null;
+          if (prev && s.started_at <= prev.ended_at) {
+            prev.ended_at = Math.max(prev.ended_at, s.ended_at);
+          } else {
+            dayMerged.push({ started_at: s.started_at, ended_at: s.ended_at });
+          }
+        });
+        const dayDeduped = dayMerged.reduce((sum, s) => sum + (s.ended_at - s.started_at), 0);
+
+        const earliest = Math.min(...day.sessions.map(s => s.started_at));
+        const latest = Math.max(...day.sessions.map(s => s.ended_at));
+        const rangeStart = earliest;
+        const rangeLen = Math.max(latest - earliest, 1);
+
+        html += '<div class="session-day">';
+        html += `<div class="session-day-header"><h3>${fmtDate(day.date)}</h3><span>${fmtDuration(dayDeduped)}</span></div>`;
+        html += renderTimeline(day.sessions, rangeStart, rangeLen);
+        html += '</div>';
+      });
+    }
 
     el.innerHTML = html;
   } catch (e) {
