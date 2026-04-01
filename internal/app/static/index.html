@@ -890,10 +890,12 @@ button:active { opacity: 0.7; }
 .session-nav button:hover { color: var(--accent); border-color: var(--accent); }
 .session-nav button.active { color: var(--accent); border-color: var(--accent); }
 .session-nav span { color: var(--fg-dim); font-size: 0.85em; }
-.session-summary { display: flex; gap: 16px; padding: 8px 14px; flex-wrap: wrap; }
-.session-summary-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; min-width: 100px; }
-.session-summary-item .ss-label { font-size: 0.75em; color: var(--fg-dim); text-transform: uppercase; }
-.session-summary-item .ss-value { font-size: 1.1em; color: var(--fg); font-weight: 600; }
+.session-summary { display: flex; gap: 8px; padding: 8px 14px; flex-wrap: wrap; }
+.session-summary-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; min-width: 70px; }
+.session-summary-item .ss-label { font-size: 0.7em; color: var(--fg-dim); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90px; }
+.session-summary-item .ss-value { font-size: 1em; color: var(--fg); font-weight: 600; }
+.session-row.all-row .session-place { color: var(--fg); }
+.session-row.all-row .session-bar-wrap { background: var(--bg2); }
 
 .place-row {
   display: flex;
@@ -2186,7 +2188,18 @@ async function loadSessions() {
     });
 
     const sortedDays = Object.values(days).sort((a, b) => b.date - a.date);
-    const grandTotal = sortedDays.reduce((sum, d) => sum + d.total, 0);
+    // De-overlap all sessions for accurate grand total
+    const allSorted = sessions.slice().sort((a, b) => a.started_at - b.started_at);
+    const allMerged = [];
+    allSorted.forEach(function(s) {
+      const prev = allMerged.length ? allMerged[allMerged.length - 1] : null;
+      if (prev && s.started_at <= prev.ended_at) {
+        prev.ended_at = Math.max(prev.ended_at, s.ended_at);
+      } else {
+        allMerged.push({ started_at: s.started_at, ended_at: s.ended_at });
+      }
+    });
+    const grandTotal = allMerged.reduce((sum, s) => sum + (s.ended_at - s.started_at), 0);
 
     // Summary by place
     const byPlace = {};
@@ -2227,8 +2240,21 @@ async function loadSessions() {
       html += '<div class="empty-state">No sessions recorded for this period.</div>';
     }
     sortedDays.forEach(function(day) {
+      // Compute de-overlapped total for the day
+      const daySorted = day.sessions.slice().sort((a, b) => a.started_at - b.started_at);
+      const dayMerged = [];
+      daySorted.forEach(function(s) {
+        const prev = dayMerged.length ? dayMerged[dayMerged.length - 1] : null;
+        if (prev && s.started_at <= prev.ended_at) {
+          prev.ended_at = Math.max(prev.ended_at, s.ended_at);
+        } else {
+          dayMerged.push({ started_at: s.started_at, ended_at: s.ended_at });
+        }
+      });
+      const dayDeduped = dayMerged.reduce((sum, s) => sum + (s.ended_at - s.started_at), 0);
+
       html += '<div class="session-day">';
-      html += `<div class="session-day-header"><h3>${fmtDate(day.date)}</h3><span>${fmtDuration(day.total)}</span></div>`;
+      html += `<div class="session-day-header"><h3>${fmtDate(day.date)}</h3><span>${fmtDuration(dayDeduped)}</span></div>`;
 
       // Find day bounds for bar scaling
       const earliest = Math.min(...day.sessions.map(s => s.started_at));
@@ -2253,6 +2279,37 @@ async function loadSessions() {
         }
         byPlace[s.place].total += s.duration;
       });
+
+      // "All" combined row — merge all sessions across places
+      if (Object.keys(byPlace).length > 1) {
+        const allSessions = day.sessions.slice().sort((a, b) => a.started_at - b.started_at);
+        const allFirst = Math.min(...allSessions.map(s => s.started_at));
+        const allLast = Math.max(...allSessions.map(s => s.ended_at));
+        // Merge overlapping intervals into unified blocks
+        const merged = [];
+        allSessions.forEach(function(s) {
+          const prev = merged.length ? merged[merged.length - 1] : null;
+          if (prev && s.started_at <= prev.ended_at) {
+            prev.ended_at = Math.max(prev.ended_at, s.ended_at);
+            prev.duration = prev.ended_at - prev.started_at;
+          } else {
+            merged.push({ started_at: s.started_at, ended_at: s.ended_at, duration: s.ended_at - s.started_at, action: 'all' });
+          }
+        });
+        html += '<div class="session-row all-row">';
+        html += `<span class="session-place" title="All projects&#10;${fmtTime(allFirst)} – ${fmtTime(allLast)}">All</span>`;
+        html += `<span class="session-time">${fmtTime(allFirst)} – ${fmtTime(allLast)}</span>`;
+        html += '<div class="session-bar-wrap">';
+        merged.forEach(function(s) {
+          const left = ((s.started_at - rangeStart) / rangeLen * 100).toFixed(1);
+          const width = Math.max(((s.ended_at - s.started_at) / rangeLen * 100), 1).toFixed(1);
+          html += `<div class="session-bar other" style="position:absolute;left:${left}%;width:${width}%;top:0;height:100%" title="Active&#10;${fmtTime(s.started_at)} – ${fmtTime(s.ended_at)}&#10;${fmtDuration(s.duration)}"></div>`;
+        });
+        html += '</div>';
+        const mergedTotal = merged.reduce((sum, s) => sum + s.duration, 0);
+        html += `<span class="session-duration">${fmtDuration(mergedTotal)}</span>`;
+        html += '</div>';
+      }
 
       Object.entries(byPlace).forEach(function(entry) {
         const place = entry[0], data = entry[1];
