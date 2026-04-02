@@ -111,6 +111,7 @@ See **[docs/local-ai-roadmap.md](docs/local-ai-roadmap.md)** for the full learni
 - [ ] **Kanban view** — drag places between tag columns (like Trello)
 - [ ] **Minimap** — show recent activity timeline per place
 - [ ] **Keyboard shortcuts** — j/k navigation, number keys for quick launch
+- [ ] **Claude tab color** — per-place hex color passed to `wt new-tab --tabColor` so each Claude session has a distinct colored tab in Windows Terminal
 
 ## Script-Friendly
 
