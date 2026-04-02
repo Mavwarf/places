@@ -871,9 +871,10 @@ button:active { opacity: 0.7; }
 /* Place list */
 .place-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; min-height: 0; padding-top: 4px; padding-bottom: 60px; }
 .session-day { padding: 8px 14px; }
-.session-day-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.session-day-header { display: flex; align-items: baseline; margin-bottom: 8px; gap: 8px; }
 .session-day-header h3 { margin: 0; font-size: 0.9em; color: var(--fg); }
 .session-day-header span { font-size: 0.8em; color: var(--fg-dim); }
+.session-day-header .session-day-meta { flex: 1; font-size: 0.75em; margin-left: 12px; }
 .session-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 0.85em; }
 .session-time { color: var(--fg-dim); width: 110px; flex-shrink: 0; text-align: right; }
 .session-bar-wrap { flex: 1; height: 18px; background: var(--bg3); border-radius: 4px; overflow: hidden; position: relative; }
@@ -2389,8 +2390,9 @@ async function loadSessions() {
         const rangeStart = earliest;
         const rangeLen = Math.max(latest - earliest, 1);
 
+        const projectCount = new Set(day.sessions.map(s => s.place)).size;
         html += '<div class="session-day">';
-        html += `<div class="session-day-header"><h3>${fmtDate(day.date)}</h3><span>${fmtDuration(dayDeduped)}</span></div>`;
+        html += `<div class="session-day-header"><h3>${fmtDate(day.date)}</h3><span class="session-day-meta">${fmtTime(earliest)} – ${fmtTime(latest)} · ${projectCount} project${projectCount !== 1 ? 's' : ''}</span><span>${fmtDuration(dayDeduped)}</span></div>`;
         html += renderTimeline(day.sessions, rangeStart, rangeLen);
         html += '</div>';
       });

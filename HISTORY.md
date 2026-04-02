@@ -2,7 +2,7 @@
 
 ## Features
 
-- Session history view — "Sessions" toggle in header shows day/week timeline with colored bars per place, summary cards; day mode with prev/next navigation and day-by-day sections; week mode with Mon–Sun combined bar and day labels; "All" combined row with de-overlapped totals; sessions under 60s filtered out; compact summary cards; date+time tooltips in week mode *(Apr 1)*
+- Session history view — "Sessions" toggle in header shows day/week timeline with colored bars per place, summary cards; day mode with prev/next navigation, day-by-day sections, and per-day start/end time + project count; week mode with Mon–Sun combined bar and day labels; "All" combined row with de-overlapped totals; sessions under 60s filtered out; compact summary cards; date+time tooltips in week mode *(Apr 2)*
 - Open config folder button in preferences Integration section *(Apr 2)*
 - Dashboard UX — visible column drag handles in place rows; git dirty tooltip shows changed files; recent bar docked to bottom above footer (gap fixed); header buttons reordered (Sessions, + left; Recent, Compact, 🎨, ⚙ right); merged nearby sessions in timeline; bigger fav/health icons; "Confirm fresh session" pref toggle; custom input/confirm dialogs; tag overflow menu with AND filter; always-visible Clear button *(Mar 30)*
 - Aggregate git status for multi-repo places — places containing sub-repos show "2 repos: 1 clean, 1 dirty" with per-repo tooltip; health dots and dirty filter work for both *(Apr 1)*
