@@ -95,8 +95,8 @@ type Config struct {
 	DetectRunning  bool               `json:"detect_running,omitempty"` // detect running sessions (default off)
 }
 
-// configDir returns the directory for places config files.
-func configDir() (string, error) {
+// ConfigDir returns the directory for places config files.
+func ConfigDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("cannot determine home directory: %w", err)
@@ -106,7 +106,7 @@ func configDir() (string, error) {
 
 // ConfigPath returns the full path to places.json, creating the directory if needed.
 func ConfigPath() (string, error) {
-	dir, err := configDir()
+	dir, err := ConfigDir()
 	if err != nil {
 		return "", err
 	}

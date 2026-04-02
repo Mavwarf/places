@@ -156,6 +156,7 @@ func Serve(port int, cb Callbacks) error {
 	mux.HandleFunc("/api/desktop-count", handleDesktopCount)
 	mux.HandleFunc("/api/switch-desktop", handleSwitchDesktop)
 	mux.HandleFunc("/api/open-url", handleOpenURL)
+	mux.HandleFunc("/api/open-config", handleOpenConfig)
 	mux.HandleFunc("/api/actions", handleActions)
 	mux.HandleFunc("/api/run-action", handleRunAction)
 	mux.HandleFunc("/api/action-assign", handleActionAssign)
@@ -803,6 +804,26 @@ func handleOpenURL(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := cmd.Start(); err != nil {
 		http.Error(w, "failed to open URL", http.StatusInternalServerError)
+		return
+	}
+	go cmd.Wait()
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleOpenConfig opens the config directory in the file explorer.
+func handleOpenConfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	dir, err := config.ConfigDir()
+	if err != nil {
+		http.Error(w, "failed to locate config directory", http.StatusInternalServerError)
+		return
+	}
+	cmd := launcher.Explorer(dir)
+	if err := cmd.Start(); err != nil {
+		http.Error(w, "failed to open config directory", http.StatusInternalServerError)
 		return
 	}
 	go cmd.Wait()

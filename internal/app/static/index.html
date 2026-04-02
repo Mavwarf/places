@@ -1637,7 +1637,16 @@ function togglePrefs() {
     `<button class="theme-picker-item" onclick="toggleDetectRunning()">Detect running sessions: ${detectRunning ? 'on' : 'off'}</button>` +
     // Integration section
     `<div style="padding:8px 12px 2px;font-size:0.75em;color:var(--fg-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border);margin-top:4px">Integration</div>` +
-    `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>`;
+    `<button class="theme-picker-item" onclick="editNotifyPath()">Notify path${notifyPath ? ': ' + esc(notifyPath.split('/').pop()) : ' (not set)'}</button>` +
+    `<button class="theme-picker-item" onclick="openConfigFolder()">Open config folder</button>`;
+}
+
+async function openConfigFolder() {
+  document.getElementById('prefs-picker').classList.remove('open');
+  try {
+    const res = await fetch('/api/open-config', {method: 'POST'});
+    if (!res.ok) toast(await res.text() || 'Failed to open config folder', true);
+  } catch (e) { toast('Failed to open config folder', true); }
 }
 
 async function editNotifyPath() {
