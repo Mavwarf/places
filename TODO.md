@@ -101,6 +101,7 @@ See **[docs/local-ai-roadmap.md](docs/local-ai-roadmap.md)** for the full learni
 - [ ] **GitHub status** — show open PRs, CI status badge next to git info in dashboard
 - [ ] **Docker status** — detect running containers associated with a place directory
 - [ ] **SSH places** — bookmark remote directories, `p ssh-api` connects and cd's
+- [ ] **Claude usage display** — show Claude usage in the dashboard and/or system tray. Two data sources: (1) local activity stats from `~/.claude/stats-cache.json` (per-day message/session/tool counts — easy, no auth); (2) live `/usage` rate-limit consumption (session %, weekly %) — not cached locally, requires calling the Anthropic usage endpoint with the OAuth token from `~/.claude/.credentials.json` (unstable/undocumented endpoint, handle token carefully). Tray tooltip idea: `Session: 34% · Week: 61%`.
 
 ### Navigation
 - [ ] **Frecent subfolders** — `p api/src` jumps to subdirectories of a place
